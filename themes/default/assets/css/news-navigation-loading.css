@@ -1,0 +1,73 @@
+/*
+ * News Navigation Loading States - v5.0.1-fixed
+ * Упрощенные стили для индикаторов загрузки
+ */
+
+/* Loading indicator */
+.news-loading-indicator {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    z-index: 9999;
+    font-size: 14px;
+}
+
+.news-loading-indicator i {
+    margin-right: 8px;
+}
+
+/* News page loading state */
+.news-page.loading {
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.news-page.loading .articles-grid {
+    position: relative;
+}
+
+.news-page.loading .articles-grid::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 100;
+}
+
+/* Active category state */
+.category-link.active {
+    background: #007cba;
+    color: white;
+}
+
+.category-link.active .category-count {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Smooth transitions */
+.articles-grid {
+    transition: opacity 0.3s ease;
+}
+
+.pagination-section {
+    transition: opacity 0.3s ease;
+}
+
+/* Disabled state during loading */
+.news-page.loading .category-link,
+.news-page.loading .pagination-link,
+.news-page.loading .sort-select,
+.news-page.loading .search-input {
+    pointer-events: none;
+    opacity: 0.6;
+}

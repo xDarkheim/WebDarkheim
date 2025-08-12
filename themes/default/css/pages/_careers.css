@@ -1,0 +1,652 @@
+/* ==========================================================================
+   СТРАНИЦА КАРЬЕРЫ - DARKHEIM STUDIO
+   Корпоративный дизайн страницы вакансий БЕЗ АНИМАЦИЙ
+   ========================================================================== */
+
+/* Hero секция карьеры */
+.careers-hero {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.careers-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, var(--color-dark-surface) 0%, transparent 70%);
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.careers-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.careers-hero .hero-icon {
+  font-size: var(--font-size-5xl);
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}
+
+.careers-hero-title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  line-height: var(--line-height-tight);
+}
+
+.careers-hero-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-lg);
+}
+
+.careers-hero-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Фильтры типов позиций */
+.careers-filter {
+  padding: var(--spacing-2xl) 0;
+  background: var(--color-dark-surface);
+  border-bottom: 1px solid var(--color-dark-border);
+}
+
+.careers-filter .filter-tabs {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.careers-filter .filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.careers-filter .filter-tab.active {
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+}
+
+/* Контент карьеры */
+.careers-content {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+}
+
+.position-section {
+  margin-bottom: var(--spacing-4xl);
+}
+
+.position-section:last-child {
+  margin-bottom: 0;
+}
+
+.careers-content .section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-3xl);
+  padding-bottom: var(--spacing-xl);
+  border-bottom: 1px solid var(--color-dark-border);
+}
+
+.careers-content .section-icon {
+  font-size: var(--font-size-4xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+}
+
+.careers-content .section-info h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.careers-content .section-tagline {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.positions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-2xl);
+}
+
+/* Карточки позиций ПОЛНОСТЬЮ СТАТИЧНЫЕ */
+.position-card {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  /* Принудительное отключение всех анимаций */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.position-card:hover {
+  /* Отключаем любые изменения при наведении */
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.position-card * {
+  /* Отключаем анимации для всех дочерних элементов */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Блок отсутствия открытых позиций */
+.no-positions {
+  background: var(--color-dark-surface);
+  border: 2px dashed var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3xl);
+  text-align: center;
+  margin: var(--spacing-2xl) 0;
+}
+
+.no-positions-icon {
+  font-size: var(--font-size-5xl);
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.6;
+}
+
+.no-positions h3 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.no-positions p {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-xl);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.position-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.position-header h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.position-meta {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.position-type,
+.position-level {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.position-type {
+  color: var(--color-accent);
+}
+
+.position-level {
+  color: var(--color-text-muted);
+}
+
+.position-summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-lg);
+}
+
+.position-requirements {
+  margin-bottom: var(--spacing-xl);
+  flex: 1;
+}
+
+.position-requirements h4 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.position-requirements ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.position-requirements li {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  padding-left: var(--spacing-lg);
+  position: relative;
+}
+
+.position-requirements li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+.position-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.position-salary {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent);
+}
+
+/* Будущие позиции */
+.future-positions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.future-position {
+  background: var(--color-dark-surface);
+  border: 2px dashed var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  position: relative;
+}
+
+.future-position h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.future-position p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-lg);
+}
+
+.coming-soon {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Преимущества */
+.careers-benefits {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-surface);
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.careers-benefits .section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.careers-benefits .section-header h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.careers-benefits .section-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.benefit-item {
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.benefit-icon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}
+
+.benefit-item h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.benefit-item p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* Процесс найма */
+.careers-process {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.careers-process .section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.careers-process .section-header h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.careers-process .section-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.careers-process .process-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-2xl);
+  margin-top: var(--spacing-3xl);
+}
+
+.careers-process .process-step {
+  text-align: center;
+  position: relative;
+}
+
+.careers-process .step-number {
+  width: 60px;
+  height: 60px;
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 auto var(--spacing-lg) auto;
+}
+
+.careers-process .step-content h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.careers-process .step-content p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* CTA секция карьеры */
+.careers-cta {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-surface);
+  text-align: center;
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.careers-cta .cta-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.careers-cta h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.careers-cta .cta-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.careers-cta .cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.careers-cta .cta-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.careers-cta .contact-label {
+  color: var(--color-text-muted);
+}
+
+.careers-cta .contact-email {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .careers-hero {
+    padding: var(--spacing-3xl) 0;
+  }
+
+  .careers-hero-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  /* Улучшенные мобильные фильтры карьеры */
+  .careers-filter {
+    padding: var(--spacing-lg) 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 2px solid var(--color-dark-border);
+  }
+
+  .careers-filter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-dark-surface);
+    opacity: 0.8;
+    z-index: -1;
+  }
+
+  .careers-filter .filter-tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 var(--spacing-lg) var(--spacing-sm);
+    margin: 0 calc(-1 * var(--spacing-lg));
+    gap: var(--spacing-sm);
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .careers-filter .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .careers-filter .filter-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    min-width: fit-content;
+    transition: all 0.3s ease;
+    position: relative;
+    background: var(--color-dark-elevated);
+    border: 1px solid var(--color-dark-border);
+  }
+
+  .careers-filter .filter-tab.active {
+    background: var(--color-accent);
+    color: var(--color-text-primary);
+    border-color: var(--color-accent);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .careers-filter .filter-tab:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+  }
+
+  /* Индикатор прокрутки для фильтров карьеры */
+  .careers-filter::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    opacity: 0.3;
+    border-radius: var(--radius-full);
+  }
+
+  .careers-content .section-header {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-md);
+  }
+
+  .positions-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+  }
+
+  .position-footer {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+
+  .future-positions {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .careers-process .process-steps {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+  }
+
+  .careers-cta .cta-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .careers-cta .cta-contact {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+}

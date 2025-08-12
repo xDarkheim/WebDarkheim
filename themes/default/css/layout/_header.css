@@ -1,0 +1,753 @@
+/* ==========================================================================
+   MODERN HEADER DESIGN - DARKHEIM STUDIO
+   Enhanced logo, navigation and user interface
+   ========================================================================== */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-fixed);
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all var(--transition-normal) var(--animation-timing);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+}
+
+.site-header.scrolled {
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: var(--shadow-lg);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.header-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, var(--spacing-xl));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-height);
+  position: relative;
+}
+
+/* ==========================================================================
+   ENHANCED LOGO DESIGN
+   ========================================================================== */
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  z-index: var(--z-50);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: transform var(--transition-normal);
+}
+
+.logo:hover {
+  transform: translateY(-1px);
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #06b6d4);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logo-icon:hover {
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+  transform: scale(1.05);
+}
+
+.logo-icon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-link {
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.logo-link:hover {
+  opacity: 0.9;
+}
+
+.logo-primary {
+  font-family: var(--font-heading), serif;
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  margin-bottom: -2px;
+}
+
+.logo-secondary {
+  font-family: var(--font-family-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   NAVIGATION DESIGN
+   ========================================================================== */
+
+.main-navigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Уменьшили gap между nav-wrapper и header-auth */
+  /* Убираем flex: 1 и justify-content, чтобы элементы располагались естественно справа */
+}
+
+.nav-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: none; /* Убираем фон обертки */
+  border-radius: 0; /* Убираем закругления */
+  border: none; /* Убираем границы */
+  backdrop-filter: none; /* Убираем размытие */
+  -webkit-backdrop-filter: none;
+  box-shadow: none; /* Убираем тени */
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  border-radius: 0; /* Убираем закругления */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  white-space: nowrap;
+  background: none; /* Убираем фон */
+  border: none; /* Убираем границы */
+}
+
+.nav-link:hover {
+  color: var(--color-accent);
+  background: none; /* Убираем фон при наведении */
+  transform: none; /* Убираем трансформации */
+  box-shadow: none; /* Убираем тени */
+}
+
+.nav-link.active {
+  color: var(--color-accent);
+  background: none; /* Убираем фон для активного состояния */
+  box-shadow: none; /* Убираем тени */
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 1px;
+}
+
+/* ==========================================================================
+   AUTH BUTTONS DESIGN
+   ========================================================================== */
+
+.header-auth {
+  display: flex;
+  align-items: center;
+  z-index: 1001;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-btn-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.auth-btn--secondary {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-btn--secondary:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.auth-btn--primary {
+  color: white;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: 1px solid transparent;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.auth-btn--primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.4);
+}
+
+/* ==========================================================================
+   USER MENU DESIGN
+   ========================================================================== */
+
+.user-menu {
+  position: relative;
+}
+
+.user-menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.avatar-fallback svg {
+  width: 18px;
+  height: 18px;
+}
+
+.user-name {
+  font-weight: 500;
+  font-size: 14px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-arrow {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.user-menu-toggle[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* User Dropdown */
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 280px;
+  background: rgba(15, 23, 42, 0.95); /* Делаем фон менее прозрачным */
+  border: 1px solid rgba(255, 255, 255, 0.15); /* Усиливаем границу */
+  border-radius: 16px;
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.5); /* Усиливаем тень */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); /* Добавляем поддержку Safari */
+  margin-top: 8px;
+}
+
+.user-menu-toggle[aria-expanded="true"] ~ .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.user-dropdown-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Усиливаем границу */
+  background: rgba(255, 255, 255, 0.02); /* Добавляем легкий фон для заголовка */
+}
+
+.user-name-large {
+  font-weight: 600;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95); /* Улучшаем контрастность текста */
+  margin-bottom: 4px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7); /* Улучшаем контрастность текста */
+}
+
+.user-dropdown-menu {
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.01); /* Добавляем легкий фон */
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: rgba(255, 255, 255, 0.9); /* Улучшаем контрастность текста */
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1); /* Усиливаем эффект при наведении */
+  color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.dropdown-item svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.8; /* Улучшаем видимость иконок */
+}
+
+.dropdown-item--danger {
+  color: #ef4444;
+}
+
+.dropdown-item--danger:hover {
+  background: rgba(239, 68, 68, 0.15); /* Усиливаем эффект для опасных действий */
+  color: #f87171;
+}
+
+.dropdown-divider {
+  margin: 8px 0;
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15); /* Усиливаем видимость разделителя */
+}
+
+/* ==========================================================================
+   MOBILE NAVIGATION
+   ========================================================================== */
+
+.mobile-nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  z-index: 1002;
+}
+
+.mobile-nav-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hamburger-icon {
+  width: 24px;
+  height: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-line {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .header-container {
+    height: 70px;
+    padding: 0 1.5rem;
+  }
+
+  .nav-wrapper {
+    display: none;
+  }
+
+  .main-navigation {
+    justify-content: flex-end;
+  }
+
+  .mobile-nav-toggle {
+    display: flex;
+  }
+
+  .logo-primary {
+    font-size: 20px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Улучшаем header-auth для планшетов */
+  .auth-btn {
+    padding: 8px 16px; /* Уменьшаем отступы */
+    font-size: 13px; /* Меньший шрифт */
+    gap: 6px; /* Меньший gap между иконкой и текстом */
+  }
+
+  .auth-btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .user-menu-toggle {
+    padding: 6px 12px; /* Уменьшаем отступы */
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .user-name {
+    font-size: 13px;
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    height: 64px;
+    padding: 0 1rem;
+  }
+
+  /* Полностью скрываем десктопную авторизацию на мобильных */
+  .auth-buttons {
+    display: none;
+  }
+
+  /* Компактный user-menu для мобильных */
+  .user-menu .user-name {
+    display: none; /* Скрываем имя пользователя */
+  }
+
+  .user-menu-toggle {
+    padding: 6px 8px; /* Минимальные отступы */
+    gap: 0; /* Убираем gap */
+    min-width: 44px; /* Минимальная область касания */
+    justify-content: center;
+  }
+
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .dropdown-arrow {
+    display: none; /* Скрываем стрелку */
+  }
+
+  .user-dropdown {
+    width: calc(100vw - 2rem);
+    right: -1rem;
+    border-radius: 12px; /* Меньший радиус для мобильных */
+  }
+
+  .user-dropdown-header {
+    padding: 16px;
+  }
+
+  .user-name-large {
+    font-size: 15px;
+  }
+
+  .user-email {
+    font-size: 12px;
+  }
+
+  .dropdown-item {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  /* Улучшенная мобильная адаптация user-dropdown */
+  .user-dropdown {
+    /* Позиционирование для мобильных */
+    position: fixed !important; /* Используем fixed positioning */
+    top: 64px !important; /* Под header */
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto !important; /* Автоширина */
+    max-width: none !important;
+    margin-top: 0 !important;
+
+    /* Улучшенная видимость на мобильных */
+    background: rgba(15, 23, 42, 0.98) !important; /* Более непрозрачный фон */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important; /* Более сильная тень */
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+  }
+
+  /* Адаптация элементов dropdown для мобильных */
+  .user-dropdown-header {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .user-name-large {
+    font-size: 14px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .user-email {
+    font-size: 11px !important;
+    opacity: 0.8 !important;
+  }
+
+  .user-dropdown-menu {
+    padding: 6px 8px !important;
+  }
+
+  .dropdown-item {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    min-height: 44px !important; /* Минимальная область касания для мобильных */
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .dropdown-item svg {
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dropdown-divider {
+    margin: 6px 8px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Закрытие dropdown при клике вне его на мобильных */
+  .mobile-dropdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .user-menu-toggle[aria-expanded="true"] ~ .mobile-dropdown-overlay {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .logo-secondary {
+    display: none;
+  }
+}
+
+/* Дополнительные стили для очень маленьких экранов */
+@media (max-width: 480px) {
+  .header-container {
+    height: 60px;
+    padding: 0 0.75rem;
+  }
+
+  .logo-primary {
+    font-size: 18px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .user-menu-toggle {
+    padding: 4px 6px;
+    min-width: 40px;
+  }
+
+  .user-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-nav-toggle {
+    padding: 6px;
+  }
+
+  .hamburger-icon {
+    width: 20px;
+    height: 16px;
+  }
+
+  /* Еще более компактный dropdown для маленьких экранов */
+  .user-dropdown {
+    left: 0.5rem !important;
+    right: 0.5rem !important;
+    border-radius: 8px !important;
+  }
+
+  .user-dropdown-header {
+    padding: 10px 12px !important;
+  }
+
+  .user-name-large {
+    font-size: 13px !important;
+  }
+
+  .user-email {
+    font-size: 10px !important;
+  }
+
+  .dropdown-item {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    min-height: 40px !important;
+  }
+
+  .dropdown-item svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}

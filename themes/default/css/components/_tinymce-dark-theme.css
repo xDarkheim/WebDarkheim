@@ -1,0 +1,120 @@
+/* ===================================================================
+   МАКСИМАЛЬНО АГРЕССИВНАЯ ТЕМНАЯ ТЕМА ДЛЯ TINYMCE TOOLBAR
+   =================================================================== */
+
+/* ПРИНУДИТЕЛЬНО ТЕМНЫЙ ФОНД ДЛЯ ВСЕХ ЭЛЕМЕНТОВ TINYMCE */
+.tox,
+.tox *,
+.tox::before,
+.tox::after,
+.tox *::before,
+.tox *::after {
+    background: #334155 !important;
+    background-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+/* TinyMCE Container - полностью темный */
+.tox.tox-tinymce {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+    background-color: #1e293b !important;
+}
+
+/* TOOLBAR - максимально агрессивное переопределение */
+.tox .tox-toolbar,
+.tox .tox-toolbar__primary,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar-overlord,
+.tox .tox-toolbar__group {
+    background: #334155 !important;
+    background-color: #334155 !important;
+    border-bottom-color: #475569 !important;
+    border-radius: 6px 6px 0 0 !important;
+    border: none !important;
+}
+
+/* ВСЕ дочерние элементы toolbar - принудительно прозрачные */
+.tox .tox-toolbar *,
+.tox .tox-toolbar__primary *,
+.tox .tox-toolbar__overflow *,
+.tox .tox-toolbar-overlord *,
+.tox .tox-toolbar__group * {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* Кнопки toolbar - активные состояния */
+.tox .tox-tbtn:hover,
+.tox .tox-tbtn:focus {
+    background: rgba(59, 130, 246, 0.2) !important;
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: var(--color-text-primary) !important;
+    border-color: var(--color-accent) !important;
+}
+
+.tox .tox-tbtn--enabled,
+.tox .tox-tbtn--enabled:hover,
+.tox .tox-tbtn.tox-tbtn--enabled {
+    background: var(--color-accent) !important;
+    background-color: var(--color-accent) !important;
+    color: var(--color-white) !important;
+    border-color: var(--color-accent) !important;
+}
+
+/* Dropdown элементы - полностью темные */
+.tox .tox-selectfield,
+.tox .tox-selectfield select,
+.tox .tox-selectfield__select,
+.tox .tox-listbox,
+.tox .tox-listboxfield,
+.tox .tox-listboxfield .tox-listbox {
+    background: var(--color-dark-surface) !important;
+    background-color: var(--color-dark-surface) !important;
+    border-color: var(--color-dark-border) !important;
+    color: var(--color-text-primary) !important;
+}
+
+/* SVG иконки - светлые */
+.tox .tox-tbtn svg,
+.tox .tox-tbtn__icon-wrap svg,
+.tox .tox-split-button svg {
+    fill: var(--color-text-secondary) !important;
+}
+
+.tox .tox-tbtn:hover svg,
+.tox .tox-tbtn--enabled svg {
+    fill: currentColor !important;
+}
+
+/* Убираем все белые фоны напрочь */
+.tox *[style*="background-color: white"],
+.tox *[style*="background-color: #fff"],
+.tox *[style*="background-color: #ffffff"],
+.tox *[style*="background: white"],
+.tox *[style*="background: #fff"],
+.tox *[style*="background: #ffffff"],
+.tox *[style*="background-color: rgb(255, 255, 255)"] {
+    background: #334155 !important;
+    background-color: #334155 !important;
+}
+
+/* Content area */
+.tox .tox-edit-area__iframe {
+    background: #0f172a !important;
+    background-color: #0f172a !important;
+}
+
+/* Statusbar */
+.tox .tox-statusbar {
+    background: #334155 !important;
+    background-color: #334155 !important;
+    border-top-color: #475569 !important;
+    color: #94a3b8 !important;
+}
+
+.tox .tox-statusbar * {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: inherit !important;
+}

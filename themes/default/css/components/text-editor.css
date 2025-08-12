@@ -1,0 +1,345 @@
+/* TinyMCE Text Editor Isolated Styles */
+/* Изолированные стили для текстового редактора */
+
+.text-editor-wrapper {
+    position: relative;
+    margin: 10px 0;
+    isolation: isolate; /* CSS isolation для предотвращения конфликтов */
+}
+
+/* Базовые стили для редактора */
+.text-editor-wrapper .tinymce-editor {
+    width: 100%;
+    min-height: 150px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 12px;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.text-editor-wrapper .tinymce-editor:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+}
+
+/* Изолированные стили для TinyMCE UI */
+.text-editor-wrapper .tox {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+.text-editor-wrapper .tox-tinymce {
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+}
+
+.text-editor-wrapper .tox-editor-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #e9ecef !important;
+    padding: 4px !important;
+}
+
+.text-editor-wrapper .tox-toolbar {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 4px 8px !important;
+}
+
+.text-editor-wrapper .tox-toolbar__group {
+    margin: 0 4px !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.text-editor-wrapper .tox-tbtn {
+    margin: 0 1px !important;
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    color: #495057 !important;
+    height: 32px !important;
+    width: 32px !important;
+}
+
+.text-editor-wrapper .tox-tbtn:hover {
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+}
+
+.text-editor-wrapper .tox-tbtn--enabled {
+    background-color: #007cba !important;
+    border-color: #007cba !important;
+    color: white !important;
+}
+
+/* Стили для области редактирования */
+.text-editor-wrapper .tox-edit-area {
+    border: none !important;
+}
+
+.text-editor-wrapper .tox-edit-area iframe {
+    border: none !important;
+}
+
+/* Изолированные стили для контента внутри редактора */
+.text-editor-wrapper .mce-content-body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: #333 !important;
+    background-color: #fff !important;
+    margin: 0 !important;
+    padding: 12px !important;
+}
+
+.text-editor-wrapper .mce-content-body p {
+    margin: 0 0 1em 0 !important;
+    padding: 0 !important;
+}
+
+.text-editor-wrapper .mce-content-body h1,
+.text-editor-wrapper .mce-content-body h2,
+.text-editor-wrapper .mce-content-body h3,
+.text-editor-wrapper .mce-content-body h4,
+.text-editor-wrapper .mce-content-body h5,
+.text-editor-wrapper .mce-content-body h6 {
+    margin: 1.5em 0 0.5em 0 !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+}
+
+.text-editor-wrapper .mce-content-body h1 { font-size: 2em !important; }
+.text-editor-wrapper .mce-content-body h2 { font-size: 1.75em !important; }
+.text-editor-wrapper .mce-content-body h3 { font-size: 1.5em !important; }
+.text-editor-wrapper .mce-content-body h4 { font-size: 1.25em !important; }
+.text-editor-wrapper .mce-content-body h5 { font-size: 1.1em !important; }
+.text-editor-wrapper .mce-content-body h6 { font-size: 1em !important; }
+
+.text-editor-wrapper .mce-content-body ul,
+.text-editor-wrapper .mce-content-body ol {
+    margin: 0 0 1em 0 !important;
+    padding-left: 2em !important;
+}
+
+.text-editor-wrapper .mce-content-body li {
+    margin: 0.25em 0 !important;
+}
+
+.text-editor-wrapper .mce-content-body blockquote {
+    margin: 1em 0 !important;
+    padding: 0.5em 1em !important;
+    border-left: 4px solid #007cba !important;
+    background-color: #f8f9fa !important;
+    font-style: italic !important;
+}
+
+.text-editor-wrapper .mce-content-body a {
+    color: #007cba !important;
+    text-decoration: underline !important;
+}
+
+.text-editor-wrapper .mce-content-body strong {
+    font-weight: 600 !important;
+}
+
+.text-editor-wrapper .mce-content-body em {
+    font-style: italic !important;
+}
+
+.text-editor-wrapper .mce-content-body code {
+    background-color: #f8f9fa !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+    font-size: 0.9em !important;
+}
+
+.text-editor-wrapper .mce-content-body pre {
+    background-color: #f8f9fa !important;
+    padding: 1em !important;
+    border-radius: 4px !important;
+    overflow-x: auto !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+    font-size: 0.9em !important;
+}
+
+/* Стили для таблиц */
+.text-editor-wrapper .mce-content-body table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 1em 0 !important;
+}
+
+.text-editor-wrapper .mce-content-body th,
+.text-editor-wrapper .mce-content-body td {
+    border: 1px solid #dee2e6 !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+}
+
+.text-editor-wrapper .mce-content-body th {
+    background-color: #f8f9fa !important;
+    font-weight: 600 !important;
+}
+
+/* Стили для изображений */
+.text-editor-wrapper .mce-content-body img {
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: 4px !important;
+}
+
+/* Изолированные стили для меню и модальных окон TinyMCE */
+.tox-silver-sink .tox-menu {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 14px !important;
+}
+
+.tox-silver-sink .tox-dialog {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .text-editor-wrapper .tox-toolbar {
+        padding: 2px 4px !important;
+    }
+
+    .text-editor-wrapper .tox-tbtn {
+        height: 28px !important;
+        width: 28px !important;
+        margin: 0 !important;
+    }
+
+    .text-editor-wrapper .tox-toolbar__group {
+        margin: 0 2px !important;
+    }
+}
+
+/* Стили для отображения форматированного контента */
+.formatted-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.formatted-content p {
+    margin: 0 0 1em 0;
+}
+
+.formatted-content h1,
+.formatted-content h2,
+.formatted-content h3,
+.formatted-content h4,
+.formatted-content h5,
+.formatted-content h6 {
+    margin: 1.5em 0 0.5em 0;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.formatted-content h1 { font-size: 2em; }
+.formatted-content h2 { font-size: 1.75em; }
+.formatted-content h3 { font-size: 1.5em; }
+.formatted-content h4 { font-size: 1.25em; }
+.formatted-content h5 { font-size: 1.1em; }
+.formatted-content h6 { font-size: 1em; }
+
+.formatted-content ul,
+.formatted-content ol {
+    margin: 0 0 1em 0;
+    padding-left: 2em;
+}
+
+.formatted-content li {
+    margin: 0.25em 0;
+}
+
+.formatted-content blockquote {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid #007cba;
+    background-color: #f8f9fa;
+    font-style: italic;
+}
+
+.formatted-content a {
+    color: #007cba;
+    text-decoration: underline;
+}
+
+.formatted-content strong {
+    font-weight: 600;
+}
+
+.formatted-content em {
+    font-style: italic;
+}
+
+.formatted-content code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.formatted-content pre {
+    background-color: #f8f9fa;
+    padding: 1em;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.formatted-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+.formatted-content th,
+.formatted-content td {
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.formatted-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.formatted-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Темная тема для редактора (опционально) */
+@media (prefers-color-scheme: dark) {
+    .text-editor-wrapper .tox-tinymce {
+        border-color: #495057 !important;
+    }
+
+    .text-editor-wrapper .tox-editor-header {
+        background-color: #343a40 !important;
+        border-bottom-color: #495057 !important;
+    }
+
+    .text-editor-wrapper .tox-tbtn {
+        color: #f8f9fa !important;
+    }
+
+    .text-editor-wrapper .tox-tbtn:hover {
+        background-color: #495057 !important;
+        border-color: #6c757d !important;
+    }
+}

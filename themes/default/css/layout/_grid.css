@@ -1,0 +1,47 @@
+/* Layout: Site Wrapper (for Sidebar and Main Content) */
+.site-wrapper {
+    display: flex;
+    flex-grow: 1; /* Allows footer to stick to bottom */
+    /* Убираем ограничение max-width для полноэкранного режима */
+    width: 100%;
+    margin: var(--spacing-4) auto; /* Centering and top/bottom margin */
+    gap: var(--spacing-4); /* Space between sidebar and main content */
+}
+
+/* Вариант с ограниченной шириной для контентных страниц */
+.site-wrapper--constrained {
+    max-width: 1200px; /* Consistent max-width for content pages */
+}
+
+/* Полноэкранный вариант для главной страницы и специальных секций */
+.site-wrapper--fullwidth {
+    max-width: none !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+}
+
+/* Layout: Sidebar */
+.sidebar {
+    width: 300px; /* Fixed width for sidebar */
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    padding: 20px;
+}
+
+.sidebar > div { /* Spacing between widgets in sidebar */
+    margin-bottom: var(--spacing-4);
+}
+
+/* Layout: Main Content */
+.main-content {
+    flex-grow: 1;
+    background-color: var(--color-dark-surface);
+    padding: var(--spacing-4); /* Internal padding for the panel */
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}

@@ -1,0 +1,772 @@
+/* ==========================================================================
+   СТРАНИЦА КОМАНДЫ - DARKHEIM STUDIO
+   Корпоративный дизайн страницы команды БЕЗ АНИМАЦИЙ
+   ========================================================================== */
+
+/* Hero секция команды */
+.page-team .team-hero {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-team .team-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, var(--color-dark-surface) 0%, transparent 70%);
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.page-team .team-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.page-team .team-hero .hero-icon {
+  font-size: var(--font-size-5xl);
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}
+
+.page-team .team-hero-title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  line-height: var(--line-height-tight);
+}
+
+.page-team .team-hero-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-lg);
+}
+
+.page-team .team-hero-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Контент команды */
+.page-team .team-content {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+}
+
+.page-team .team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--spacing-3xl);
+}
+
+/* Карточки участников команды ПОЛНОСТЬЮ СТАТИЧНЫЕ */
+.page-team .team-member {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  gap: var(--spacing-xl);
+  /* Принудительное отключение всех анимаций */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.page-team .team-member:hover {
+  /* Отключаем любые изменения при наведении */
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.page-team .team-member *,
+.page-team .team-member *:hover,
+.page-team .team-member *:focus,
+.page-team .team-member *:active {
+  /* Отключаем анимации для всех дочерних элементов во всех состояниях */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Дополнительное отключение для всех элементов в team-grid */
+.page-team .team-grid,
+.page-team .team-grid *,
+.page-team .team-grid *:before,
+.page-team .team-grid *:after,
+.page-team .team-grid *:hover,
+.page-team .team-grid *:focus,
+.page-team .team-grid *:active {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  opacity: initial !important;
+  filter: none !important;
+}
+
+/* Принудительное отключение анимаций для фото участников */
+.page-team .member-photo,
+.page-team .member-photo-img,
+.page-team .photo-placeholder {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.page-team .member-photo:hover,
+.page-team .member-photo-img:hover,
+.page-team .photo-placeholder:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Отключение анимаций для ссылок и кнопок в карточках */
+.page-team .team-member .member-website,
+.page-team .team-member .button,
+.page-team .team-member a {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .team-member .member-website:hover,
+.page-team .team-member .button:hover,
+.page-team .team-member a:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Отключение анимаций для тегов навыков */
+.page-team .skill-tag {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .skill-tag:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .team-member {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  gap: var(--spacing-xl);
+  /* Принудительное отключение всех анимаций */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.page-team .team-member:hover {
+  /* Отключаем любые изменения при наведении */
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.page-team .team-member * {
+  /* Отключаем анимации для всех дочерних элементов */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.page-team .member-photo {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.page-team .member-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.page-team .photo-placeholder {
+  font-size: var(--font-size-4xl);
+  opacity: 0.6;
+}
+
+.page-team .member-info {
+  flex: 1;
+}
+
+.page-team .member-name {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.page-team .member-role {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-xs);
+}
+
+.page-team .member-specialty {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-bottom: var(--spacing-md);
+}
+
+.page-team .member-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-lg);
+}
+
+.page-team .member-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-team .skill-tag {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.page-team .skill-tag--advanced {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.page-team .skill-tag--intermediate {
+  background: var(--color-info-bg);
+  border-color: var(--color-info);
+  color: var(--color-info);
+}
+
+.page-team .member-links {
+  margin-top: var(--spacing-md);
+}
+
+.page-team .member-website {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.page-team .member-actions {
+  margin-top: var(--spacing-md);
+}
+
+/* Placeholder участник команды */
+.page-team .team-member--placeholder {
+  border: 2px dashed var(--color-dark-border);
+  background: transparent;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Placeholder участник команды - ПОЛНОСТЬЮ БЕЗ АНИМАЦИЙ */
+.page-team .team-member--placeholder {
+  border: 2px dashed var(--color-dark-border);
+  background: transparent;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+  /* Принудительное отключение всех анимаций для placeholder */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .team-member--placeholder:hover {
+  /* Отключаем любые изменения при наведении на placeholder */
+  border: 2px dashed var(--color-dark-border);
+  background: transparent;
+  transform: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+  animation: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.page-team .team-member--placeholder *,
+.page-team .team-member--placeholder *:hover,
+.page-team .team-member--placeholder *:focus,
+.page-team .team-member--placeholder *:active {
+  /* Отключаем анимации для всех элементов внутри placeholder */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.page-team .team-member--placeholder .member-photo {
+  margin-bottom: var(--spacing-lg);
+  /* Принудительное отключение анимаций для фото в placeholder */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .team-member--placeholder .member-photo:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.page-team .team-member--placeholder .member-info {
+  text-align: center;
+  /* Принудительное отключение анимаций для info в placeholder */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.page-team .team-member--placeholder .member-info:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Дополнительное отключение для кнопки в placeholder */
+.page-team .team-member--placeholder .button {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+.page-team .team-member--placeholder .button:hover {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Ценности команды */
+.page-team .team-values {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-surface);
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.page-team .team-values .section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.page-team .team-values .section-header h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-team .team-values .section-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.page-team .values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.page-team .value-item {
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.page-team .value-icon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-lg);
+  display: block;
+}
+
+.page-team .value-item h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-team .value-item p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* Технологии команды */
+.page-team .team-technologies {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-bg);
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.page-team .team-technologies .section-header {
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.page-team .team-technologies .section-header h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.page-team .team-technologies .section-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.page-team .tech-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-2xl);
+}
+
+.page-team .tech-category {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.page-team .tech-category h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.page-team .tech-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.page-team .tech-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-dark-elevated);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* CTA секция команды */
+.page-team .team-cta {
+  padding: var(--spacing-4xl) 0;
+  background: var(--color-dark-surface);
+  text-align: center;
+  border-top: 1px solid var(--color-dark-border);
+}
+
+.page-team .team-cta .cta-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.page-team .team-cta h2 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.page-team .team-cta .cta-description {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.page-team .team-cta .cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.page-team .team-cta .cta-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.page-team .team-cta .contact-label {
+  color: var(--color-text-muted);
+}
+
+.page-team .team-cta .contact-email {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+/* МАКСИМАЛЬНО АГРЕССИВНОЕ отключение анимаций для placeholder */
+.page-team .team-grid .team-member.team-member--placeholder,
+.page-team .team-grid .team-member.team-member--placeholder:hover,
+.page-team .team-grid .team-member.team-member--placeholder:focus,
+.page-team .team-grid .team-member.team.member--placeholder:active {
+  /* Принудительное отключение ВСЕХ возможных анимаций */
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  scale: 1 !important;
+  rotate: none !important;
+  translate: none !important;
+  backdrop-filter: none !important;
+  -webkit-transition: none !important;
+  -webkit-transform: none !important;
+  -webkit-animation: none !important;
+  -webkit-filter: none !important;
+  /* Отключаем border анимации */
+  border: 2px dashed var(--color-dark-border) !important;
+  background: transparent !important;
+}
+
+/* Отключение анимаций для ВСЕХ дочерних элементов placeholder с максимальной специфичностью */
+.page-team .team-grid .team-member.team.member--placeholder *,
+.page-team .team-grid .team-member.team.member--placeholder *:hover,
+.page-team .team-grid .team-member.team.member--placeholder *:focus,
+.page-team .team-grid .team-member.team.member--placeholder *:active,
+.page-team .team-grid .team-member.team.member--placeholder *:before,
+.page-team .team-grid .team-member.team.member--placeholder *:after {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: initial !important;
+  scale: 1 !important;
+  rotate: none !important;
+  translate: none !important;
+  backdrop-filter: none !important;
+  -webkit-transition: none !important;
+  -webkit-transform: none !important;
+  -webkit-animation: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Специальное отключение для button в placeholder */
+.page-team .team-grid .team-member.team.member--placeholder .button,
+.page-team .team-grid .team-member.team.member--placeholder .button:hover,
+.page-team .team-grid .team-member.team.member--placeholder .button:focus,
+.page-team .team-grid .team-member.team.member--placeholder .button:active {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  translate: none !important;
+  backdrop-filter: none !important;
+  -webkit-transition: none !important;
+  -webkit-transform: none !important;
+  -webkit-animation: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .page-team .team-hero {
+    padding: var(--spacing-3xl) 0;
+  }
+
+  .page-team .team-hero-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  /* Улучшенные мобильные фильтры команды (если они есть) */
+  .page-team .team-filter {
+    padding: var(--spacing-lg) 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 2px solid var(--color-dark-border);
+  }
+
+  .page-team .team-filter::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-dark-surface);
+    opacity: 0.8;
+    z-index: -1;
+  }
+
+  .page-team .team-filter .filter-tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 var(--spacing-lg) var(--spacing-sm);
+    margin: 0 calc(-1 * var(--spacing-lg));
+    gap: var(--spacing-sm);
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .page-team .team-filter .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .page-team .team-filter .filter-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    min-width: fit-content;
+    transition: all 0.3s ease;
+    position: relative;
+    background: var(--color-dark-elevated);
+    border: 1px solid var(--color-dark-border);
+  }
+
+  .page-team .team-filter .filter-tab.active {
+    background: var(--color-accent);
+    color: var(--color-text-primary);
+    border-color: var(--color-accent);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .page-team .team-filter .filter-tab:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+  }
+
+  /* Индикатор прокрутки для фильтров команды */
+  .page-team .team-filter::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    opacity: 0.3;
+    border-radius: var(--radius-full);
+  }
+
+  .page-team .team-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2xl);
+  }
+
+  .page-team .team-member {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .page-team .team-member .member-photo {
+    align-self: center;
+  }
+
+  .page-team .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-team .tech-categories {
+    grid-template-columns: 1fr;
+  }
+
+  .page-team .team-cta .cta-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .page-team .team-cta .cta-contact {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+}

@@ -1,0 +1,15 @@
+# Ignore all files and directories
+*
+**/*
+src/
+page/
+includes/
+public/
+config/
+database/
+scripts/
+themes/
+storage/
+vendor/
+resources/
+

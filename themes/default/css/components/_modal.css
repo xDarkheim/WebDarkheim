@@ -1,0 +1,498 @@
+/* ==========================================================================
+   LOGIN MODAL COMPONENT
+   Modern modal dialog for user authentication
+   ========================================================================== */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal Container */
+.modal-container {
+  background: var(--color-dark-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--color-dark-border);
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+  border-bottom: 1px solid var(--color-dark-border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.modal-close:hover {
+  background: var(--color-dark-elevated);
+  color: var(--color-text-primary);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: var(--spacing-lg);
+}
+
+.modal-body .login-form {
+  margin: 0;
+}
+
+.modal-body .form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.modal-body .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.modal-body .form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.modal-body .input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.modal-body .input-group-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  z-index: 2;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.modal-body .form-control {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) calc(var(--spacing-lg) + 24px);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  background: var(--color-dark-bg);
+  color: var(--color-text-primary);
+}
+
+.modal-body .form-control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-light);
+}
+
+.modal-body .input-group-toggle {
+  position: absolute;
+  right: var(--spacing-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  z-index: 2;
+  border-radius: var(--radius-sm);
+}
+
+.modal-body .input-group-toggle:hover {
+  color: var(--color-text-primary);
+}
+
+/* Checkbox Styling */
+.modal-body .form-checkbox {
+  margin-bottom: var(--spacing-md);
+}
+
+.modal-body .checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modal-body .checkbox-input {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.modal-body .checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-dark-border);
+  border-radius: var(--radius-sm);
+  margin-right: var(--spacing-sm);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.modal-body .checkbox-input:checked + .checkbox-custom {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.modal-body .checkbox-input:checked + .checkbox-custom::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Form Actions */
+.modal-body .form-actions {
+  margin-top: var(--spacing-lg);
+}
+
+.modal-body .button-block {
+  width: 100%;
+  justify-content: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+  border-top: 1px solid var(--color-dark-border);
+  text-align: center;
+}
+
+.modal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.modal-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.modal-link:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.modal-separator {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ==========================================================================
+   МОДАЛЬНЫЕ ОКНА - DARKHEIM STUDIO (Исправленная версия)
+   ========================================================================== */
+
+/* Основной контейнер модального окна */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal.show {
+  display: flex !important;
+  opacity: 1;
+}
+
+/* Содержимое модального окна */
+.modal-content {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s ease;
+  margin: 20px;
+}
+
+.modal.show .modal-content {
+  transform: scale(1) translateY(0);
+}
+
+/* Заголовок модального окна */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #475569;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title i {
+  font-size: 16px;
+}
+
+.modal-approve .modal-title i {
+  color: #10b981;
+}
+
+.modal-reject .modal-title i {
+  color: #ef4444;
+}
+
+.modal-revoke .modal-title i {
+  color: #f59e0b;
+}
+
+.modal-notes .modal-title i {
+  color: #06b6d4;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #f8fafc;
+  background: #475569;
+}
+
+/* Тело модального окна */
+.modal-body {
+  padding: 20px;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.modal-body p {
+  margin: 0 0 12px 0;
+}
+
+.modal-body .highlight {
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+.modal-body .text-muted {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Подвал модального окна */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 20px;
+  border-top: 1px solid #475569;
+  background: #0f172a;
+}
+
+/* Стили для форм в модальных окнах */
+.modal .form-group {
+  margin-bottom: 12px;
+}
+
+.modal .form-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #f8fafc;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.modal .form-control {
+  width: 100%;
+  padding: 8px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal .form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal .form-control::placeholder {
+  color: #94a3b8;
+}
+
+/* Стили кнопок в модальных окнах */
+.modal .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.modal .btn-secondary {
+  background: #475569;
+  color: #f8fafc;
+  border-color: #475569;
+}
+
+.modal .btn-secondary:hover {
+  background: #64748b;
+  border-color: #64748b;
+}
+
+.modal .btn-success {
+  background: #10b981;
+  color: #f8fafc;
+  border-color: #10b981;
+}
+
+.modal .btn-success:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.modal .btn-danger {
+  background: #ef4444;
+  color: #f8fafc;
+  border-color: #ef4444;
+}
+
+.modal .btn-danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.modal .btn-warning {
+  background: #f59e0b;
+  color: #0f172a;
+  border-color: #f59e0b;
+}
+
+.modal .btn-warning:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+/* Адаптивность */
+@media (max-width: 640px) {
+  .modal-content {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

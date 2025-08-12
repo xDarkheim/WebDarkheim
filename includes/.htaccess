@@ -1,0 +1,9 @@
+# Protect includes directory
+Order Deny,Allow
+Deny from all
+
+# Block all PHP files in includes
+<FilesMatch "\.(php|inc|class)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

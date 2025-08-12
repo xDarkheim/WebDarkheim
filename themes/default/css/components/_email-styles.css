@@ -1,0 +1,131 @@
+/* Email Styles - Inline CSS for Email Templates */
+
+/* Base email styles */
+.email-container {
+    max-width: 600px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #333333;
+}
+
+.email-header {
+    background: #2563eb;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.email-content {
+    padding: 30px 20px;
+    background: #ffffff;
+}
+
+.email-footer {
+    background: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Email specific components */
+.email-info-item {
+    margin: 8px 0 0 0;
+    font-weight: normal;
+}
+
+.email-info-item strong {
+    font-weight: 600;
+}
+
+.email-security-list {
+    color: #94a3b8;
+    margin: 16px 0;
+    padding-left: 20px;
+}
+
+.email-security-list li {
+    margin-bottom: 8px;
+}
+
+.email-what-happens {
+    color: #94a3b8;
+    margin: 16px 0;
+    padding-left: 20px;
+}
+
+.email-what-happens li {
+    margin-bottom: 8px;
+}
+
+.email-button-container {
+    text-align: center;
+    margin: 32px 0;
+}
+
+.email-button {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.email-security-tips-title {
+    color: #ffffff;
+    font-size: 18px;
+    margin: 32px 0 16px 0;
+}
+
+.email-security-tips-list {
+    color: #94a3b8;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.email-security-tips-list li {
+    margin-bottom: 8px;
+}
+
+/* Dark theme email styles */
+.email-dark {
+    background: #1a1a1a;
+    color: #e5e5e5;
+}
+
+.email-dark .email-content {
+    background: #2a2a2a;
+    color: #e5e5e5;
+}
+
+.email-dark .email-footer {
+    background: #1a1a1a;
+    color: #94a3b8;
+}
+
+/* Responsive email styles */
+@media only screen and (max-width: 600px) {
+    .email-container {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    .email-content {
+        padding: 20px 15px !important;
+    }
+
+    .email-header,
+    .email-footer {
+        padding: 15px !important;
+    }
+
+    .email-button {
+        display: block !important;
+        width: 100% !important;
+        max-width: 280px !important;
+        margin: 0 auto !important;
+    }
+}

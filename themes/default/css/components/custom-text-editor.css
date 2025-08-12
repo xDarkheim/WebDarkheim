@@ -1,0 +1,377 @@
+/* Custom Text Editor Toolbar Styles */
+/* Визуальная панель инструментов для текстового редактора */
+
+.custom-editor-toolbar {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    z-index: 10;
+}
+
+.custom-editor-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 4px;
+    border-right: 1px solid #dee2e6;
+    margin-right: 8px;
+}
+
+.custom-editor-toolbar-group:last-child {
+    border-right: none;
+    margin-right: 0;
+}
+
+.custom-editor-toolbar-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
+    position: relative;
+    outline: none;
+}
+
+.custom-editor-toolbar-button:hover {
+    background: #ffffff;
+    border-color: #adb5bd;
+    color: #212529;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px) scale(1.02);
+}
+
+.custom-editor-toolbar-button:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.custom-editor-toolbar-button.active {
+    background: #007cba;
+    border-color: #007cba;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 124, 186, 0.3);
+}
+
+.custom-editor-toolbar-button.active:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.custom-editor-toolbar-button[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.custom-editor-toolbar-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-editor-dropdown-select {
+    appearance: none;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 4px 24px 4px 8px;
+    font-size: 13px;
+    color: #495057;
+    cursor: pointer;
+    min-width: 100px;
+    outline: none;
+    transition: all 0.2s ease;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 6px center;
+    background-repeat: no-repeat;
+    background-size: 12px;
+}
+
+.custom-editor-dropdown-select:hover,
+.custom-editor-dropdown-select:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+}
+
+.custom-editor-color-picker {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.custom-editor-color-picker:hover {
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1);
+}
+
+.custom-editor-color-preview {
+    width: 100%;
+    height: 20px;
+    background: #000000;
+    border: none;
+    cursor: pointer;
+}
+
+.custom-editor-color-icon {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #666;
+}
+
+.custom-editor-separator {
+    width: 1px;
+    height: 24px;
+    background: #dee2e6;
+    margin: 0 4px;
+}
+
+/* Tooltip для кнопок */
+.custom-editor-toolbar-button[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.custom-editor-toolbar-button[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid #333;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .custom-editor-toolbar {
+        padding: 6px 8px;
+        flex-wrap: wrap;
+    }
+
+    .custom-editor-toolbar-button {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .custom-editor-toolbar-group {
+        margin-right: 6px;
+        padding: 0 2px;
+    }
+
+    .custom-editor-dropdown-select {
+        min-width: 80px;
+        font-size: 12px;
+        padding: 2px 20px 2px 6px;
+    }
+}
+
+/* Стили для области редактора с кастомной панелью */
+.custom-text-editor-container {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.custom-text-editor-container .custom-editor-textarea {
+    width: 100%;
+    border: none;
+    border-radius: 0 0 8px 8px;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 200px;
+    outline: none;
+    background: white;
+    color: #333;
+}
+
+.custom-text-editor-container .custom-editor-textarea:focus {
+    box-shadow: none;
+}
+
+/* Стили для предварительного просмотра */
+.custom-editor-preview {
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.custom-editor-preview h1, .custom-editor-preview h2, .custom-editor-preview h3 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+.custom-editor-preview p {
+    margin: 0 0 0.5em 0;
+}
+
+.custom-editor-preview ul, .custom-editor-preview ol {
+    margin: 0 0 0.5em 0;
+    padding-left: 1.5em;
+}
+
+/* Анимации для интерактивности */
+@keyframes buttonPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+.custom-editor-toolbar-button:active {
+    animation: buttonPress 0.1s ease;
+}
+
+/* Стили для активного состояния форматирования */
+.custom-editor-format-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    border: 2px solid white;
+    display: none;
+}
+
+.custom-editor-toolbar-button.active .custom-editor-format-indicator {
+    display: block;
+}
+
+/* Стили для счетчика символов */
+.custom-editor-status-bar {
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #6c757d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.custom-editor-word-count {
+    font-weight: 500;
+}
+
+.custom-editor-format-info {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.custom-editor-format-tag {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Стили для полноэкранного режима */
+.fullscreen-editor {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.fullscreen-editor .custom-text-editor-container {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
+.fullscreen-editor .custom-editor-textarea {
+    flex: 1 !important;
+    min-height: auto !important;
+    height: auto !important;
+}
+
+.fullscreen-editor .custom-editor-toolbar {
+    flex-shrink: 0 !important;
+}
+
+.fullscreen-editor .custom-editor-status-bar {
+    flex-shrink: 0 !important;
+}
+
+/* Улучшенная анимация для кнопок */
+.custom-editor-toolbar-button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-editor-toolbar-button:hover {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.custom-editor-toolbar-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Стили для активных состояний форматирования */
+.format-bold { font-weight: bold !important; }
+.format-italic { font-style: italic !important; }
+.format-underline { text-decoration: underline !important; }
+.format-strikethrough { text-decoration: line-through !important; }
+
+/* Дополнительные стили для лучшей видимости */
+.custom-editor-toolbar {
+    border-bottom: 2px solid #007cba;
+}
+
+.custom-text-editor-container:focus-within .custom-editor-toolbar {
+    border-bottom-color: #0056b3;
+    box-shadow: 0 2px 8px rgba(0, 124, 186, 0.15);
+}

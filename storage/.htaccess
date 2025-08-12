@@ -1,0 +1,15 @@
+# Protect storage directory but allow necessary access
+# Block PHP execution
+<FilesMatch "\.(php|phtml|php3|php4|php5|pl|py|jsp|asp|sh)$">
+    Require all denied
+</FilesMatch>
+
+# Block sensitive files
+<FilesMatch "\.(log|cache|tmp|bak|sql)$">
+    Require all denied
+</FilesMatch>
+
+# Allow access to uploads if needed (images, documents)
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf|doc|docx)$">
+    Require all granted
+</FilesMatch>

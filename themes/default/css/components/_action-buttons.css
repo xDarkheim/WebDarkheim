@@ -1,0 +1,209 @@
+/* ==========================================================================
+   REDESIGNED FORM ACTION BUTTONS - DARKHEIM STUDIO
+   ========================================================================== */
+
+/* New redesigned action buttons container */
+.form-actions-redesigned {
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--color-dark-border);
+}
+
+.form-actions-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.form-actions-help {
+    text-align: center;
+    margin-top: var(--spacing-sm);
+}
+
+.form-actions-help small {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.form-actions-help kbd {
+    background: var(--color-dark-hover);
+    border: 1px solid var(--color-dark-border);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    font-family: var(--font-family-mono);
+    font-size: 10px;
+    font-weight: var(--font-weight-medium);
+}
+
+/* Modern button styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    text-decoration: none;
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+    min-width: 140px;
+    text-transform: none;
+}
+
+.btn i {
+    font-size: var(--font-size-sm);
+    transition: transform 0.3s ease;
+}
+
+.btn span {
+    font-weight: var(--font-weight-medium);
+}
+
+/* Publish button - primary action */
+.btn-publish {
+    background: linear-gradient(135deg, var(--color-success), #059669);
+    color: white;
+    border-color: var(--color-success);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    font-weight: var(--font-weight-bold);
+    min-width: 160px;
+}
+
+.btn-publish:hover {
+    background: linear-gradient(135deg, #059669, var(--color-success));
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    transform: translateY(-2px);
+    border-color: #059669;
+}
+
+.btn-publish:hover i {
+    transform: scale(1.1);
+}
+
+.btn-publish:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* Cancel button - secondary action */
+.btn-cancel {
+    background: var(--color-dark-surface);
+    color: var(--color-text-secondary);
+    border-color: var(--color-dark-border);
+}
+
+.btn-cancel:hover {
+    background: var(--color-dark-elevated);
+    color: var(--color-text-primary);
+    border-color: var(--color-danger);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-cancel:hover i {
+    color: var(--color-danger);
+    transform: rotate(90deg);
+}
+
+/* Back button - tertiary action */
+.btn-back {
+    background: transparent;
+    color: var(--color-text-muted);
+    border-color: var(--color-dark-border);
+}
+
+.btn-back:hover {
+    background: var(--color-dark-surface);
+    color: var(--color-text-secondary);
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-back:hover i {
+    color: var(--color-primary);
+    transform: translateX(-3px);
+}
+
+/* Button focus states */
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.3);
+}
+
+.btn-publish:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+/* Button loading state */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive design for buttons */
+@media (max-width: 768px) {
+    .form-actions-container {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .btn {
+        width: 100%;
+        min-width: auto;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .btn-publish {
+        order: 1;
+    }
+
+    .btn-cancel {
+        order: 2;
+    }
+
+    .btn-back {
+        order: 3;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-xs);
+        min-width: auto;
+    }
+
+    .btn span {
+        display: none;
+    }
+
+    .btn i {
+        margin: 0;
+    }
+}

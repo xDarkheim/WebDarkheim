@@ -1,0 +1,52 @@
+/* Custom Scrollbar Styles */
+
+/* Webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary, #1e293b);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border, #64748b);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary, #cbd5e1);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--color-bg-secondary, #1e293b);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border, #64748b) var(--color-bg-secondary, #1e293b);
+}
+
+/* Dark theme adjustments */
+.dark-theme ::-webkit-scrollbar-track {
+    background: var(--color-bg-dark, #0f172a);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+    background: var(--color-border-dark, #475569);
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted, #94a3b8);
+}
+
+/* Mobile scrollbar (mostly hidden) */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        width: 4px;
+    }
+}

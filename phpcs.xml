@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="Disabled PHPCS">
+    <description>Completely disable PHPCS</description>
+
+    <!-- Disable all rules -->
+    <rule ref="Generic">
+        <exclude name="Generic"/>
+    </rule>
+
+    <rule ref="PEAR">
+        <exclude name="PEAR"/>
+    </rule>
+
+    <rule ref="PSR1">
+        <exclude name="PSR1"/>
+    </rule>
+
+    <rule ref="PSR2">
+        <exclude name="PSR2"/>
+    </rule>
+
+    <rule ref="PSR12">
+        <exclude name="PSR12"/>
+    </rule>
+
+    <rule ref="Squiz">
+        <exclude name="Squiz"/>
+    </rule>
+
+    <!-- Ignore all files -->
+    <exclude-pattern>*</exclude-pattern>
+</ruleset>
+

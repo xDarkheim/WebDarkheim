@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset name="Disabled PHPCS">
+    <description>Completely disable PHPCS for this project</description>
+
+    <!-- Ignore all files in the project -->
+    <exclude-pattern>*</exclude-pattern>
+    <exclude-pattern>**/*</exclude-pattern>
+    <exclude-pattern>src/*</exclude-pattern>
+    <exclude-pattern>page/*</exclude-pattern>
+    <exclude-pattern>includes/*</exclude-pattern>
+    <exclude-pattern>public/*</exclude-pattern>
+
+    <!-- No rules are enabled -->
+</ruleset>
+

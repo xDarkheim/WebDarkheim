@@ -1,0 +1,223 @@
+/* ==========================================================================
+   MANAGE USERS TABLE FIX - КОМПАКТНЫЕ ИКОНКИ ДЕЙСТВИЙ
+   Исправление проблемы с выходом таблицы за границы
+   ========================================================================== */
+
+/* Фиксированная компоновка таблицы пользователей */
+.admin-page-wrapper .users-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+/* Фиксированные ширины колонок для стабильности */
+.admin-page-wrapper .users-table th:nth-child(1) { /* ID */
+    width: 60px !important;
+}
+
+.admin-page-wrapper .users-table th:nth-child(2) { /* Username */
+    width: 25% !important;
+}
+
+.admin-page-wrapper .users-table th:nth-child(3) { /* Email */
+    width: 30% !important;
+}
+
+.admin-page-wrapper .users-table th:nth-child(4) { /* Role */
+    width: 100px !important;
+}
+
+.admin-page-wrapper .users-table th:nth-child(5) { /* Registered */
+    width: 120px !important;
+}
+
+.admin-page-wrapper .users-table th:nth-child(6) { /* Actions */
+    width: 80px !important;
+}
+
+/* Контейнер таблицы с ограничениями */
+.admin-page-wrapper .table-container {
+    width: 100%;
+    overflow: hidden !important;
+}
+
+.admin-page-wrapper .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Компактные кнопки действий - ТОЛЬКО ИКОНКИ */
+.admin-page-wrapper .action-buttons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.admin-page-wrapper .btn-small {
+    padding: 6px !important;
+    font-size: 12px !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid transparent !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+/* Скрываем текст в кнопках, показываем только иконки */
+.admin-page-wrapper .btn-small span {
+    display: none !important;
+}
+
+.admin-page-wrapper .btn-small i {
+    font-size: 12px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Цвета кнопок действий */
+.admin-page-wrapper .btn-secondary {
+    background: var(--admin-color-info) !important;
+    color: white !important;
+    border-color: var(--admin-color-info) !important;
+}
+
+.admin-page-wrapper .btn-secondary:hover {
+    background: var(--admin-color-info-hover) !important;
+    border-color: var(--admin-color-info-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.admin-page-wrapper .btn-danger {
+    background: var(--admin-color-error) !important;
+    color: white !important;
+    border-color: var(--admin-color-error) !important;
+}
+
+.admin-page-wrapper .btn-danger:hover {
+    background: var(--admin-color-error-hover) !important;
+    border-color: var(--admin-color-error-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.admin-page-wrapper .btn-disabled {
+    background: var(--admin-color-dark-border) !important;
+    color: var(--admin-color-text-muted) !important;
+    border-color: var(--admin-color-dark-border) !important;
+    cursor: not-allowed !important;
+}
+
+.admin-page-wrapper .btn-disabled:hover {
+    transform: none !important;
+}
+
+/* Форма удаления */
+.admin-page-wrapper .delete-form {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Фиксированная высота строк */
+.admin-page-wrapper .users-table tbody tr {
+    height: 50px !important;
+}
+
+.admin-page-wrapper .users-table td {
+    vertical-align: middle !important;
+    padding: 8px 12px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* Специальные исключения для определенных ячеек */
+.admin-page-wrapper .users-table td:nth-child(2) { /* Username column */
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+.admin-page-wrapper .users-table td:nth-child(6) { /* Actions column */
+    white-space: nowrap !important;
+    overflow: visible !important;
+    padding: 8px 4px !important;
+}
+
+/* Улучшения для информации о пользователе */
+.admin-page-wrapper .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.admin-page-wrapper .user-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-page-wrapper .user-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-page-wrapper .user-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .admin-page-wrapper .users-table th:nth-child(3) { /* Email на мобильном */
+        display: none;
+    }
+
+    .admin-page-wrapper .users-table td:nth-child(3) { /* Email на мобильном */
+        display: none;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(2) { /* Username */
+        width: 40% !important;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(4) { /* Role */
+        width: 25% !important;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(5) { /* Registered */
+        width: 15% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-page-wrapper .users-table th:nth-child(5) { /* Registered на маленьких экранах */
+        display: none;
+    }
+
+    .admin-page-wrapper .users-table td:nth-child(5) { /* Registered на маленьких экранах */
+        display: none;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(2) { /* Username */
+        width: 50% !important;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(4) { /* Role */
+        width: 30% !important;
+    }
+
+    .admin-page-wrapper .users-table th:nth-child(6) { /* Actions */
+        width: 20% !important;
+    }
+}

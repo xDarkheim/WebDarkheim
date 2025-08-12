@@ -1,0 +1,392 @@
+/* ==========================================================================
+   MODERN NAVIGATION DESIGN - DARKHEIM STUDIO
+   Clean and minimal navigation without borders and backgrounds
+   ========================================================================== */
+
+/* Dropdown Menu Styles */
+.nav-item.has-dropdown {
+  position: relative;
+}
+
+/* Enhanced Navigation Links - Compact Version */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px; /* Уменьшили отступы */
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px; /* Уменьшили размер шрифта */
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.nav-link:hover {
+  color: var(--color-accent);
+  background: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.nav-link.active {
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px; /* Уменьшили отступ */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px; /* Уменьшили ширину индикатора */
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 1px;
+}
+
+/* Dropdown Icon */
+.dropdown-icon {
+  font-size: 11px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  margin-left: 6px;
+  opacity: 0.8;
+  filter: none; /* Убираем фильтры */
+}
+
+.nav-item.has-dropdown:hover .dropdown-icon {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* Enhanced Dropdown Menu - Invisible Background Version */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 160px;
+  background: rgba(15, 23, 42, 0.98); /* Более темный фон, ближе к основному */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Очень тонкая граница */
+  border-radius: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Тонкая тень для отделения */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px); /* Уменьшаем смещение */
+  transition: all 0.2s ease; /* Упрощаем анимацию */
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0; /* Чуть больше отступов для комфорта */
+  backdrop-filter: blur(20px); /* Усилили размытие */
+  -webkit-backdrop-filter: blur(20px);
+  margin-top: 2px; /* Уменьшили отступ сверху */
+}
+
+.nav-item.has-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Dropdown Items - Ultra Clean Version */
+.dropdown-item {
+  margin: 0;
+}
+
+.dropdown-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px; /* Немного увеличили для удобства */
+  color: rgba(255, 255, 255, 0.75); /* Чуть приглушили цвет */
+  text-decoration: none;
+  transition: all 0.2s ease; /* Плавный переход */
+  border-radius: 0; /* Убираем закругления */
+  font-size: 13px; /* Еще меньше размер шрифта */
+  font-weight: 400; /* Уменьшили жирность шрифта */
+  background: none; /* Убираем фон */
+  border: none; /* Убираем границы */
+  position: relative;
+  overflow: visible; /* Убираем ограничение overflow */
+}
+
+.dropdown-link::before {
+  display: none; /* Убираем псевдоэлемент */
+}
+
+.dropdown-link:hover {
+  background: rgba(255, 255, 255, 0.05); /* Очень тонкий фон при наведении */
+  color: var(--color-accent); /* Акцентный цвет при наведении */
+  transform: none; /* Убираем трансформации */
+  border: none;
+  box-shadow: none;
+  padding-left: 16px; /* Сохраняем отступы */
+}
+
+.dropdown-link.active {
+  background: rgba(59, 130, 246, 0.1); /* Тонкий акцентный фон для активного */
+  color: var(--color-accent);
+  border: none;
+}
+
+/* Prevent dropdown from closing when hovering over gap */
+.nav-item.has-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: transparent;
+  z-index: 999;
+}
+
+/* Mobile Navigation Styles - Clean Version */
+.mobile-nav {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: none; /* Убираем границы */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 999;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.mobile-nav.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.mobile-nav-list {
+  padding: 1rem;
+  list-style: none;
+  margin: 0;
+}
+
+.mobile-nav-item {
+  margin-bottom: 4px;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 0; /* Убираем закругления */
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 16px;
+  background: none; /* Убираем фон */
+  border: none; /* Убираем границы */
+}
+
+.mobile-nav-link:hover {
+  background: rgba(255, 255, 255, 0.05); /* Минимальный фон */
+  color: white;
+}
+
+.mobile-nav-link.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-accent);
+}
+
+/* Mobile Dropdown Styles */
+@media (max-width: 1024px) {
+  .mobile-nav {
+    top: 70px;
+    max-height: calc(100vh - 70px);
+  }
+
+  .mobile-nav-item.has-dropdown .dropdown-menu {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+    border: none;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin: 0;
+    border-radius: 0;
+    margin-top: 8px;
+  }
+
+  .mobile-nav-item.has-dropdown.mobile-open .dropdown-menu {
+    max-height: 300px;
+  }
+
+  .mobile-nav-link.has-dropdown::after {
+    content: '▼';
+    font-size: 12px;
+    transition: transform 0.3s ease;
+    opacity: 0.7;
+  }
+
+  .mobile-nav-link.has-dropdown.mobile-open::after {
+    transform: rotate(180deg);
+  }
+
+  .dropdown-link {
+    padding: 12px 24px;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .dropdown-link:hover {
+    padding-left: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-nav {
+    top: 64px;
+    max-height: calc(100vh - 64px);
+  }
+
+  .mobile-nav-link {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .dropdown-link {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Focus states for accessibility */
+.nav-link:focus,
+.dropdown-link:focus,
+.mobile-nav-link:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  box-shadow: none; /* Убираем box-shadow, используем только outline */
+}
+
+/* ==========================================================================
+   MOBILE AUTH LINKS - COMPACT AND USER-FRIENDLY DESIGN
+   ========================================================================== */
+
+/* Специальная секция для авторизации в мобильном меню */
+.mobile-auth-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 12px;
+  padding-top: 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Компактные стили для ссылок авторизации в мобильном меню */
+.mobile-nav-item.mobile-auth-item {
+  margin-bottom: 2px;
+}
+
+.mobile-nav-link.mobile-auth-link {
+  padding: 10px 20px; /* Уменьшенные отступы */
+  font-size: 14px; /* Меньший размер шрифта */
+  font-weight: 400; /* Обычный вес шрифта вместо жирного */
+  color: rgba(255, 255, 255, 0.7); /* Приглушенный цвет */
+  background: rgba(255, 255, 255, 0.03); /* Очень легкий фон */
+  border-radius: 8px;
+  margin: 0 8px; /* Отступы по бокам */
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mobile-nav-link.mobile-auth-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: none; /* Убираем трансформации */
+}
+
+/* Специальный стиль для кнопки входа */
+.mobile-nav-link.mobile-auth-link--login {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.mobile-nav-link.mobile-auth-link--login:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-accent);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Стиль для кнопки регистрации (если есть) */
+.mobile-nav-link.mobile-auth-link--register {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.mobile-nav-link.mobile-auth-link--register:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Стили для аутентифицированных пользователей */
+.mobile-nav-link.mobile-auth-link--dashboard {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.mobile-nav-link.mobile-auth-link--dashboard:hover {
+  background: rgba(34, 197, 94, 0.15);
+  color: rgba(34, 197, 94, 1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.mobile-nav-link.mobile-auth-link--logout {
+  color: rgba(239, 68, 68, 0.8);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.mobile-nav-link.mobile-auth-link--logout:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: rgba(239, 68, 68, 1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+  .mobile-nav-link.mobile-auth-link {
+    padding: 8px 16px;
+    font-size: 13px;
+    margin: 0 4px;
+  }
+
+  .mobile-auth-section {
+    padding-top: 12px;
+    margin-top: 8px;
+  }
+}
+
+/* Smooth scrolling when mobile menu is open */
+body.mobile-nav-open {
+  overflow: hidden;
+}

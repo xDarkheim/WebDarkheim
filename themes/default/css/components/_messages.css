@@ -1,0 +1,745 @@
+/* Warning Message on Auth Pages */
+.auth-warning-message {
+    max-width: 600px;
+    margin: 0 auto var(--spacing-md) auto;
+    padding: var(--spacing-md);
+    background-color: var(--color-warning-bg);
+    border: 1px solid var(--color-warning);
+    border-left-width: 5px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+}
+
+/* Flash Messages - Global positioning to appear above navigation */
+.flash-messages {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-modal);
+    max-width: 600px;
+    width: 90%;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+}
+
+.flash-messages .message {
+    pointer-events: auto;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    position: relative;
+}
+
+/* Message Types */
+.flash-messages .message.success {
+    background: rgba(16, 185, 129, 0.95);
+    border-color: var(--color-success);
+    color: var(--color-white);
+}
+
+.flash-messages .message.error {
+    background: rgba(239, 68, 68, 0.95);
+    border-color: var(--color-error);
+    color: var(--color-white);
+}
+
+.flash-messages .message.warning {
+    background: rgba(245, 158, 11, 0.95);
+    border-color: var(--color-warning);
+    color: var(--color-white);
+}
+
+.flash-messages .message.info {
+    background: rgba(59, 130, 246, 0.95);
+    border-color: var(--color-accent);
+    color: var(--color-white);
+}
+
+/* Альтернативные селекторы для разных вариантов классов сообщений */
+.message--error,
+.message.message--error {
+    position: relative;
+    z-index: var(--z-popover);
+    margin-top: 90px;
+    background: rgba(239, 68, 68, 0.95);
+    color: var(--color-white);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-error);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+}
+
+/* Для контейнеров сообщений, которые могут быть в верхней части страницы */
+.page-container .message--error:first-child,
+.page-container .message.message--error:first-child {
+    margin-top: 100px;
+}
+
+/* Close button for flash messages */
+.flash-messages .message .close-btn {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    background: none;
+    border: none;
+    color: currentColor;
+    font-size: var(--font-size-lg);
+    font-weight: bold;
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.flash-messages .message .close-btn:hover {
+    opacity: 1;
+}
+
+/* General styles for messages WITHIN specific page containers like .form-page-container */
+.form-page-container .messages {
+    padding: var(--spacing-3) var(--spacing-4);
+    margin-top: 0;
+    margin-bottom: var(--spacing-4);
+    border-radius: var(--radius-md);
+    border-width: 1px;
+    border-style: solid;
+    font-size: var(--font-size-md);
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    clear: both;
+}
+
+.form-page-container .messages p {
+    margin: 0;
+    flex-grow: 1;
+}
+
+/* Стили для разных типов внутристраничных сообщений */
+.form-page-container .messages.success {
+    background-color: #2a4d34;
+    border-color: var(--color-success);
+    color: var(--color-text-primary);
+}
+
+.form-page-container .messages.errors {
+    background-color: #5a2a2a;
+    border-color: var(--color-error);
+    color: var(--color-text-primary);
+}
+
+/* Alert styles for consistent design across the site */
+.alert {
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    font-size: var(--font-size-md);
+    position: relative;
+    z-index: 1060;
+}
+
+/* Специальные отступы для alert сообщений в верхней части страницы */
+.page-container .alert:first-child,
+.projects-page-container .alert:first-child,
+.contact-page-container .alert:first-child,
+.about-page-container .alert:first-child {
+    margin-top: 100px;
+}
+
+/* Если alert находится сразу после hero секции */
+.projects-hero + .projects-section .alert:first-child,
+.contact-hero + .contact-section .alert:first-child,
+.about-hero + .about-section .alert:first-child {
+    margin-top: var(--spacing-xl);
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+    color: var(--color-success, #22c55e);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1);
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: var(--color-error, #ef4444);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: var(--color-warning, #f59e0b);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    color: var(--color-accent, #3b82f6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .flash-messages {
+        top: 60px;
+        width: 95%;
+        max-width: none;
+    }
+
+    .flash-messages .message {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* ===== UNIFIED MESSAGE SYSTEM БЕЗ АНИМАЦИЙ ===== */
+.message-container {
+    margin: var(--spacing-3) 0;
+    width: 100%;
+}
+
+.message {
+    position: relative;
+    padding: var(--spacing-3) var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+    border-radius: var(--radius-md);
+    border: 1px solid;
+    border-left-width: 4px;
+    font-size: var(--font-size-md);
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+    flex-grow: 1;
+}
+
+.message-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 20px;
+}
+
+.message-text {
+    flex-grow: 1;
+}
+
+.message-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.message-close:hover {
+    opacity: 1;
+}
+
+/* SUCCESS MESSAGES */
+.message--success {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.message--success .message-icon.icon-success::before {
+    content: "✓";
+    color: #28a745;
+}
+
+.message--success .message-close {
+    color: #155724;
+}
+
+/* ERROR MESSAGES */
+.message--error {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.message--error .message-icon.icon-error::before {
+    content: "✕";
+    color: #dc3545;
+}
+
+.message--error .message-close {
+    color: #721c24;
+}
+
+/* WARNING MESSAGES */
+.message--warning {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.message--warning .message-icon.icon-warning::before {
+    content: "⚠";
+    color: #ffc107;
+}
+
+.message--warning .message-close {
+    color: #856404;
+}
+
+/* INFO MESSAGES */
+.message--info {
+    background-color: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+.message--info .message-icon.icon-info::before {
+    content: "ℹ";
+    color: #17a2b8;
+}
+
+.message--info .message-close {
+    color: #0c5460;
+}
+
+/* DARK THEME VARIATIONS */
+@media (prefers-color-scheme: dark) {
+    .message--success {
+        background-color: #1e3a2e;
+        color: #b8e6c1;
+        border-color: #28a745;
+    }
+
+    .message--error {
+        background-color: #3a1e1e;
+        color: #f5b7b1;
+        border-color: #dc3545;
+    }
+
+    .message--warning {
+        background-color: #3a3520;
+        color: #ffeaa7;
+        border-color: #ffc107;
+    }
+
+    .message--info {
+        background-color: #1e2a3a;
+        color: #a8d8ea;
+        border-color: #17a2b8;
+    }
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+    .message {
+        padding: var(--spacing-2) var(--spacing-3);
+        font-size: var(--font-size-sm);
+    }
+
+    .message-icon {
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+    }
+
+    .message-close {
+        width: 18px;
+        height: 18px;
+        font-size: 16px;
+    }
+}
+
+/* ===== AUTH PAGES MESSAGE STYLING БЕЗ АНИМАЦИЙ ===== */
+.message-container--auth {
+    margin: var(--spacing-2) 0 var(--spacing-3) 0;
+    width: 100%;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.message-container--auth .message {
+    padding: var(--spacing-2) var(--spacing-3);
+    margin-bottom: var(--spacing-1);
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+    border-left-width: 3px;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    display: block;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    text-align: left;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+.message-container--auth .message--success {
+    background-color: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #d1fae5;
+}
+
+.message-container--auth .message--error {
+    background-color: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fecaca;
+}
+
+.message-container--auth .message--warning {
+    background-color: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.4);
+    color: #fef3c7;
+}
+
+.message-container--auth .message--info {
+    background-color: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.4);
+    color: #dbeafe;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .message-container--auth {
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .message-container--auth .message {
+        padding: var(--spacing-1) var(--spacing-2);
+        font-size: 0.8rem;
+    }
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION SYSTEM БЕЗ АНИМАЦИЙ - Modern popup messages
+   ========================================================================== */
+
+/* Toast Container - Fixed positioning in top right */
+.toast-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 1070;
+    max-width: 400px;
+    width: 100%;
+    pointer-events: none;
+}
+
+/* Individual Toast БЕЗ АНИМАЦИЙ */
+.toast {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+.toast--show {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+}
+
+/* Dark theme toast */
+@media (prefers-color-scheme: dark) {
+    .toast {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(71, 85, 105, 0.3);
+    }
+}
+
+/* Toast Types */
+.toast--success {
+    border-left: 4px solid #10b981;
+}
+
+.toast--error {
+    border-left: 4px solid #ef4444;
+}
+
+.toast--warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.toast--info {
+    border-left: 4px solid #3b82f6;
+}
+
+/* Toast Content */
+.toast__content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.toast__icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    margin-top: 2px;
+}
+
+.toast--success .toast__icon {
+    background: #10b981;
+}
+
+.toast--error .toast__icon {
+    background: #ef4444;
+}
+
+.toast--warning .toast__icon {
+    background: #f59e0b;
+}
+
+.toast--info .toast__icon {
+    background: #3b82f6;
+}
+
+.toast__icon::before {
+    content: '✓';
+}
+
+.toast--error .toast__icon::before {
+    content: '✕';
+}
+
+.toast--warning .toast__icon::before {
+    content: '!';
+}
+
+.toast--info .toast__icon::before {
+    content: 'i';
+}
+
+.toast__message {
+    flex: 1;
+    color: var(--color-text-primary, #1f2937);
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+    .toast__message {
+        color: #f1f5f9;
+    }
+}
+
+/* Close Button */
+.toast__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.7;
+}
+
+.toast__close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    .toast__close {
+        color: #9ca3af;
+    }
+
+    .toast__close:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Progress Bar БЕЗ АНИМАЦИИ */
+.toast__progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.toast__progress-bar {
+    height: 100%;
+    width: 0;
+    transform-origin: left;
+}
+
+.toast--success .toast__progress-bar {
+    background: #10b981;
+}
+
+.toast--error .toast__progress-bar {
+    background: #ef4444;
+}
+
+.toast--warning .toast__progress-bar {
+    background: #f59e0b;
+}
+
+.toast--info .toast__progress-bar {
+    background: #3b82f6;
+}
+
+.toast--removing {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .toast-container {
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .toast {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+
+    .toast__content {
+        gap: 10px;
+    }
+
+    .toast__icon {
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
+    }
+}
+
+/* Legacy Alert Styles БЕЗ АНИМАЦИЙ */
+.alert {
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    font-size: var(--font-size-md);
+    position: relative;
+    z-index: 10;
+}
+
+/* Legacy alert positioning fixes */
+.page-container .alert:first-child,
+.projects-page-container .alert:first-child,
+.contact-page-container .alert:first-child,
+.about-page-container .alert:first-child {
+    margin-top: 100px;
+}
+
+.projects-hero + .projects-section .alert:first-child,
+.contact-hero + .contact-section .alert:first-child,
+.about-hero + .about-section .alert:first-child {
+    margin-top: var(--spacing-xl);
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+    color: var(--color-success, #22c55e);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1);
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: var(--color-error, #ef4444);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: var(--color-warning, #f59e0b);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+    color: var(--color-accent, #3b82f6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+}

@@ -1,0 +1,56 @@
+/* Main CSS file - imports all partials */
+
+/* Base styles */
+@import "base/_variables.css";
+@import "base/_reset.css";
+@import "base/_typography.css";
+
+/* Layout */
+@import "layout/_header.css";
+@import "layout/_grid.css";
+@import "layout/_footer.css";
+@import "layout/_page.css";
+@import "layout/_sidebar.css";
+
+/* Components */
+@import "components/_navigation.css";
+@import "components/_buttons.css";
+@import "components/_action-buttons.css";
+@import "components/_forms.css";
+@import "components/_widgets.css";
+@import "components/_messages.css";
+@import "components/_cards.css";
+@import "components/_modal.css";
+@import "components/_notifications.css";
+@import "components/_formatted-content.css";
+@import "components/_tinymce-dark-theme.css";
+@import "components/_social-media.css";
+@import "components/_email-styles.css";
+
+/* Pages */
+@import "pages/_auth.css";
+@import "pages/_news-isolated.css";
+@import "pages/_hero.css";
+@import "pages/_home.css";
+@import "pages/_comments.css";
+@import "pages/_dashboard.css";
+@import "pages/_profile-edit.css";
+@import "pages/_settings.css";
+@import "pages/_about.css";
+@import "pages/_manage.css";
+@import "pages/_manage-articles.css";
+@import "pages/_manage-categories.css";
+@import "pages/_edit-category.css";
+@import "pages/_contact.css";
+@import "pages/_projects.css";
+@import "pages/_services.css";
+@import "pages/_team.css";
+@import "pages/_careers.css";
+@import "pages/_legal.css";
+@import "pages/_admin_settings.css";
+@import "pages/_create-article.css";
+
+/* Utilities */
+@import "utils/_scrollbar.css";
+@import "utils/_responsive.css";
+@import "utils/_animations.css";

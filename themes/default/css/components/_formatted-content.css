@@ -1,0 +1,351 @@
+/* ===================================================================
+   УНИВЕРСАЛЬНЫЕ СТИЛИ ФОРМАТИРОВАННОГО КОНТЕНТА
+   Применяются ко всему контенту: статьи, комментарии, предпросмотр
+   =================================================================== */
+
+/* Базовый класс для всего форматированного контента */
+.formatted-content,
+.news-isolated .formatted-content {
+  color: var(--color-text-primary);
+  line-height: 1.8;
+  font-size: var(--font-size-md, 1rem);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Заголовки в форматированном контенте */
+.formatted-content h1,
+.formatted-content h2,
+.formatted-content h3,
+.formatted-content h4,
+.formatted-content h5,
+.formatted-content h6,
+.news-isolated .formatted-content h1,
+.news-isolated .formatted-content h2,
+.news-isolated .formatted-content h3,
+.news-isolated .formatted-content h4,
+.news-isolated .formatted-content h5,
+.news-isolated .formatted-content h6 {
+  color: var(--color-text-primary);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+  font-weight: 700;
+  font-family: var(--font-family-sans, inherit, sans-serif);
+}
+
+.formatted-content h1 {
+  font-size: var(--font-size-3xl, 2.5rem);
+  border-bottom: 3px solid var(--color-accent);
+  padding-bottom: 0.5rem;
+}
+
+.formatted-content h2 {
+  font-size: var(--font-size-2xl, 2rem);
+  border-bottom: 2px solid var(--color-accent-light);
+  padding-bottom: 0.5rem;
+}
+
+.formatted-content h3 {
+  font-size: var(--font-size-xl, 1.75rem);
+  color: var(--color-accent);
+}
+
+.formatted-content h4 {
+  font-size: var(--font-size-lg, 1.5rem);
+  color: var(--color-accent-light);
+}
+
+.formatted-content h5,
+.formatted-content h6 {
+  font-size: var(--font-size-md, 1.25rem);
+  color: var(--color-text-secondary);
+}
+
+/* Параграфы */
+.formatted-content p,
+.news-isolated .formatted-content p {
+  color: var(--color-text-primary);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  text-align: justify;
+}
+
+.formatted-content p:last-child,
+.news-isolated .formatted-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Ссылки */
+.formatted-content a,
+.news-isolated .formatted-content a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.formatted-content a:hover,
+.news-isolated .formatted-content a:hover {
+  color: var(--color-accent-light);
+  text-decoration: underline;
+}
+
+/* Списки */
+.formatted-content ul,
+.formatted-content ol,
+.news-isolated .formatted-content ul,
+.news-isolated .formatted-content ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+  color: var(--color-text-primary);
+}
+
+.formatted-content li,
+.news-isolated .formatted-content li {
+  margin-bottom: 0.25rem;
+  line-height: 1.6;
+}
+
+/* Выделение текста */
+.formatted-content strong,
+.formatted-content b,
+.news-isolated .formatted-content strong,
+.news-isolated .formatted-content b {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.formatted-content em,
+.formatted-content i,
+.news-isolated .formatted-content em,
+.news-isolated .formatted-content i {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+/* Цитаты */
+.formatted-content blockquote,
+.news-isolated .formatted-content blockquote {
+  background: var(--color-dark-surface);
+  border-left: 6px solid var(--color-accent);
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  border-radius: 0 8px 8px 0;
+  position: relative;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.formatted-content blockquote::before,
+.news-isolated .formatted-content blockquote::before {
+  content: '"';
+  font-size: 3rem;
+  color: var(--color-accent);
+  position: absolute;
+  top: -5px;
+  left: 15px;
+  font-family: serif;
+  opacity: 0.7;
+}
+
+/* Код */
+.formatted-content code,
+.news-isolated .formatted-content code {
+  background: var(--color-dark-surface);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--color-accent-light);
+  border: 1px solid var(--color-dark-border);
+}
+
+.formatted-content pre,
+.news-isolated .formatted-content pre {
+  background: var(--color-dark-surface);
+  padding: 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid var(--color-dark-border);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.formatted-content pre code,
+.news-isolated .formatted-content pre code {
+  background: none;
+  padding: 0;
+  border: none;
+  font-size: 0.9rem;
+}
+
+/* Изображения */
+.formatted-content img,
+.news-isolated .formatted-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: block;
+}
+
+/* Таблицы */
+.formatted-content table,
+.news-isolated .formatted-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  background: var(--color-dark-surface);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.formatted-content th,
+.formatted-content td,
+.news-isolated .formatted-content th,
+.news-isolated .formatted-content td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-dark-border);
+  color: var(--color-text-primary);
+}
+
+.formatted-content th,
+.news-isolated .formatted-content th {
+  background: var(--color-dark-elevated);
+  font-weight: 600;
+}
+
+/* Горизонтальная линия */
+.formatted-content hr,
+.news-isolated .formatted-content hr {
+  border: none;
+  height: 2px;
+  background: var(--gradient-tech, linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%));
+  margin: 2rem 0;
+  border-radius: 2px;
+}
+
+/* Специальные стили для разных размеров контента */
+
+/* Для статей - оптимизированные отступы */
+.formatted-content--article {
+  font-size: var(--font-size-md, 1.1rem);
+  padding: 2rem;
+}
+
+.formatted-content--article h1,
+.formatted-content--article h2,
+.formatted-content--article h3,
+.formatted-content--article h4,
+.formatted-content--article h5,
+.formatted-content--article h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.formatted-content--article h1 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.formatted-content--article h2 {
+  margin-top: 1.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.formatted-content--article p {
+  margin-bottom: 1rem;
+}
+
+.formatted-content--article blockquote {
+  padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+  font-size: 1.1rem;
+}
+
+.formatted-content--article pre {
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.formatted-content--article img {
+  margin: 1.5rem 0;
+}
+
+.formatted-content--article ul,
+.formatted-content--article ol {
+  margin-bottom: 1rem;
+}
+
+.formatted-content--article li {
+  margin-bottom: 0.25rem;
+}
+
+/* Для комментариев - более компактные стили */
+.formatted-content--comment {
+  font-size: var(--font-size-base, 0.95rem);
+  padding: 1rem;
+}
+
+.formatted-content--comment h1,
+.formatted-content--comment h2,
+.formatted-content--comment h3,
+.formatted-content--comment h4,
+.formatted-content--comment h5,
+.formatted-content--comment h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.formatted-content--comment h1 {
+  font-size: var(--font-size-xl, 1.5rem);
+}
+
+.formatted-content--comment h2 {
+  font-size: var(--font-size-lg, 1.25rem);
+}
+
+.formatted-content--comment h3 {
+  font-size: var(--font-size-md, 1.1rem);
+}
+
+.formatted-content--comment p {
+  margin-bottom: 1rem;
+}
+
+.formatted-content--comment blockquote {
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  font-size: 1rem;
+}
+
+.formatted-content--comment pre {
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* Для предпросмотра - минималистичные стили */
+.formatted-content--preview {
+  font-size: var(--font-size-base, 0.9rem);
+  padding: 0.5rem;
+}
+
+.formatted-content--preview h1,
+.formatted-content--preview h2,
+.formatted-content--preview h3,
+.formatted-content--preview h4,
+.formatted-content--preview h5,
+.formatted-content--preview h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.formatted-content--preview p {
+  margin-bottom: 0.75rem;
+}

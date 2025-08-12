@@ -1,0 +1,321 @@
+/* ==========================================================================
+   КОРПОРАТИВНАЯ ТИПОГРАФИКА - DARKHEIM STUDIO
+   ========================================================================== */
+
+/* Базовые настройки документа */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base); /* 14px - компактный основной текст */
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary); /* Светлый текст на темном фоне */
+  background-color: var(--color-dark-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  padding-top: 70px; /* Компенсация фиксированного header'а для всех страниц */
+}
+
+body.mobile-nav-open {
+    overflow: hidden;
+}
+
+/* Корпоративные контейнеры страниц */
+.page-container {
+  background: var(--color-dark-bg);
+  min-height: calc(100vh - 70px);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+/* Строгая иерархия заголовков */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-lg) 0;
+  letter-spacing: -0.025em;
+}
+
+h1 {
+  font-size: var(--font-size-3xl); /* 30px */
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-2xl);
+}
+
+h2 {
+  font-size: var(--font-size-2xl); /* 24px */
+  margin-bottom: var(--spacing-xl);
+}
+
+h3 {
+  font-size: var(--font-size-xl); /* 20px */
+  margin-bottom: var(--spacing-lg);
+}
+
+h4 {
+  font-size: var(--font-size-lg); /* 18px */
+  margin-bottom: var(--spacing-md);
+}
+
+h5 {
+  font-size: var(--font-size-md); /* 16px */
+  margin-bottom: var(--spacing-md);
+}
+
+h6 {
+  font-size: var(--font-size-base); /* 14px */
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Hero/Display Typography */
+.hero-title {
+  font-size: var(--font-size-6xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1.1;
+  background: var(--gradient-tech);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: var(--spacing-lg);
+}
+
+.display-title {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+.section-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xl);
+  position: relative;
+}
+
+/* Параграфы и текстовые блоки */
+p {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-base); /* 14px */
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+}
+
+/* Размеры текста */
+.text-xs {
+  font-size: var(--font-size-xs); /* 10px */
+  line-height: var(--line-height-tight);
+}
+
+.text-sm {
+  font-size: var(--font-size-sm); /* 12px */
+  line-height: var(--line-height-normal);
+}
+
+.text-base {
+  font-size: var(--font-size-base); /* 14px */
+}
+
+.text-lg {
+  font-size: var(--font-size-lg); /* 18px */
+}
+
+/* Цветовые варианты текста */
+.text-secondary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm); /* 12px */
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm); /* 12px */
+}
+
+.text-accent {
+  color: var(--color-accent);
+}
+
+/* Ссылки */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+a:hover,
+a:focus {
+  color: var(--color-accent-light);
+  text-decoration: underline;
+}
+
+/* Списки */
+ul, ol {
+  margin: 0 0 var(--spacing-lg) 0;
+  padding-left: var(--spacing-xl);
+}
+
+li {
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-base); /* 14px */
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+}
+
+.list-unstyled {
+  list-style: none;
+  padding-left: 0;
+}
+
+.list-tech {
+  list-style: none;
+  padding-left: 0;
+}
+
+.list-tech li {
+  position: relative;
+  padding-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.list-tech li::before {
+  content: '▶';
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Блоки кода */
+code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm); /* 12px */
+  background-color: var(--color-dark-surface);
+  color: var(--color-accent-light);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm); /* 12px */
+  background-color: var(--color-dark-surface);
+  color: var(--color-text-primary);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 0 0 var(--spacing-lg) 0;
+  border: 1px solid var(--color-dark-border);
+}
+
+/* Цитаты */
+blockquote {
+  margin: 0 0 var(--spacing-lg) 0;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-left: 4px solid var(--color-accent);
+  background-color: var(--color-dark-surface);
+  font-style: italic;
+  font-size: var(--font-size-base); /* 14px */
+  color: var(--color-text-secondary);
+}
+
+/* Таблицы */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-sm); /* 12px */
+  background-color: var(--color-dark-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+th, td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-dark-border);
+}
+
+th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  background-color: var(--color-dark-elevated);
+  font-size: var(--font-size-xs); /* 10px */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  color: var(--color-text-secondary);
+}
+
+/* Утилиты */
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Адаптивная типографика */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+
+  .hero-title {
+    font-size: var(--font-size-4xl);
+  }
+
+  .display-title {
+    font-size: var(--font-size-3xl);
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .section-title {
+    font-size: var(--font-size-2xl);
+  }
+}

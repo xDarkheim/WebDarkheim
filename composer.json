@@ -1,0 +1,46 @@
+{
+    "name": "darkheim/webengine",
+    "description": "WebEngine Darkheim Project - Modern PHP Application",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "8.4.5",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "phpmailer/phpmailer": "^6.9",
+        "monolog/monolog": "^3.0",
+        "ext-zlib": "*",
+        "ext-iconv": "*",
+        "ext-libxml": "*",
+        "ext-dom": "*"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse",
+        "cs-check": "echo 'PHPCS disabled for this project'",
+        "cs-fix": "echo 'PHPCBF disabled for this project'",
+        "post-install-cmd": [
+            "@composer dump-autoload"
+        ]
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -1,0 +1,9 @@
+# Deny all access to config directory
+Order Deny,Allow
+Deny from all
+
+# Block all file types
+<FilesMatch ".*">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

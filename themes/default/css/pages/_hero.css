@@ -1,0 +1,529 @@
+/* ==========================================================================
+   HERO SECTION - FIXED POSITIONING AND LAYOUT
+   Corrected hero section positioning and container issues
+   ========================================================================== */
+
+.hero-section {
+  /* Consistent width with other pages */
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100vh;
+  min-height: 100vh;
+
+  /* Proper positioning without breaking layout */
+  position: relative;
+  padding: 0; /* Убираем боковые отступы */
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Улучшенный многослойный фон */
+  background:
+    /* Основной градиент */
+    linear-gradient(135deg,
+      rgba(15, 23, 42, 0.95) 0%,
+      rgba(30, 41, 59, 0.9) 25%,
+      rgba(51, 65, 85, 0.85) 50%,
+      rgba(30, 41, 59, 0.9) 75%,
+      rgba(15, 23, 42, 0.95) 100%
+    ),
+    /* Второй слой с радиальными градиентами */
+    radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
+    /* Диагональные полосы для текстуры */
+    linear-gradient(45deg,
+      transparent 40%,
+      rgba(59, 130, 246, 0.03) 45%,
+      rgba(59, 130, 246, 0.03) 55%,
+      transparent 60%
+    ),
+    linear-gradient(-45deg,
+      transparent 40%,
+      rgba(139, 92, 246, 0.02) 45%,
+      rgba(139, 92, 246, 0.02) 55%,
+      transparent 60%
+    ),
+    /* Базовый темный фон */
+    var(--gradient-surface);
+
+  background-size:
+    100% 100%,
+    800px 800px,
+    600px 600px,
+    1000px 1000px,
+    400px 400px,
+    200px 200px,
+    150px 150px,
+    100% 100%;
+
+  background-position:
+    center center,
+    -200px -200px,
+    200px 200px,
+    center top,
+    left bottom,
+    right top,
+    left center,
+    center center;
+
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+
+  /* Улучшения производительности */
+  will-change: transform;
+  transform: translateZ(0);
+
+  /* Убираем overflow для корректного отображения */
+  overflow: visible;
+}
+
+@keyframes backgroundShift {
+  0%, 100% {
+    background-position:
+      center center,
+      -200px -200px,
+      200px 200px,
+      center top,
+      left bottom,
+      right top,
+      left center,
+      center center;
+  }
+  50% {
+    background-position:
+      center center,
+      -100px -100px,
+      calc(100% + 200px) calc(100% + 200px),
+      center -100px,
+      -50px calc(100% + 100px),
+      50px 50px,
+      calc(100% - 50px) calc(100% - 50px),
+      center center;
+  }
+}
+
+/* Добавляем недостающую анимацию meshRotate */
+@keyframes meshRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Улучшенный анимированный оверлей */
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    /* Основной конический градиент */
+    conic-gradient(from 0deg at 30% 70%,
+      rgba(59, 130, 246, 0.08) 0deg,
+      rgba(139, 92, 246, 0.06) 60deg,
+      transparent 120deg,
+      rgba(6, 182, 212, 0.05) 180deg,
+      transparent 240deg,
+      rgba(236, 72, 153, 0.04) 300deg,
+      rgba(59, 130, 246, 0.08) 360deg
+    ),
+    /* Дополнительные радиальные эффекты */
+    radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse at 20% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 70%);
+
+  background-size:
+    150% 150%,
+    100% 100%,
+    100% 100%;
+
+  animation:
+    meshRotate 25s linear infinite,
+    pulseOverlay 8s ease-in-out infinite;
+  opacity: 0.7;
+  z-index: -1;
+}
+
+@keyframes pulseOverlay {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+/* Дополнительный слой с тонкими световыми эффектами */
+.hero-section::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    /* Световые лучи */
+    linear-gradient(45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.01) 50%,
+      transparent 70%
+    ),
+    linear-gradient(-45deg,
+      transparent 30%,
+      rgba(59, 130, 246, 0.02) 50%,
+      transparent 70%
+    ),
+    /* Тонкие линии для текстуры */
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.005) 2px,
+      rgba(255, 255, 255, 0.005) 4px
+    );
+
+  animation: lightShift 15s ease-in-out infinite;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+@keyframes lightShift {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateX(20px) rotate(1deg);
+    opacity: 0.5;
+  }
+  66% {
+    transform: translateX(-15px) rotate(-0.5deg);
+    opacity: 0.4;
+  }
+}
+
+/* Enhanced particles system */
+.hero-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--gradient-tech);
+  border-radius: var(--radius-full);
+  animation: floatParticle 15s infinite ease-in-out;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+}
+
+.particle:nth-child(1) { top: 20%; left: 10%; animation-delay: -2s; animation-duration: 12s; }
+.particle:nth-child(2) { top: 60%; left: 20%; animation-delay: -5s; animation-duration: 18s; }
+.particle:nth-child(3) { top: 40%; left: 70%; animation-delay: -8s; animation-duration: 14s; }
+.particle:nth-child(4) { top: 80%; left: 80%; animation-delay: -3s; animation-duration: 16s; }
+.particle:nth-child(5) { top: 15%; left: 60%; animation-delay: -7s; animation-duration: 20s; }
+.particle:nth-child(6) { top: 70%; left: 40%; animation-delay: -1s; animation-duration: 13s; }
+.particle:nth-child(7) { top: 30%; left: 90%; animation-delay: -9s; animation-duration: 17s; }
+.particle:nth-child(8) { top: 90%; left: 15%; animation-delay: -4s; animation-duration: 15s; }
+
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.2);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-15px, -60px) scale(0.8);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translate(25px, -40px) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* Hero content with glassmorphism */
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--spacing-4xl) var(--spacing-lg);
+}
+
+/* Modern hero title */
+.hero-title {
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: var(--font-weight-black);
+  line-height: var(--line-height-tight);
+  margin: 0 0 var(--spacing-xl) 0;
+
+  /* Advanced gradient text */
+  background: linear-gradient(
+    135deg,
+    var(--color-text-primary) 0%,
+    var(--color-accent-light) 25%,
+    #8b5cf6 50%,
+    var(--color-info) 75%,
+    var(--color-text-primary) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 8s ease-in-out infinite;
+
+  /* Text shadow for depth */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Enhanced subtitle */
+.hero-subtitle {
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-normal);
+  opacity: 0.9;
+  max-width: 700px;
+  margin: 0 auto var(--spacing-3xl);
+  text-align: center;
+}
+
+/* Modern action buttons */
+.hero-actions {
+  display: flex;
+  gap: var(--spacing-lg);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-2xl);
+}
+
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(var(--blur-md));
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 180px;
+  justify-content: center;
+}
+
+/* Primary button */
+.hero-btn-primary {
+  background: var(--gradient-tech);
+  color: var(--color-white);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+}
+
+.hero-btn-primary:hover {
+  transform: none;
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+  background: linear-gradient(135deg, var(--color-accent-hover), #7c3aed);
+  text-decoration: none;
+  color: var(--color-white);
+}
+
+.hero-btn-primary span {
+  transition: transform var(--transition-fast);
+}
+
+.hero-btn-primary:hover span {
+  transform: translateX(4px);
+}
+
+/* Secondary button */
+.hero-btn-secondary {
+  background: rgba(30, 41, 59, 0.6);
+  color: var(--color-text-secondary);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  backdrop-filter: blur(var(--blur-lg));
+}
+
+.hero-btn-secondary:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(96, 165, 250, 0.5);
+  color: var(--color-accent-light);
+  transform: none;
+  box-shadow: var(--shadow-lg);
+  text-decoration: none;
+}
+
+/* Enhanced scroll indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: var(--spacing-2xl);
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(226, 232, 240, 0.7);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.scroll-indicator:hover {
+  color: #60a5fa;
+}
+
+.scroll-indicator::after {
+  content: '';
+  width: 2px;
+  height: 30px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(96, 165, 250, 0.8),
+    transparent
+  );
+  border-radius: var(--radius-full);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+@keyframes scrollPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(10px);
+  }
+}
+
+/* Hero cards */
+.hero-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-4xl);
+}
+
+.hero-card {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  transition: none; /* УБРАНА АНИМАЦИЯ */
+}
+
+.hero-card:hover {
+  transform: none; /* УБРАНА АНИМАЦИЯ */
+  border-color: var(--color-dark-border-light);
+}
+
+/* Features section */
+.hero-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4xl);
+  margin-top: var(--spacing-4xl);
+}
+
+.hero-feature {
+  background: var(--color-dark-surface);
+  border: 1px solid var(--color-dark-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  transition: none; /* УБРАНА АНИМАЦИЯ */
+}
+
+.hero-feature:hover {
+  transform: none; /* УБРАНА АНИМАЦИЯ */
+}
+
+/* Stats section */
+.hero-stats {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-4xl);
+  margin-top: var(--spacing-4xl);
+}
+
+.hero-stats-item {
+  text-align: center;
+  transition: none; /* УБРАНА АНИМАЦИЯ */
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .hero-content {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .hero-btn {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* Уменьшаем количество частиц на мобильных */
+  .particle:nth-child(n+5) {
+    display: none;
+  }
+}
+
+/* Disable animations on reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .hero-section::before,
+  .hero-section::after,
+  .hero-content::after,
+  .hero-title,
+  .scroll-indicator,
+  .particle {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,331 @@
+/* ==========================================================================
+   ТЕМНЫЕ КОРПОРАТИВНЫЕ КНОПКИ БЕЗ АНИМАЦИЙ - DARKHEIM STUDIO
+   ========================================================================== */
+
+/* Базовые стили кнопок БЕЗ АНИМАЦИЙ */
+.button,
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-family-sans), sans-serif;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Размеры кнопок */
+.button--xs {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  gap: 2px;
+}
+
+.button--sm {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-xs);
+  gap: var(--spacing-xs);
+}
+
+.button--md {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+}
+
+.button--lg {
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-md);
+  gap: var(--spacing-sm);
+}
+
+.button--xl {
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--font-size-lg);
+  gap: var(--spacing-md);
+}
+
+/* Цветовые варианты кнопок */
+.button--primary {
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+}
+
+.button--primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.button--secondary {
+  background: var(--color-dark-border);
+  color: var(--color-text-primary);
+  border-color: var(--color-dark-border);
+}
+
+.button--secondary:hover {
+  background: var(--color-dark-border-light);
+  border-color: var(--color-dark-border-light);
+}
+
+.button--outline {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-dark-border);
+}
+
+.button--outline:hover {
+  background: var(--color-dark-elevated);
+  color: var(--color-text-primary);
+  border-color: var(--color-dark-border-light);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: transparent;
+}
+
+.button--ghost:hover {
+  background: var(--color-dark-elevated);
+  color: var(--color-text-primary);
+}
+
+.button--success {
+  background: var(--color-success);
+  color: var(--color-text-primary);
+  border-color: var(--color-success);
+}
+
+.button--success:hover {
+  background: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
+.button--warning {
+  background: var(--color-warning);
+  color: var(--color-text-inverse);
+  border-color: var(--color-warning);
+}
+
+.button--warning:hover {
+  background: var(--color-warning-hover);
+  border-color: var(--color-warning-hover);
+}
+
+.button--danger {
+  background: var(--color-error);
+  color: var(--color-text-primary);
+  border-color: var(--color-error);
+}
+
+.button--danger:hover {
+  background: var(--color-error-hover);
+  border-color: var(--color-error-hover);
+}
+
+/* Состояния кнопок */
+.button:disabled,
+.button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-dark-border);
+  color: var(--color-text-muted);
+  border-color: var(--color-dark-border);
+}
+
+.button:disabled:hover,
+.button--disabled:hover {
+  background: var(--color-dark-border);
+  color: var(--color-text-muted);
+  border-color: var(--color-dark-border);
+}
+
+/* Кнопки в состоянии загрузки */
+.button--loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.button--loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: var(--spacing-sm);
+}
+
+/* Полноширинные кнопки */
+.button--full {
+  width: 100%;
+}
+
+/* Кнопки-иконки */
+.button--icon {
+  padding: var(--spacing-sm);
+  min-width: auto;
+  aspect-ratio: 1;
+}
+
+.button--icon-sm {
+  padding: var(--spacing-xs);
+}
+
+.button--icon-lg {
+  padding: var(--spacing-md);
+}
+
+/* Группы кнопок */
+.button-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.button-group .button {
+  border-radius: 0;
+  border-right-width: 0;
+}
+
+.button-group .button:first-child {
+  border-top-left-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+}
+
+.button-group .button:last-child {
+  border-top-right-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  border-right-width: 1px;
+}
+
+.button-group .button:only-child {
+  border-radius: var(--radius-md);
+  border-right-width: 1px;
+}
+
+/* Кнопки с иконками */
+.button .icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.button .icon:first-child {
+  margin-right: 0;
+}
+
+.button .icon:last-child {
+  margin-left: 0;
+}
+
+.button .icon:only-child {
+  margin: 0;
+}
+
+/* Специальные кнопки действий */
+.btn-action {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: auto;
+}
+
+.btn-edit {
+  background: var(--color-info);
+  color: var(--color-text-primary);
+  border-color: var(--color-info);
+}
+
+.btn-edit:hover {
+  background: var(--color-info-hover);
+  border-color: var(--color-info-hover);
+}
+
+.btn-delete {
+  background: var(--color-error);
+  color: var(--color-text-primary);
+  border-color: var(--color-error);
+}
+
+.btn-delete:hover {
+  background: var(--color-error-hover);
+  border-color: var(--color-error-hover);
+}
+
+/* Кнопки в формах */
+.form-actions .button {
+  min-width: 120px;
+}
+
+/* Кнопки в навигации */
+.nav-button {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+}
+
+.nav-button:hover {
+  background: var(--color-dark-elevated);
+  color: var(--color-text-primary);
+}
+
+.nav-button.active {
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+/* Кнопки в карточках */
+.card .button {
+  margin-top: var(--spacing-md);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .button--responsive {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .button-group .button {
+    width: 100%;
+    border-radius: 0;
+    border-right-width: 1px;
+    border-bottom-width: 0;
+  }
+
+  .button-group .button:first-child {
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-md);
+    border-bottom-left-radius: 0;
+  }
+
+  .button-group .button:last-child {
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+    border-top-right-radius: 0;
+    border-bottom-width: 1px;
+  }
+}

@@ -1,0 +1,243 @@
+/* ==========================================================================
+   FULLSCREEN SIDEBAR DECORATIONS & PARTICLES
+   Декоративные элементы для заполнения боковых пространств
+   ========================================================================== */
+
+/* Боковые декоративные панели для полноэкранного режима */
+.fullscreen-sidebars {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+}
+
+/* Адаптивная ширина в зависимости от размера экрана */
+@media (min-width: 1400px) {
+    .fullscreen-sidebars {
+        width: calc((100vw - 1200px) / 2);
+        display: block;
+    }
+}
+
+@media (min-width: 1800px) {
+    .fullscreen-sidebars {
+        width: calc((100vw - 1400px) / 2);
+    }
+}
+
+.fullscreen-sidebars--left {
+    left: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.02) 0%,
+        rgba(139, 92, 246, 0.03) 50%,
+        rgba(6, 182, 212, 0.02) 100%
+    );
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fullscreen-sidebars--right {
+    right: 0;
+    background: linear-gradient(
+        225deg,
+        rgba(37, 99, 235, 0.02) 0%,
+        rgba(139, 92, 246, 0.03) 50%,
+        rgba(6, 182, 212, 0.02) 100%
+    );
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Декоративные линии внутри боковых панелей */
+.fullscreen-sidebars::before {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 60%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(59, 130, 246, 0.3) 50%,
+        transparent 100%
+    );
+    border-radius: 1px;
+}
+
+/* Дополнительная декоративная линия для широких экранов */
+@media (min-width: 1800px) {
+    .fullscreen-sidebars::after {
+        content: '';
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1px;
+        height: 40%;
+        background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+        );
+    }
+}
+
+/* Анимированные частицы в боковых панелях */
+.sidebar-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.sidebar-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    animation: particleFloat 20s infinite linear;
+}
+
+/* Разные цвета для частиц */
+.sidebar-particle:nth-child(1) {
+    left: 30%;
+    animation-delay: 0s;
+    background: rgba(59, 130, 246, 0.4);
+}
+
+.sidebar-particle:nth-child(2) {
+    left: 70%;
+    animation-delay: -7s;
+    background: rgba(139, 92, 246, 0.4);
+}
+
+.sidebar-particle:nth-child(3) {
+    left: 50%;
+    animation-delay: -14s;
+    background: rgba(6, 182, 212, 0.4);
+}
+
+.sidebar-particle:nth-child(4) {
+    left: 20%;
+    animation-delay: -3s;
+    background: rgba(59, 130, 246, 0.3);
+}
+
+/* Настройки для правой панели */
+.fullscreen-sidebars--right .sidebar-particle:nth-child(1) {
+    left: 30%;
+    animation-delay: -2s;
+}
+
+.fullscreen-sidebars--right .sidebar-particle:nth-child(2) {
+    left: 70%;
+    animation-delay: -9s;
+}
+
+.fullscreen-sidebars--right .sidebar-particle:nth-child(3) {
+    left: 50%;
+    animation-delay: -16s;
+}
+
+.fullscreen-sidebars--right .sidebar-particle:nth-child(4) {
+    left: 80%;
+    animation-delay: -5s;
+}
+
+/* Улучшенная анимация частиц */
+@keyframes particleFloat {
+    0% {
+        transform: translateY(100vh) translateX(-50%) scale(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+        transform: translateY(90vh) translateX(-50%) scale(1);
+    }
+    90% {
+        opacity: 1;
+        transform: translateY(10vh) translateX(-50%) scale(1);
+    }
+    100% {
+        transform: translateY(-100px) translateX(-50%) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Скрываем боковые панели на узких экранах */
+@media (max-width: 1399px) {
+    .fullscreen-sidebars {
+        display: none;
+    }
+}
+
+/* Эффекты для различных размеров экрана */
+@media (min-width: 1400px) and (max-width: 1599px) {
+    .sidebar-particle {
+        width: 3px;
+        height: 3px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .sidebar-particle {
+        width: 4px;
+        height: 4px;
+    }
+
+    /* Дополнительные частицы для больших экранов */
+    .sidebar-particles::after {
+        content: '';
+        position: absolute;
+        top: 40%;
+        left: 25%;
+        width: 2px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        animation: particleFloat 25s infinite linear;
+        animation-delay: -12s;
+    }
+}
+
+/* Режим пониженного движения для доступности */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-particle {
+        animation-duration: 60s; /* Замедляем анимацию */
+    }
+
+    .fullscreen-sidebars::before,
+    .fullscreen-sidebars::after {
+        animation: none; /* Отключаем анимацию декоративных элементов */
+    }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+    .fullscreen-sidebars--left {
+        background: linear-gradient(
+            135deg,
+            rgba(37, 99, 235, 0.04) 0%,
+            rgba(139, 92, 246, 0.05) 50%,
+            rgba(6, 182, 212, 0.04) 100%
+        );
+        border-right-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .fullscreen-sidebars--right {
+        background: linear-gradient(
+            225deg,
+            rgba(37, 99, 235, 0.04) 0%,
+            rgba(139, 92, 246, 0.05) 50%,
+            rgba(6, 182, 212, 0.04) 100%
+        );
+        border-left-color: rgba(255, 255, 255, 0.08);
+    }
+}

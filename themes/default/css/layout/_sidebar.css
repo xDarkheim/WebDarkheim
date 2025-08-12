@@ -1,0 +1,35 @@
+/* Sidebar styles - DISABLED for full width layout */
+
+/* Sidebar is completely hidden in the new design */
+.sidebar {
+  display: none !important;
+}
+
+/* Legacy sidebar styles kept for reference but disabled */
+/*
+.sidebar {
+  width: 280px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--spacing-4);
+}
+*/
+
+/* Remove any sidebar-related margins or padding from main content */
+.site-wrapper .main-content {
+  margin-left: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure full width layout on all devices */
+@media (min-width: 768px) {
+  .site-wrapper {
+    padding-left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}

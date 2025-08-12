@@ -1,0 +1,87 @@
+# HTTPS Redirect - ОТКЛЮЧЕН в пользу PHP редиректа для избежания петель
+# RewriteEngine On
+
+# Проверяем, что это не локальная среда
+# RewriteCond %{HTTP_HOST} !^localhost$ [NC]
+# RewriteCond %{HTTP_HOST} !^127\.0\.0\.1$ [NC]
+# RewriteCond %{HTTP_HOST} !\.local$ [NC]
+# RewriteCond %{HTTP_HOST} !\.test$ [NC]
+
+# Редирект на HTTPS если не используется HTTPS
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Дополнительная проверка для балансировщиков нагрузки и прокси
+# RewriteCond %{HTTP:X-Forwarded-Proto} !https
+# RewriteCond %{HTTP_HOST} !^localhost$ [NC]
+# RewriteCond %{HTTP_HOST} !^127\.0\.0\.1$ [NC]
+# RewriteCond %{HTTP_HOST} !\.local$ [NC]
+# RewriteCond %{HTTP_HOST} !\.test$ [NC]
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Security Headers для HTTPS
+<IfModule mod_headers.c>
+    # HSTS (HTTP Strict Transport Security) - только для HTTPS
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" env=HTTPS
+
+    # Prevent mixed content
+    Header always set Content-Security-Policy "upgrade-insecure-requests" env=HTTPS
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # X-Content-Type-Options
+    Header always set X-Content-Type-Options "nosniff"
+
+    # X-Frame-Options
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # X-XSS-Protection
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Кэширование статических ресурсов
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Защита конфиденциальных файлов
+<Files "composer.json">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "composer.lock">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".env">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.log">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Защита директорий
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Блокируем доступ к системным директориям
+    RewriteRule ^(config|database|includes|scripts|src|storage|tests|vendor)(/.*)?$ - [F,L]
+
+    # Блокируем доступ к системным файлам
+    RewriteRule ^(phpstan|phpunit|composer)\.(json|lock|neon|xml)$ - [F,L]
+</IfModule>

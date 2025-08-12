@@ -1,0 +1,17 @@
+# Deny all access to source code directory
+Require all denied
+
+# Block all PHP files and source code
+<FilesMatch "\.(php|inc|class|phtml)$">
+    Require all denied
+</FilesMatch>
+
+# Block configuration and sensitive files
+<FilesMatch "\.(json|xml|yml|yaml|ini|conf)$">
+    Require all denied
+</FilesMatch>
+
+# Additional protection for common source file extensions
+<FilesMatch "\.(tpl|twig|blade\.php)$">
+    Require all denied
+</FilesMatch>
