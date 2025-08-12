@@ -17,7 +17,7 @@ $authService = $serviceProvider->getAuth();
 // Check authentication
 if (!$authService->isAuthenticated()) {
     $flashMessageService->addError('Please log in to access your portfolio.');
-    header("Location: /page/auth/login.php");
+    header("Location: /index.php?page=login");
     exit();
 }
 
@@ -25,7 +25,7 @@ if (!$authService->isAuthenticated()) {
 $current_user_role = $authService->getCurrentUserRole();
 if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     $flashMessageService->addError('Access denied. Client account required.');
-    header("Location: /page/user/dashboard.php");
+    header("Location: /index.php?page=dashboard");
     exit();
 }
 
@@ -39,7 +39,7 @@ $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$profileData) {
     $flashMessageService->addError('Please complete your profile first.');
-    header('Location: /page/user/profile/');
+    header('Location: /index.php?page=profile_edit');
     exit();
 }
 
@@ -108,16 +108,14 @@ if ($profileData) {
     $stmt->execute([$profileData['id']]);
     $projectStats['total'] = $stmt->fetchColumn();
 }
-
-include __DIR__ . '/../../../resources/views/_header.php';
 ?>
 
 <div class="container mt-4">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/page/user/dashboard.php">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/page/user/portfolio/">Portfolio</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
             <li class="breadcrumb-item active">Settings</li>
         </ol>
     </nav>
@@ -128,7 +126,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
             <i class="fas fa-cog text-primary me-2"></i>
             Portfolio Settings
         </h1>
-        <a href="/page/user/portfolio/" class="btn btn-outline-secondary">
+        <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>
             Back to Portfolio
         </a>
@@ -355,7 +353,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                                 <label class="form-label fw-bold">Your Portfolio Link</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control"
-                                           value="<?= (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] ?>/page/public/client/portfolio.php?client_id=<?= $profileData['id'] ?>"
+                                           value="<?= (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] ?>/index.php?page=public_client_portfolio&client_id=<?= $profileData['id'] ?>"
                                            readonly>
                                     <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value)">
                                         <i class="fas fa-copy"></i>
@@ -439,5 +437,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<?php include __DIR__ . '/../../../resources/views/_footer.php'; ?>

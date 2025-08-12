@@ -17,7 +17,7 @@ $authService = $serviceProvider->getAuth();
 // Check authentication
 if (!$authService->isAuthenticated()) {
     $flashMessageService->addError('Please log in to access your portfolio.');
-    header("Location: /page/auth/login.php");
+    header("Location: /index.php?page=login");
     exit();
 }
 
@@ -25,7 +25,7 @@ if (!$authService->isAuthenticated()) {
 $current_user_role = $authService->getCurrentUserRole();
 if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     $flashMessageService->addError('Access denied. Client account required.');
-    header("Location: /page/user/dashboard.php");
+    header("Location: /index.php?page=dashboard");
     exit();
 }
 
@@ -65,16 +65,14 @@ for ($i = 5; $i >= 0; $i--) {
         'views' => rand(50, 200) // Placeholder data
     ];
 }
-
-include __DIR__ . '/../../../resources/views/_header.php';
 ?>
 
 <div class="container mt-4">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/page/user/dashboard.php">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/page/user/portfolio/">Portfolio</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
             <li class="breadcrumb-item active">Statistics</li>
         </ol>
     </nav>
@@ -85,7 +83,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
             <i class="fas fa-chart-bar text-primary me-2"></i>
             Portfolio Statistics
         </h1>
-        <a href="/page/user/portfolio/" class="btn btn-outline-secondary">
+        <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>
             Back to Portfolio
         </a>
@@ -253,7 +251,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                     <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No project data yet</h5>
                     <p class="text-muted">Add some projects to see performance statistics</p>
-                    <a href="/page/user/portfolio/add_project.php" class="btn btn-primary">
+                    <a href="/index.php?page=portfolio_create" class="btn btn-primary">
                         <i class="fas fa-plus me-1"></i>
                         Add Your First Project
                     </a>
@@ -306,7 +304,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                                         <small class="text-muted"><?= date('M j, Y', strtotime($project['created_at'])) ?></small>
                                     </td>
                                     <td>
-                                        <a href="/page/user/portfolio/edit_project.php?id=<?= $project['id'] ?>"
+                                        <a href="/index.php?page=portfolio_edit&id=<?= $project['id'] ?>"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
@@ -326,22 +324,22 @@ include __DIR__ . '/../../../resources/views/_header.php';
             <h5 class="card-title">Quick Actions</h5>
             <div class="row">
                 <div class="col-md-3 mb-2">
-                    <a href="/page/user/portfolio/add_project.php" class="btn btn-primary w-100">
+                    <a href="/index.php?page=portfolio_create" class="btn btn-primary w-100">
                         <i class="fas fa-plus me-1"></i> Add New Project
                     </a>
                 </div>
                 <div class="col-md-3 mb-2">
-                    <a href="/page/user/portfolio/my_projects.php" class="btn btn-outline-primary w-100">
+                    <a href="/index.php?page=portfolio_manage" class="btn btn-outline-primary w-100">
                         <i class="fas fa-folder me-1"></i> Manage Projects
                     </a>
                 </div>
                 <div class="col-md-3 mb-2">
-                    <a href="/page/user/portfolio/project_settings.php" class="btn btn-outline-secondary w-100">
+                    <a href="/index.php?page=project_settings" class="btn btn-outline-secondary w-100">
                         <i class="fas fa-cog me-1"></i> Portfolio Settings
                     </a>
                 </div>
                 <div class="col-md-3 mb-2">
-                    <a href="/page/user/profile/" class="btn btn-outline-info w-100">
+                    <a href="/index.php?page=profile_edit" class="btn btn-outline-info w-100">
                         <i class="fas fa-user me-1"></i> Edit Profile
                     </a>
                 </div>
@@ -396,5 +394,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<?php include __DIR__ . '/../../../resources/views/_footer.php'; ?>

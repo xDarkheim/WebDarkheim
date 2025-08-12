@@ -37,12 +37,16 @@ $stmt = $database_handler->prepare("SELECT * FROM client_profiles WHERE user_id 
 $stmt->execute([$current_user_id]);
 $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
+if (!$profileData) {
+    $flashMessageService->addError('Please complete your profile first.');
+    header('Location: /index.php?page=profile_edit');
+    exit();
+}
+
 // Get project categories (simplified - using existing categories table)
 $stmt = $database_handler->prepare("SELECT * FROM categories WHERE status = 'active' ORDER BY name");
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-include __DIR__ . '/../../../resources/views/_header.php';
 ?>
 
 <div class="container mt-4">
@@ -50,7 +54,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=portfolio">Portfolio</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
             <li class="breadcrumb-item active">Add Project</li>
         </ol>
     </nav>
@@ -61,26 +65,17 @@ include __DIR__ . '/../../../resources/views/_header.php';
             <i class="fas fa-plus text-primary me-2"></i>
             Add New Project
         </h1>
-        <a href="/index.php?page=portfolio" class="btn btn-outline-secondary">
+        <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>
             Back to Portfolio
         </a>
     </div>
 
-    <?php if (!$profileData): ?>
-        <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Profile Required</strong><br>
-            You need to complete your profile before adding projects.
-            <a href="/index.php?page=profile" class="btn btn-sm btn-warning mt-2">
-                Complete Profile First
-            </a>
-        </div>
-    <?php else: ?>
+    <form id="projectForm" enctype="multipart/form-data">
         <div class="row">
             <div class="col-lg-8">
-                <!-- Project Form -->
-                <div class="card">
+                <!-- Project Information -->
+                <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="fas fa-info-circle me-2"></i>
@@ -88,56 +83,66 @@ include __DIR__ . '/../../../resources/views/_header.php';
                         </h5>
                     </div>
                     <div class="card-body">
-                        <form id="projectForm" enctype="multipart/form-data">
-                            <div class="mb-3">
-                                <label for="title" class="form-label">Project Title <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="title" name="title" required
-                                       placeholder="Enter your project title">
-                            </div>
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Project Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required
+                                   placeholder="Enter your project title">
+                        </div>
 
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" rows="4"
-                                          placeholder="Describe your project, its goals, and key features"></textarea>
-                            </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"
+                                      placeholder="Describe your project, its goals, and key features"></textarea>
+                        </div>
 
-                            <div class="mb-3">
-                                <label for="technologies" class="form-label">Technologies Used</label>
-                                <input type="text" class="form-control" id="technologies" name="technologies"
-                                       placeholder="e.g., React, Node.js, MongoDB, AWS">
-                                <small class="form-text text-muted">
-                                    List the main technologies, frameworks, and tools used
-                                </small>
-                            </div>
+                        <div class="mb-3">
+                            <label for="technologies" class="form-label">Technologies Used</label>
+                            <input type="text" class="form-control" id="technologies" name="technologies"
+                                   placeholder="e.g., React, Node.js, MongoDB, AWS">
+                            <small class="form-text text-muted">
+                                List the main technologies, frameworks, and tools used in this project
+                            </small>
+                        </div>
 
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="project_url" class="form-label">Live Project URL</label>
-                                        <input type="url" class="form-control" id="project_url" name="project_url"
-                                               placeholder="https://your-project.com">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="github_url" class="form-label">GitHub Repository</label>
-                                        <input type="url" class="form-control" id="github_url" name="github_url"
-                                               placeholder="https://github.com/username/repo">
-                                    </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="project_url" class="form-label">Live Project URL</label>
+                                    <input type="url" class="form-control" id="project_url" name="project_url"
+                                           placeholder="https://your-project.com">
                                 </div>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="images" class="form-label">Project Images</label>
-                                <input type="file" class="form-control" id="images" name="images[]"
-                                       multiple accept="image/*">
-                                <small class="form-text text-muted">
-                                    Upload screenshots, mockups, or other visuals. Max size: 5MB per file.
-                                </small>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="github_url" class="form-label">GitHub Repository</label>
+                                    <input type="url" class="form-control" id="github_url" name="github_url"
+                                           placeholder="https://github.com/username/repo">
+                                </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div id="imagePreview" class="row mt-3"></div>
-                        </form>
+                <!-- Project Images -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-images me-2"></i>
+                            Project Images
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="images" class="form-label">Upload Images</label>
+                            <input type="file" class="form-control" id="images" name="images[]"
+                                   multiple accept="image/*">
+                            <small class="form-text text-muted">
+                                Upload screenshots, mockups, or other visual representations of your project.
+                                Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per file.
+                            </small>
+                        </div>
+
+                        <div id="imagePreview" class="row mt-3"></div>
                     </div>
                 </div>
             </div>
@@ -156,7 +161,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                             <label for="visibility" class="form-label">Visibility</label>
                             <select class="form-select" id="visibility" name="visibility">
                                 <option value="private">Private - Only visible to you</option>
-                                <option value="public">Public - Visible after approval</option>
+                                <option value="public">Public - Visible to everyone (after approval)</option>
                             </select>
                         </div>
 
@@ -176,28 +181,55 @@ include __DIR__ . '/../../../resources/views/_header.php';
                     </div>
                 </div>
 
+                <!-- Quick Help -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Tips for Success
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled small">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Use clear, descriptive project titles
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Add multiple high-quality screenshots
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Include live demo and source code links
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Select relevant categories for better discovery
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- Actions -->
                 <div class="card">
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <button type="submit" form="projectForm" class="btn btn-primary" data-action="save">
-                                <i class="fas fa-save me-1"></i>
-                                Save as Draft
+                            <button type="submit" class="btn btn-secondary" data-action="draft">
+                                <i class="fas fa-save me-1"></i> Save as Draft
                             </button>
-                            <button type="submit" form="projectForm" class="btn btn-success" data-action="submit">
-                                <i class="fas fa-paper-plane me-1"></i>
-                                Save & Submit for Review
+                            <button type="submit" class="btn btn-success" data-action="submit">
+                                <i class="fas fa-paper-plane me-1"></i> Save & Submit for Review
                             </button>
-                            <a href="/index.php?page=portfolio" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-1"></i>
-                                Cancel
+                            <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> Cancel
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    <?php endif; ?>
+    </form>
 </div>
 
 <script>
@@ -249,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show loading state
         const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
         submitButton.disabled = true;
 
         fetch('/page/api/portfolio/create_project.php', {
@@ -263,21 +295,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Project created and submitted for review!' :
                     'Project saved as draft!'
                 );
-                window.location.href = '/index.php?page=portfolio';
+                window.location.href = '/index.php?page=client_portfolio';
             } else {
                 alert('Error: ' + (data.error || 'Unknown error occurred'));
+                // Restore button state
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
             }
         })
         .catch(error => {
-            alert('An error occurred while saving the project.');
+            alert('An error occurred while creating the project.');
             console.error('Error:', error);
+            // Restore button state
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
         });
     });
 });
 </script>
-
-<?php include __DIR__ . '/../../../resources/views/_footer.php'; ?>

@@ -35,7 +35,7 @@ $current_user_id = $authService->getCurrentUserId();
 // Get project ID
 $projectId = (int)($_GET['id'] ?? 0);
 if ($projectId <= 0) {
-    header('Location: /index.php?page=portfolio_projects');
+    header('Location: /index.php?page=portfolio_manage');
     exit();
 }
 
@@ -46,7 +46,7 @@ $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$profileData) {
     $flashMessageService->addError('Please complete your profile first.');
-    header('Location: /index.php?page=profile');
+    header('Location: /index.php?page=profile_edit');
     exit();
 }
 
@@ -57,7 +57,7 @@ $projectData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$projectData) {
     $flashMessageService->addError('Project not found or access denied.');
-    header('Location: /index.php?page=portfolio_projects');
+    header('Location: /index.php?page=portfolio_manage');
     exit();
 }
 
@@ -70,8 +70,6 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $assignedCategories = [];
 
 $images = json_decode($projectData['images'] ?? '[]', true);
-
-include __DIR__ . '/../../../resources/views/_header.php';
 ?>
 
 <div class="container mt-4">
@@ -79,23 +77,25 @@ include __DIR__ . '/../../../resources/views/_header.php';
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=portfolio">Portfolio</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=portfolio_projects">My Projects</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=portfolio_manage">My Projects</a></li>
             <li class="breadcrumb-item active">Edit Project</li>
         </ol>
     </nav>
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-edit text-primary me-2"></i>
-            Edit Project
-        </h1>
         <div>
-            <a href="/index.php?page=portfolio_projects" class="btn btn-outline-secondary me-2">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit text-primary me-2"></i>
+                Edit Project
+            </h1>
+            <a href="/index.php?page=portfolio_manage" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left me-1"></i>
                 Back to Projects
             </a>
+        </div>
+        <div>
             <?php if ($projectData['status'] === 'rejected'): ?>
                 <span class="badge bg-danger">Rejected</span>
             <?php elseif ($projectData['status'] === 'pending'): ?>
@@ -317,7 +317,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                                 </button>
                             <?php endif; ?>
 
-                            <a href="/index.php?page=portfolio_projects" class="btn btn-outline-secondary">
+                            <a href="/index.php?page=portfolio_manage" class="btn btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Cancel
                             </a>
                         </div>
@@ -421,5 +421,3 @@ function removeImage(imageName) {
     }
 }
 </script>
-
-<?php include __DIR__ . '/../../../resources/views/_footer.php'; ?>

@@ -22,6 +22,12 @@ return [
         'privacy' => ['file' => 'public/privacy.php', 'title' => 'Privacy Policy'],
         'terms' => ['file' => 'public/terms.php', 'title' => 'Terms of Service'],
         'cookies' => ['file' => 'public/cookies.php', 'title' => 'Cookie Policy'],
+
+        // Client portfolio public pages
+        'client_catalog' => ['file' => 'public/client/catalog.php', 'title' => 'Client Portfolio Catalog'],
+        'public_client_portfolio' => ['file' => 'public/client/portfolio.php', 'title' => 'Client Portfolio'],
+        'client_project' => ['file' => 'public/client/project.php', 'title' => 'Project Details'],
+
         // Authentication pages
         'login' => ['file' => 'auth/login.php', 'title' => 'Login'],
         'register' => ['file' => 'auth/register.php', 'title' => 'Register'],

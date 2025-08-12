@@ -17,7 +17,7 @@ $authService = $serviceProvider->getAuth();
 // Check authentication
 if (!$authService->isAuthenticated()) {
     $flashMessageService->addError('Please log in to access your portfolio.');
-    header("Location: /page/auth/login.php");
+    header("Location: /index.php?page=login");
     exit();
 }
 
@@ -25,7 +25,7 @@ if (!$authService->isAuthenticated()) {
 $current_user_role = $authService->getCurrentUserRole();
 if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     $flashMessageService->addError('Access denied. Client account required.');
-    header("Location: /page/user/dashboard.php");
+    header("Location: /index.php?page=dashboard");
     exit();
 }
 
@@ -53,15 +53,13 @@ $stats = [
     'published' => count(array_filter($projects, fn($p) => $p['status'] === 'published')),
     'rejected' => count(array_filter($projects, fn($p) => $p['status'] === 'rejected'))
 ];
-
-include __DIR__ . '/../../../resources/views/_header.php';
 ?>
 
 <div class="container mt-4">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/page/user/dashboard.php">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
             <li class="breadcrumb-item active">Portfolio</li>
         </ol>
     </nav>
@@ -72,7 +70,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
             <i class="fas fa-briefcase text-primary me-2"></i>
             My Portfolio
         </h1>
-        <a href="/page/user/portfolio/add_project.php" class="btn btn-primary">
+        <a href="/index.php?page=portfolio_create" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i>
             Add Project
         </a>
@@ -154,7 +152,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                     Recent Projects
                 </h5>
                 <?php if (count($projects) > 5): ?>
-                    <a href="/page/user/portfolio/my_projects.php" class="btn btn-outline-primary btn-sm">
+                    <a href="/index.php?page=portfolio_manage" class="btn btn-outline-primary btn-sm">
                         View All (<?= count($projects) ?>)
                     </a>
                 <?php endif; ?>
@@ -166,7 +164,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                     <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
                     <h5 class="text-muted">No projects yet</h5>
                     <p class="text-muted">Start building your portfolio by adding your first project</p>
-                    <a href="/page/user/portfolio/add_project.php" class="btn btn-primary">
+                    <a href="/index.php?page=portfolio_create" class="btn btn-primary">
                         <i class="fas fa-plus me-1"></i>
                         Create First Project
                     </a>
@@ -224,7 +222,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="/page/user/portfolio/edit_project.php?id=<?= $project['id'] ?>"
+                                            <a href="/index.php?page=portfolio_edit&id=<?= $project['id'] ?>"
                                                class="btn btn-outline-primary" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -257,7 +255,7 @@ include __DIR__ . '/../../../resources/views/_header.php';
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>Profile Setup Required</strong><br>
                     Complete your client profile to start adding projects to your portfolio.
-                    <a href="/page/user/profile/" class="btn btn-warning btn-sm mt-2">
+                    <a href="/index.php?page=profile_edit" class="btn btn-warning btn-sm mt-2">
                         <i class="fas fa-user-edit me-1"></i>
                         Complete Profile
                     </a>
@@ -318,5 +316,3 @@ function deleteProject(projectId) {
     }
 }
 </script>
-
-<?php include __DIR__ . '/../../../resources/views/_footer.php'; ?>
