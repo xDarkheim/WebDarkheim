@@ -54,7 +54,7 @@ class NewsController
                 return $this->handleArticlesList();
             }
         } catch (Exception $e) {
-            $this->logger->error("News controller error: " . $e->getMessage());
+            $this->logger->error('News controller error: ' . $e->getMessage());
             return [
                 'error' => 'An error occurred while loading news content.',
                 'page_title' => 'News Hub'
@@ -102,7 +102,7 @@ class NewsController
             ];
 
         } catch (Exception $e) {
-            $this->logger->error("Error loading single article: " . $e->getMessage());
+            $this->logger->error('Error loading single article: ' . $e->getMessage());
             return [
                 'error' => 'Article not found.',
                 'page_title' => 'Article Not Found'
@@ -144,7 +144,7 @@ class NewsController
             ];
 
         } catch (Exception $e) {
-            $this->logger->error("Error loading articles list: " . $e->getMessage());
+            $this->logger->error('Error loading articles list: ' . $e->getMessage());
             return [
                 'error' => 'Error loading articles.',
                 'page_title' => 'News Hub'

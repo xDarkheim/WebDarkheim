@@ -79,7 +79,7 @@ class DeleteCommentController extends BaseFormController
             }
 
         } catch (Exception $e) {
-            error_log("Error deleting comment: " . $e->getMessage());
+            error_log('Error deleting comment: ' . $e->getMessage());
             $this->flashMessage->addError('An error occurred while deleting the comment.');
         }
 

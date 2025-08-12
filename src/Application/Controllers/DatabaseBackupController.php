@@ -18,6 +18,7 @@ use App\Infrastructure\Lib\MailerService;
 use Exception;
 use InvalidArgumentException;
 use PDO;
+use ReflectionException;
 use RuntimeException;
 
 class DatabaseBackupController
@@ -31,6 +32,9 @@ class DatabaseBackupController
     private int $maxBackups;
     private array $allowedTables;
 
+    /**
+     * @throws ReflectionException
+     */
     public function __construct()
     {
         $this->services = ServiceProvider::getInstance();
@@ -41,7 +45,7 @@ class DatabaseBackupController
         try {
             $this->mailer = new MailerService();
         } catch (Exception $e) {
-            error_log("DatabaseBackupController: Failed to initialize MailerService: " . $e->getMessage());
+            error_log('DatabaseBackupController: Failed to initialize MailerService: ' . $e->getMessage());
             $this->mailer = null;
         }
 
@@ -431,7 +435,7 @@ class DatabaseBackupController
      */
     private function getAllTables(): array
     {
-        $query = "SHOW TABLES";
+        $query = 'SHOW TABLES';
         $stmt = $this->database->prepare($query);
         $stmt->execute();
 
@@ -455,8 +459,8 @@ class DatabaseBackupController
     {
         $dbName = $_ENV['DB_NAME'] ?? 'database';
         $sql = "-- Database Backup\n";
-        $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
-        $sql .= "-- Database: " . $dbName . "\n\n";
+        $sql .= '-- Generated: ' . date('Y-m-d H:i:s') . "\n";
+        $sql .= '-- Database: ' . $dbName . "\n\n";
         $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
 
         foreach ($tables as $table) {
@@ -474,8 +478,8 @@ class DatabaseBackupController
     {
         $dbName = $_ENV['DB_NAME'] ?? 'database';
         $sql = "-- Database Structure Backup\n";
-        $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
-        $sql .= "-- Database: " . $dbName . "\n\n";
+        $sql .= '-- Generated: ' . date('Y-m-d H:i:s') . "\n";
+        $sql .= '-- Database: ' . $dbName . "\n\n";
 
         foreach ($tables as $table) {
             $sql .= $this->dumpTableStructure($table);

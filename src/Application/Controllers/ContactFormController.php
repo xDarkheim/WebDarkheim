@@ -12,9 +12,13 @@ declare(strict_types=1);
 namespace App\Application\Controllers;
 
 use Exception;
+use ReflectionException;
 
 class ContactFormController extends BaseFormController
 {
+    /**
+     * @throws ReflectionException
+     */
     public function handle(): void
     {
         // Check request method

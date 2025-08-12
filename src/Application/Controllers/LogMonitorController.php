@@ -18,6 +18,7 @@ use FilesystemIterator;
 use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionException;
 
 
 class LogMonitorController
@@ -31,6 +32,9 @@ class LogMonitorController
         'php_errors' => '/storage/logs/php_errors.log'
     ];
 
+    /**
+     * @throws ReflectionException
+     */
     public function __construct()
     {
         $this->services = ServiceProvider::getInstance();

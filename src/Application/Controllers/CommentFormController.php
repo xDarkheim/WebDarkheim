@@ -14,10 +14,14 @@ namespace App\Application\Controllers;
 
 use App\Domain\Models\Comments;
 use Exception;
+use ReflectionException;
 
 
 class CommentFormController extends BaseFormController
 {
+    /**
+     * @throws ReflectionException
+     */
     public function handle(): void
     {
         // Check request method
@@ -133,7 +137,7 @@ class CommentFormController extends BaseFormController
             $conn = $this->services->getDatabase()->getConnection();
 
             // Check if the article exists in the database
-            $stmt = $conn->prepare("SELECT id FROM articles WHERE id = ? LIMIT 1");
+            $stmt = $conn->prepare('SELECT id FROM articles WHERE id = ? LIMIT 1');
             $stmt->execute([$articleId]);
             return $stmt->fetch() !== false;
 

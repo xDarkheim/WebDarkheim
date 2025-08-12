@@ -13,10 +13,14 @@ declare(strict_types=1);
 namespace App\Application\Controllers;
 
 use Exception;
+use ReflectionException;
 
 
 class LoginFormController extends BaseFormController
 {
+    /**
+     * @throws ReflectionException
+     */
     public function handle(): void
     {
         // Check if the administrator is logging in during maintenance mode

@@ -40,7 +40,7 @@ class ProfileController {
 
     private function loadUser(): ?User {
         if ($this->user === null) {
-            $this->user = (new User($this->db_handler))->findByIdAsObject($this->userId);
+            $this->user = new User($this->db_handler)->findByIdAsObject($this->userId);
         }
         return $this->user;
     }
@@ -69,27 +69,27 @@ class ProfileController {
     public function handleChangePasswordRequest(string $currentPassword, string $newPassword, string $confirmPassword): void {
         $user = $this->loadUser();
         if (!$user) {
-            $this->flashService->addError("User data could not be loaded.");
+            $this->flashService->addError('User data could not be loaded.');
             return;
         }
 
         // Validation
         if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
-            $this->flashService->addError("All password fields are required.");
+            $this->flashService->addError('All password fields are required.');
             return;
         }
         if ($newPassword !== $confirmPassword) {
-            $this->flashService->addError("New password and confirmation password do not match.");
+            $this->flashService->addError('New password and confirmation password do not match.');
             return;
         }
         if (strlen($newPassword) < 8) {
-            $this->flashService->addError("New password must be at least 8 characters long.");
+            $this->flashService->addError('New password must be at least 8 characters long.');
             return;
         }
 
         // Verify the current password
         if (!password_verify($currentPassword, $user->getPasswordHash())) {
-            $this->flashService->addError("Incorrect current password.");
+            $this->flashService->addError('Incorrect current password.');
             return;
         }
 
@@ -97,13 +97,13 @@ class ProfileController {
         try {
             $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
             if ($user->updateDetails(['password_hash' => $passwordHash])) {
-                $this->flashService->addSuccess("Your password has been changed successfully.");
+                $this->flashService->addSuccess('Your password has been changed successfully.');
             } else {
-                $this->flashService->addError("Failed to update password. Please try again.");
+                $this->flashService->addError('Failed to update password. Please try again.');
             }
         } catch (Throwable $e) {
-            error_log("Password change failed: " . $e->getMessage());
-            $this->flashService->addError("An error occurred while changing your password. Please try again later.");
+            error_log('Password change failed: ' . $e->getMessage());
+            $this->flashService->addError('An error occurred while changing your password. Please try again later.');
         }
     }
 
@@ -111,7 +111,7 @@ class ProfileController {
      * Handle email change request (disabled)
      */
     public function handleEmailChangeRequest(): void {
-        $this->flashService->addError("Email change is disabled.");
+        $this->flashService->addError('Email change is disabled.');
     }
 
     /**
@@ -120,7 +120,7 @@ class ProfileController {
     public function handleUpdateDetailsRequest(array $profileData): void {
         $user = $this->loadUser();
         if (!$user) {
-            $this->flashService->addError("User data could not be loaded.");
+            $this->flashService->addError('User data could not be loaded.');
             return;
         }
 
@@ -130,7 +130,7 @@ class ProfileController {
 
         // Block email change via profile update
         if (array_key_exists('email', $profileData)) {
-            $this->flashService->addError("Changing email is disabled.");
+            $this->flashService->addError('Changing email is disabled.');
             $hasErrors = true;
         }
 
@@ -138,7 +138,7 @@ class ProfileController {
         if (array_key_exists('location', $profileData)) {
             $location = trim($profileData['location']);
             if (strlen($location) > 100) {
-                $this->flashService->addError("Location must be 100 characters or less.");
+                $this->flashService->addError('Location must be 100 characters or less.');
                 $hasErrors = true;
             } else {
                 $updateData['location'] = $location;
@@ -149,7 +149,7 @@ class ProfileController {
         if (array_key_exists('user_status', $profileData)) {
             $userStatus = trim($profileData['user_status']);
             if (strlen($userStatus) > 150) {
-                $this->flashService->addError("Status must be 150 characters or less.");
+                $this->flashService->addError('Status must be 150 characters or less.');
                 $hasErrors = true;
             } else {
                 $updateData['user_status'] = $userStatus;
@@ -160,7 +160,7 @@ class ProfileController {
         if (array_key_exists('bio', $profileData)) {
             $bio = trim($profileData['bio']);
             if (strlen($bio) > 1000) {
-                $this->flashService->addError("Bio must be 1000 characters or less.");
+                $this->flashService->addError('Bio must be 1000 characters or less.');
                 $hasErrors = true;
             } else {
                 $updateData['bio'] = $bio;
@@ -171,7 +171,7 @@ class ProfileController {
         if (array_key_exists('website_url', $profileData)) {
             $websiteUrl = trim($profileData['website_url']);
             if (!empty($websiteUrl) && !filter_var($websiteUrl, FILTER_VALIDATE_URL)) {
-                $this->flashService->addError("Please enter a valid website URL.");
+                $this->flashService->addError('Please enter a valid website URL.');
                 $hasErrors = true;
             } else {
                 $updateData['website_url'] = $websiteUrl;
@@ -189,18 +189,18 @@ class ProfileController {
                 $updateResult = $user->updateDetails($updateData);
 
                 if ($updateResult) {
-                    $this->flashService->addSuccess("Your profile has been updated successfully.");
+                    $this->flashService->addSuccess('Your profile has been updated successfully.');
                     // Clear cached user data to reflect changes
                     $this->user = null;
                 } else {
-                    $this->flashService->addError("Failed to update profile. Please try again.");
+                    $this->flashService->addError('Failed to update profile. Please try again.');
                 }
             } catch (Exception $e) {
-                error_log("Profile update error: " . $e->getMessage());
-                $this->flashService->addError("An error occurred while updating your profile. Please try again.");
+                error_log('Profile update error: ' . $e->getMessage());
+                $this->flashService->addError('An error occurred while updating your profile. Please try again.');
             }
         } else {
-            $this->flashService->addInfo("No profile fields were provided for update.");
+            $this->flashService->addInfo('No profile fields were provided for update.');
         }
     }
 

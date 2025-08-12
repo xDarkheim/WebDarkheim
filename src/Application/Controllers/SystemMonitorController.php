@@ -144,15 +144,15 @@ class SystemMonitorController
     private function getDatabaseInfo(): array
     {
         try {
-            $tablesResult = $this->database->query("SHOW TABLES");
+            $tablesResult = $this->database->query('SHOW TABLES');
             $tablesCount = $tablesResult->rowCount();
 
-            $sizeResult = $this->database->query("
+            $sizeResult = $this->database->query('
                 SELECT 
                     ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) AS db_size 
                 FROM information_schema.tables 
                 WHERE table_schema = DATABASE()
-            ");
+            ');
             
             $sizeData = $sizeResult->fetch();
             $dbSize = $sizeData ? (float)($sizeData['db_size'] ?? 0) : 0;

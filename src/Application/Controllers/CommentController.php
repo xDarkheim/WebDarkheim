@@ -17,6 +17,7 @@ use App\Domain\Interfaces\LoggerInterface;
 use App\Domain\Interfaces\AuthenticationInterface;
 use App\Domain\Models\Comments;
 use Exception;
+use ReflectionException;
 
 class CommentController
 {
@@ -25,6 +26,9 @@ class CommentController
     private DatabaseInterface $database;
     private LoggerInterface $logger;
 
+    /**
+     * @throws ReflectionException
+     */
     public function __construct()
     {
         $this->services = ServiceProvider::getInstance();
@@ -294,7 +298,7 @@ class CommentController
         try {
             $conn = $this->database->getConnection();
 
-            $sql = "UPDATE comments SET content = :content, updated_at = NOW() WHERE id = :id";
+            $sql = 'UPDATE comments SET content = :content, updated_at = NOW() WHERE id = :id';
             $stmt = $conn->prepare($sql);
 
             return $stmt->execute([

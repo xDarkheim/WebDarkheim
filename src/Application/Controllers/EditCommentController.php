@@ -17,6 +17,9 @@ use Exception;
 
 class EditCommentController extends BaseFormController
 {
+    /**
+     * @throws \ReflectionException
+     */
     public function handle(): void
     {
         // Check request method
@@ -127,11 +130,11 @@ class EditCommentController extends BaseFormController
         try {
             $conn = $this->services->getDatabase()->getConnection();
 
-            $stmt = $conn->prepare("
+            $stmt = $conn->prepare('
                 UPDATE comments 
                 SET content = :content, updated_at = NOW() 
                 WHERE id = :id
-            ");
+            ');
 
             return $stmt->execute([
                 ':content' => $newContent,

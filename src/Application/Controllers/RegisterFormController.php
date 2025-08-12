@@ -15,9 +15,13 @@ namespace App\Application\Controllers;
 
 
 use Exception;
+use ReflectionException;
 
 class RegisterFormController extends BaseFormController
 {
+    /**
+     * @throws ReflectionException
+     */
     public function handle(): void
     {
         // Check if registration is enabled
@@ -33,7 +37,7 @@ class RegisterFormController extends BaseFormController
                 return;
             }
         } catch (Exception $e) {
-            error_log("Failed to check registration status in RegisterFormController: " . $e->getMessage());
+            error_log('Failed to check registration status in RegisterFormController: ' . $e->getMessage());
             // Continue with registration if we can't check settings
         }
 

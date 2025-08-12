@@ -15,6 +15,7 @@ use App\Application\Core\ServiceProvider;
 use App\Application\Core\SessionManager;
 use App\Domain\Interfaces\FlashMessageInterface;
 use App\Domain\Interfaces\LoggerInterface;
+use ReflectionException;
 
 abstract class BaseFormController
 {
@@ -22,6 +23,9 @@ abstract class BaseFormController
     protected FlashMessageInterface $flashMessage;
     protected LoggerInterface $logger;
 
+    /**
+     * @throws ReflectionException
+     */
     public function __construct()
     {
         $this->services = ServiceProvider::getInstance();
@@ -31,6 +35,7 @@ abstract class BaseFormController
 
     /**
      * Валидация CSRF токена
+     * @throws ReflectionException
      */
     protected function validateCSRF(): bool
     {

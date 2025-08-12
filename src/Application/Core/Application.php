@@ -18,6 +18,7 @@ use App\Application\Middleware\MaintenanceMiddleware;
 use App\Application\Middleware\RateLimitMiddleware;
 use App\Infrastructure\Lib\Router;
 use App\Domain\Models\SiteSettings;
+use ReflectionException;
 use RuntimeException;
 use Throwable;
 
@@ -28,12 +29,18 @@ class Application
     private Router $router;
     private array $siteSettings = [];
 
+    /**
+     * @throws ReflectionException
+     */
     public function __construct(ServiceProvider $services)
     {
         $this->services = $services;
         $this->initializeApplication();
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function initializeApplication(): void
     {
         // Session initialization
@@ -52,6 +59,9 @@ class Application
         $this->initializeRouter();
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function initializeSession(): void
     {
         // Initialize SessionManager immediately, before any output
@@ -80,6 +90,9 @@ class Application
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function checkDatabaseConnection(): void
     {
         try {
@@ -87,18 +100,21 @@ class Application
             // Check that the connection is active by running a simple query
             $db->query('SELECT 1');
         } catch (Throwable $e) {
-            $this->services->getLogger()->critical("Database connection failed", [
+            $this->services->getLogger()->critical('Database connection failed', [
                 'error' => $e->getMessage()
             ]);
 
             if (($_ENV['APP_ENV'] ?? 'production') === 'development') {
-                throw new RuntimeException("Database connection failed. Check your database configuration.");
+                throw new RuntimeException('Database connection failed. Check your database configuration.');
             } else {
-                throw new RuntimeException("Service temporarily unavailable. Please try again later.");
+                throw new RuntimeException('Service temporarily unavailable. Please try again later.');
             }
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function loadSiteSettings(): void
     {
         try {
@@ -124,12 +140,12 @@ class Application
                     $totalSettings += count($category);
                 }
 
-                $this->services->getLogger()->info("Site settings loaded from database", [
+                $this->services->getLogger()->info('Site settings loaded from database', [
                     'total_settings' => $totalSettings
                 ]);
             }
         } catch (Throwable $e) {
-            $this->services->getLogger()->warning("Failed to load site settings", [
+            $this->services->getLogger()->warning('Failed to load site settings', [
                 'error' => $e->getMessage()
             ]);
             $this->siteSettings = [];
@@ -144,6 +160,7 @@ class Application
 
     /**
      * Initialize and run system middleware
+     * @throws ReflectionException
      */
     private function initializeMiddleware(): void
     {
@@ -255,6 +272,9 @@ class Application
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     public function run(): void
     {
         // Request logging
@@ -279,6 +299,9 @@ class Application
         $this->loadMainTemplate();
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function logRequest(): void
     {
         // Improved AJAX request check
@@ -301,6 +324,9 @@ class Application
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function processFlashMessages(): void
     {
         // Get StateManager for centralized state management
@@ -334,6 +360,9 @@ class Application
         return isset($_GET['page']) ? trim(strtolower($_GET['page'])) : 'home';
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function logAuthenticatedAccess(string $page_key): void
     {
         // Improved AJAX request check (same as in other methods)
@@ -356,6 +385,9 @@ class Application
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function dispatchRoute(string $page_key): void
     {
         try {
@@ -374,6 +406,9 @@ class Application
         }
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function prepareTemplateData(): void
     {
         $stateManager = StateManager::getInstance($this->services->getLogger());
@@ -434,6 +469,9 @@ class Application
         return 'WebEngine Darkheim';
     }
 
+    /**
+     * @throws ReflectionException
+     */
     private function loadMainTemplate(): void
     {
         global $template_data, $page_content, $navItems;
@@ -465,6 +503,7 @@ class Application
 
     /**
      * Generate navigation HTML from configuration
+     * @throws ReflectionException
      */
     private function generateNavigationHtml(): string
     {
@@ -534,6 +573,7 @@ class Application
 
     /**
      * Generate navigation items array for mobile menu compatibility
+     * @throws ReflectionException
      */
     private function generateNavigationItems(): array
     {
