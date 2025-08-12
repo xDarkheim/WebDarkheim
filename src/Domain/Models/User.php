@@ -99,6 +99,97 @@ class User {
     public function getWebsiteUrl(): ?string { return $this->website_url; }
     public function getPendingEmailAddress(): ?string { return $this->pending_email_address; }
 
+    // Role and permission methods
+    public function hasRole(string $roleName): bool {
+        if ($this->role === $roleName) {
+            return true;
+        }
+
+        // Also check in user_roles table for additional roles
+        $conn = $this->db_handler->getConnection();
+        $stmt = $conn->prepare("
+            SELECT COUNT(*) FROM user_roles ur 
+            INNER JOIN roles r ON ur.role_id = r.id 
+            WHERE ur.user_id = ? AND r.name = ?
+        ");
+        $stmt->execute([$this->id, $roleName]);
+        return $stmt->fetchColumn() > 0;
+    }
+
+    public function hasPermission(string $resource, string $action): bool {
+        // Admin always has all permissions
+        if ($this->role === 'admin') {
+            return true;
+        }
+
+        // Check through role permissions
+        $conn = $this->db_handler->getConnection();
+        $stmt = $conn->prepare("
+            SELECT COUNT(*) FROM user_roles ur
+            INNER JOIN role_permissions rp ON ur.role_id = rp.role_id
+            INNER JOIN permissions p ON rp.permission_id = p.id
+            WHERE ur.user_id = ? AND p.resource = ? AND p.action = ?
+        ");
+        $stmt->execute([$this->id, $resource, $action]);
+
+        return $stmt->fetchColumn() > 0;
+    }
+
+    public function getUserRoles(): array {
+        $conn = $this->db_handler->getConnection();
+        $stmt = $conn->prepare("
+            SELECT r.* FROM roles r
+            INNER JOIN user_roles ur ON r.id = ur.role_id
+            WHERE ur.user_id = ?
+        ");
+        $stmt->execute([$this->id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function assignRole(int $roleId): bool {
+        try {
+            $conn = $this->db_handler->getConnection();
+            $stmt = $conn->prepare("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)");
+            return $stmt->execute([$this->id, $roleId]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function removeRole(int $roleId): bool {
+        try {
+            $conn = $this->db_handler->getConnection();
+            $stmt = $conn->prepare("DELETE FROM user_roles WHERE user_id = ? AND role_id = ?");
+            return $stmt->execute([$this->id, $roleId]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function isAdmin(): bool {
+        return $this->role === 'admin';
+    }
+
+    public function isEmployee(): bool {
+        return in_array($this->role, ['admin', 'employee']);
+    }
+
+    public function isClient(): bool {
+        return in_array($this->role, ['admin', 'employee', 'client']);
+    }
+
+    public function canAccessAdminPanel(): bool {
+        return $this->hasPermission('admin', 'view') || $this->role === 'admin';
+    }
+
+    public function canManageContent(): bool {
+        return $this->hasPermission('content', 'create') || $this->isEmployee();
+    }
+
+    public function canModerateContent(): bool {
+        return $this->hasPermission('content', 'moderate') || $this->isEmployee();
+    }
+
     // Setters
     public function setUsername(string $username): void {
         $this->username = $username;

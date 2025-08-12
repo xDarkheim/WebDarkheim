@@ -79,13 +79,70 @@ return [
         'edit_user' => ['file' => 'admin/edit_user.php', 'title' => 'Edit User', 'auth' => true, 'admin' => true],
         'edit_category' => ['file' => 'admin/edit_category.php', 'title' => 'Edit Category', 'auth' => true, 'admin' => true],
 
-        // News API endpoints для Navigation v5.0
-        'api_filter_articles' => ['file' => 'api/filter_articles.php', 'is_api' => true],
+        // New Admin moderation pages
+        'moderate_projects' => ['file' => 'admin/moderate_projects.php', 'title' => 'Moderate Projects', 'auth' => true, 'admin' => true],
+        'moderate_comments' => ['file' => 'admin/moderate_comments.php', 'title' => 'Moderate Comments', 'auth' => true, 'admin' => true],
+        'client_management' => ['file' => 'admin/client_management.php', 'title' => 'Client Management', 'auth' => true, 'admin' => true],
+        'portfolio_settings' => ['file' => 'admin/portfolio_settings.php', 'title' => 'Portfolio Settings', 'auth' => true, 'admin' => true],
+
+        // Client Portfolio pages
+        'client_portfolio' => ['file' => 'user/portfolio/index.php', 'title' => 'My Portfolio', 'auth' => true],
+        'portfolio_create' => ['file' => 'user/portfolio/add_project.php', 'title' => 'Add Project', 'auth' => true],
+        'portfolio_edit' => ['file' => 'user/portfolio/edit_project.php', 'title' => 'Edit Project', 'auth' => true],
+        'portfolio_manage' => ['file' => 'user/portfolio/my_projects.php', 'title' => 'Manage Projects', 'auth' => true],
+        'project_stats' => ['file' => 'user/portfolio/project_stats.php', 'title' => 'Project Statistics', 'auth' => true],
+        'project_settings' => ['file' => 'user/portfolio/project_settings.php', 'title' => 'Portfolio Settings', 'auth' => true],
+
+        // Client Support/Tickets pages
+        'client_tickets' => ['file' => 'user/tickets/index.php', 'title' => 'Support Tickets', 'auth' => true],
+        'ticket_create' => ['file' => 'user/tickets/create.php', 'title' => 'Create Ticket', 'auth' => true],
+        'ticket_view' => ['file' => 'user/tickets/view.php', 'title' => 'View Ticket', 'auth' => true],
+
+        // Client Projects (studio projects for clients)
+        'client_projects' => ['file' => 'user/projects/index.php', 'title' => 'My Projects', 'auth' => true],
+        'project_details' => ['file' => 'user/projects/details.php', 'title' => 'Project Details', 'auth' => true],
+        'project_timeline' => ['file' => 'user/projects/timeline.php', 'title' => 'Project Timeline', 'auth' => true],
+
+        // Client Invoices and Documents
+        'client_invoices' => ['file' => 'user/invoices/index.php', 'title' => 'Invoices', 'auth' => true],
+        'invoice_download' => ['file' => 'user/invoices/download.php', 'title' => 'Download Invoice', 'auth' => true],
+        'client_documents' => ['file' => 'user/documents/index.php', 'title' => 'Documents', 'auth' => true],
+
+        // Public client profiles and community
+        'public_client_profile' => ['file' => 'public/client/profile.php', 'title' => 'Client Profile'],
+        'public_client_portfolio' => ['file' => 'public/client/portfolio.php', 'title' => 'Client Portfolio'],
+        'community_projects' => ['file' => 'public/community/projects.php', 'title' => 'Community Projects'],
+
+        // Portfolio API endpoints
+        'api_portfolio_create' => ['controller' => 'App\\Application\\Controllers\\ClientPortfolioController', 'method' => 'create'],
+        'api_portfolio_update' => ['controller' => 'App\\Application\\Controllers\\ClientPortfolioController', 'method' => 'update'],
+        'api_portfolio_delete' => ['controller' => 'App\\Application\\Controllers\\ClientPortfolioController', 'method' => 'delete'],
+        'api_portfolio_upload_images' => ['controller' => 'App\\Application\\Controllers\\ClientPortfolioController', 'method' => 'uploadImages'],
+        'api_portfolio_toggle_visibility' => ['controller' => 'App\\Application\\Controllers\\ClientPortfolioController', 'method' => 'toggleVisibility'],
+
+        // Client Profile API endpoints
+        'api_client_profile_update' => ['controller' => 'App\\Application\\Controllers\\ClientProfileController', 'method' => 'updateProfile'],
+        'api_client_skills_update' => ['controller' => 'App\\Application\\Controllers\\ClientProfileController', 'method' => 'updateSkills'],
+        'api_client_social_links' => ['controller' => 'App\\Application\\Controllers\\ClientProfileController', 'method' => 'updateSocialLinks'],
+
+        // Comment API endpoints
+        'api_comment_create' => ['controller' => 'App\\Application\\Controllers\\CommentController', 'method' => 'create'],
+        'api_comment_update' => ['controller' => 'App\\Application\\Controllers\\CommentController', 'method' => 'update'],
+        'api_comment_delete' => ['controller' => 'App\\Application\\Controllers\\CommentController', 'method' => 'delete'],
+        'api_comment_moderate' => ['controller' => 'App\\Application\\Controllers\\CommentController', 'method' => 'moderate'],
+        'api_get_comment_thread' => ['controller' => 'App\\Application\\Controllers\\CommentController', 'method' => 'getThread'],
+
+        // Notification API endpoints
+        'api_notifications_unread' => ['controller' => 'App\\Application\\Controllers\\NotificationController', 'method' => 'getUnread'],
+        'api_notifications_mark_read' => ['controller' => 'App\\Application\\Controllers\\NotificationController', 'method' => 'markRead'],
+        'api_notification_preferences' => ['controller' => 'App\\Application\\Controllers\\NotificationController', 'method' => 'updatePreferences'],
 
         // System pages
         '404' => ['file' => 'system/404.php', 'title' => 'Page Not Found'],
         'error' => ['file' => 'system/error.php', 'title' => 'Error'],
-        'maintenance' => ['file' => 'system/maintenance.php', 'title' => 'Under Maintenance'],
+        'maintenance' => ['file' => 'system/maintenance.php', 'title' => 'Maintenance Mode'],
+
+
     ],
 
     // Middleware configuration
@@ -95,70 +152,107 @@ return [
             // Add global middleware classes here if needed
         ],
 
-        // Route-specific middleware
-        'dashboard' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'account_dashboard' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'profile_edit' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'account_edit_profile' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'profile_settings' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'account_settings' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'articles_manage' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'manage_articles' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'article_create' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'create_article' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'article_edit' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'edit_article' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'article_delete' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'delete_article' => ['App\\Infrastructure\\Middleware\\AuthMiddleware'],
-        'admin_manage_users' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'manage_users' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'admin_edit_user' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'edit_user' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'admin_manage_categories' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'manage_categories' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'admin_edit_category' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'edit_category' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'admin_site_settings' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'site_settings' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'backup_monitor' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
-        'system_monitor' => ['App\\Infrastructure\\Middleware\\AdminMiddleware'],
+        // Client area routes - require client or higher role
+        'dashboard' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'account_dashboard' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'profile_edit' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'account_edit_profile' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'profile_settings' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'account_settings' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+
+        // Content management - require employee or admin (remove for regular clients)
+        'articles_manage' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'manage_articles' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'article_create' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'create_article' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'article_edit' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'edit_article' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'article_delete' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'delete_article' => ['App\\Application\\Middleware\\RoleMiddleware'],
+
+        // Admin-only routes
+        'manage_users' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'edit_user' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'manage_categories' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'edit_category' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'site_settings' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'backup_monitor' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+        'system_monitor' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+
+        // New client portfolio routes
+        'client_portfolio' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'portfolio_create' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'portfolio_edit' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'portfolio_manage' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'project_stats' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+
+        // Client support routes
+        'client_tickets' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'ticket_create' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'ticket_view' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+
+        // Project moderation (employee/admin only)
+        'moderate_projects' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'moderate_comments' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'client_management' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+
+        // Additional client area routes
+        'client_projects' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'project_details' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'project_timeline' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'project_settings' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'client_invoices' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'invoice_download' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'client_documents' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+
+        // Admin moderation pages
+        'portfolio_settings' => ['App\\Application\\Middleware\\AdminOnlyMiddleware'],
+
+        // API endpoints middleware
+        'api_portfolio_create' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_portfolio_update' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_portfolio_delete' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_portfolio_upload_images' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_portfolio_toggle_visibility' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_client_profile_update' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_client_skills_update' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_client_social_links' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_comment_create' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_comment_update' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_comment_delete' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_comment_moderate' => ['App\\Application\\Middleware\\RoleMiddleware'],
+        'api_get_comment_thread' => [], // Public access
+        'api_notifications_unread' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_notifications_mark_read' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
+        'api_notification_preferences' => ['App\\Application\\Middleware\\ClientAreaMiddleware'],
     ],
 
-    // Redirect configuration
-    'redirects' => [
-        // Legacy redirects for old page names
-        'index' => 'home',
-        'main' => 'home',
-        'homepage' => 'home',
+    // Role requirements for RoleMiddleware routes
+    'role_requirements' => [
+        'articles_manage' => ['admin', 'employee'],
+        'manage_articles' => ['admin', 'employee'],
+        'article_create' => ['admin', 'employee'],
+        'create_article' => ['admin', 'employee'],
+        'article_edit' => ['admin', 'employee'],
+        'edit_article' => ['admin', 'employee'],
+        'article_delete' => ['admin', 'employee'],
+        'delete_article' => ['admin', 'employee'],
+        'moderate_projects' => ['admin', 'employee'],
+        'moderate_comments' => ['admin', 'employee'],
+        'api_comment_moderate' => ['admin', 'employee'],
+    ],
 
-        // Account page redirects to the new structure
-        'account' => 'dashboard',
-        'profile' => 'profile_edit',
-        'my_profile' => 'profile_edit',
-        'my_articles' => 'articles_manage',
-        'my_account' => 'dashboard',
+    // Permission requirements for specific actions
+    'permission_requirements' => [
+        'articles_manage' => ['resource' => 'content', 'action' => 'edit'],
+        'article_create' => ['resource' => 'content', 'action' => 'create'],
+        'article_edit' => ['resource' => 'content', 'action' => 'edit'],
+        'article_delete' => ['resource' => 'content', 'action' => 'delete'],
+        'moderate_projects' => ['resource' => 'portfolio', 'action' => 'moderate'],
+        'moderate_comments' => ['resource' => 'comments', 'action' => 'moderate'],
+        'manage_users' => ['resource' => 'users', 'action' => 'edit'],
+        'site_settings' => ['resource' => 'settings', 'action' => 'edit'],
+        'backup_monitor' => ['resource' => 'backups', 'action' => 'view'],
+    ],
 
-        // Admin redirects
-        'admin' => [
-            'target' => 'admin_manage_users',
-            'status' => 301 // Permanent redirect
-        ],
-        'admin_panel' => [
-            'target' => 'admin_manage_users',
-            'status' => 301
-        ],
-
-        // External redirect example
-        'old_blog' => [
-            'target' => 'https://blog.darkheim.net',
-            'status' => 301,
-            'external' => true
-        ],
-
-        // Temporary redirect example
-        'maintenance' => [
-            'target' => 'home',
-            'status' => 302
-        ]
-    ]
-];
+    ];
