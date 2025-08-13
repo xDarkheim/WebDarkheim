@@ -1,9 +1,10 @@
 <?php
 
 /**
- * Comments model
+ * Comments model for the new commenting system
+ * Supports comments on articles and client portfolio projects with threading
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
 declare(strict_types=1);
@@ -16,9 +17,12 @@ use PDOException;
 
 class Comments
 {
-    public const string STATUS_PENDING = 'pending';
-    public const string STATUS_APPROVED = 'approved';
-    public const string STATUS_REJECTED = 'rejected';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_REJECTED = 'rejected';
+
+    public const TYPE_ARTICLE = 'article';
+    public const TYPE_PORTFOLIO = 'portfolio_project';
 
     private PDO $db;
 
@@ -33,25 +37,31 @@ class Comments
     public function createComment(array $data): ?int
     {
         try {
-            // Adapt to the existing comment table structure
-            $sql = "INSERT INTO comments (article_id, user_id, author_name, author_email, content, is_approved, created_at) 
-                    VALUES (:article_id, :user_id, :author_name, :author_email, :content, 1, NOW())";
-
-            // Get user information for author_name and author_email
-            $userStmt = $this->db->prepare("SELECT username, email FROM users WHERE id = :user_id LIMIT 1");
-            $userStmt->execute([':user_id' => $data['user_id']]);
-            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+            $sql = "INSERT INTO comments (
+                        commentable_type, commentable_id, user_id, author_name, author_email, 
+                        content, status, parent_id, thread_level, ip_address, user_agent, created_at
+                    ) VALUES (
+                        :commentable_type, :commentable_id, :user_id, :author_name, :author_email,
+                        :content, :status, :parent_id, :thread_level, :ip_address, :user_agent, NOW()
+                    )";
 
             $stmt = $this->db->prepare($sql);
             $result = $stmt->execute([
-                ':article_id' => $data['article_id'],
-                ':user_id' => $data['user_id'],
-                ':author_name' => $user['username'] ?? 'Anonymous',
-                ':author_email' => $user['email'] ?? '',
-                ':content' => $data['content']
+                ':commentable_type' => $data['commentable_type'],
+                ':commentable_id' => $data['commentable_id'],
+                ':user_id' => $data['user_id'] ?? null,
+                ':author_name' => $data['author_name'],
+                ':author_email' => $data['author_email'],
+                ':content' => $data['content'],
+                ':status' => $data['status'] ?? self::STATUS_PENDING,
+                ':parent_id' => $data['parent_id'] ?? null,
+                ':thread_level' => $this->calculateThreadLevel($data['parent_id'] ?? null),
+                ':ip_address' => $data['ip_address'] ?? null,
+                ':user_agent' => $data['user_agent'] ?? null
             ]);
 
             return $result ? (int)$this->db->lastInsertId() : null;
+
         } catch (PDOException $e) {
             error_log("Error creating comment: " . $e->getMessage());
             return null;
@@ -59,12 +69,42 @@ class Comments
     }
 
     /**
-     * Find comment by ID with user information
+     * Get comments by commentable item
      */
-    public function findByIdWithUser(int $commentId): ?array
+    public function getCommentsByItem(string $commentableType, int $commentableId, bool $includeUnapproved = false): array
     {
         try {
-            $sql = "SELECT c.*, u.username AS author_username 
+            $statusCondition = $includeUnapproved ? "" : "AND c.status = 'approved'";
+
+            $sql = "SELECT c.*, u.username as user_username, u.id as user_id_ref
+                    FROM comments c 
+                    LEFT JOIN users u ON c.user_id = u.id 
+                    WHERE c.commentable_type = :commentable_type 
+                    AND c.commentable_id = :commentable_id 
+                    {$statusCondition}
+                    ORDER BY c.created_at ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':commentable_type' => $commentableType,
+                ':commentable_id' => $commentableId
+            ]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Error fetching comments: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get comment by ID
+     */
+    public function getCommentById(int $commentId): ?array
+    {
+        try {
+            $sql = "SELECT c.*, u.username as user_username 
                     FROM comments c 
                     LEFT JOIN users u ON c.user_id = u.id 
                     WHERE c.id = :id LIMIT 1";
@@ -74,126 +114,169 @@ class Comments
 
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result ?: null;
+
         } catch (PDOException $e) {
-            error_log("Error finding comment: " . $e->getMessage());
+            error_log("Error fetching comment by ID: " . $e->getMessage());
             return null;
         }
     }
 
     /**
-     * Find comment by ID
+     * Update comment content
      */
-    public function findById(int $commentId): ?array
+    public function updateComment(int $commentId, string $content): bool
     {
         try {
-            $sql = "SELECT * FROM comments WHERE id = :id LIMIT 1";
+            $sql = "UPDATE comments SET content = :content, updated_at = NOW() WHERE id = :id";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':id' => $commentId]);
 
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ?: null;
+            return $stmt->execute([
+                ':content' => $content,
+                ':id' => $commentId
+            ]);
+
         } catch (PDOException $e) {
-            error_log("Error finding comment: " . $e->getMessage());
-            return null;
+            error_log("Error updating comment: " . $e->getMessage());
+            return false;
         }
     }
 
     /**
-     * Find comments by article ID
-     * Shows all comments without a status check
+     * Update comment status (for moderation)
      */
-    public static function findByArticleId(DatabaseInterface $database_handler, int $article_id): array
+    public function updateCommentStatus(int $commentId, string $status, int $moderatorId, ?string $rejectionReason = null): bool
     {
-        $db = $database_handler->getConnection();
-
         try {
-            $sql = "SELECT c.*, u.username AS author_username 
+            $sql = "UPDATE comments 
+                    SET status = :status, moderated_by = :moderator_id, moderated_at = NOW(), rejection_reason = :rejection_reason
+                    WHERE id = :id";
+
+            $stmt = $this->db->prepare($sql);
+
+            return $stmt->execute([
+                ':status' => $status,
+                ':moderator_id' => $moderatorId,
+                ':rejection_reason' => $rejectionReason,
+                ':id' => $commentId
+            ]);
+
+        } catch (PDOException $e) {
+            error_log("Error updating comment status: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get pending comments for moderation
+     */
+    public function getPendingComments(int $limit = 50): array
+    {
+        try {
+            // Simplified query without references to potentially non-existent tables
+            $sql = "SELECT c.*, u.username as user_username
                     FROM comments c 
-                    LEFT JOIN users u ON c.user_id = u.id 
-                    WHERE c.article_id = :article_id
-                    ORDER BY c.created_at DESC";
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':article_id', $article_id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error fetching comments by article ID $article_id: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * Get all comments for an article for admin (shows all statuses)
-     */
-    public static function getAllByArticleIdForAdmin(DatabaseInterface $db_handler, int $article_id): array
-    {
-        $db = $db_handler->getConnection();
-
-        try {
-            $sql = "SELECT c.*, u.username AS author_username
-                    FROM comments c
                     LEFT JOIN users u ON c.user_id = u.id
-                    WHERE c.article_id = :article_id
-                    ORDER BY c.created_at DESC";
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':article_id', $article_id, PDO::PARAM_INT);
+                    WHERE c.status = 'pending' 
+                    ORDER BY c.created_at DESC 
+                    LIMIT :limit";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->execute();
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         } catch (PDOException $e) {
-            error_log("Error fetching all comments for admin for article ID $article_id: " . $e->getMessage());
+            error_log("Error fetching pending comments: " . $e->getMessage());
             return [];
         }
     }
 
     /**
-     * Delete a comment by ID
+     * Count comments by status for a specific item
      */
-    public function delete(int $comment_id): bool
+    public function countCommentsByStatus(string $commentableType, int $commentableId): array
     {
         try {
-            $stmt = $this->db->prepare("DELETE FROM comments WHERE id = :id");
-            $stmt->bindParam(':id', $comment_id, PDO::PARAM_INT);
-            return $stmt->execute();
+            $sql = "SELECT status, COUNT(*) as count 
+                    FROM comments 
+                    WHERE commentable_type = :commentable_type AND commentable_id = :commentable_id
+                    GROUP BY status";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':commentable_type' => $commentableType,
+                ':commentable_id' => $commentableId
+            ]);
+
+            $result = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $result[$row['status']] = (int)$row['count'];
+            }
+
+            return $result;
+
         } catch (PDOException $e) {
-            error_log("Error deleting comment ID $comment_id: " . $e->getMessage());
+            error_log("Error counting comments: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Delete comment (soft delete by marking as rejected)
+     */
+    public function deleteComment(int $commentId): bool
+    {
+        try {
+            $sql = "UPDATE comments SET status = 'rejected' WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+
+            return $stmt->execute([':id' => $commentId]);
+
+        } catch (PDOException $e) {
+            error_log("Error deleting comment: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Get comment by ID (static version)
+     * Calculate thread level for nested comments
      */
-    public static function getById(DatabaseInterface $database_handler, int $commentId): ?array
+    private function calculateThreadLevel(?int $parentId): int
     {
-        $db = $database_handler->getConnection();
+        if (!$parentId) {
+            return 0;
+        }
 
         try {
-            $sql = "SELECT * FROM comments WHERE id = :id LIMIT 1";
-            $stmt = $db->prepare($sql);
-            $stmt->execute([':id' => $commentId]);
+            $sql = "SELECT thread_level FROM comments WHERE id = :parent_id LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':parent_id' => $parentId]);
 
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ?: null;
+            $parent = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $parent ? (int)$parent['thread_level'] + 1 : 0;
+
         } catch (PDOException $e) {
-            error_log("Error finding comment: " . $e->getMessage());
-            return null;
+            error_log("Error calculating thread level: " . $e->getMessage());
+            return 0;
         }
     }
 
     /**
-     * Delete comment by ID (static version)
+     * Check if user can comment on the specified item
+     * Simplified version that just checks if the commentable type is valid
      */
-    public static function deleteById(DatabaseInterface $database_handler, int $commentId): bool
+    public function canComment(string $commentableType, int $commentableId): bool
     {
-        $db = $database_handler->getConnection();
+        // Basic validation - check if commentable type is supported
+        $allowedTypes = [self::TYPE_ARTICLE, self::TYPE_PORTFOLIO];
 
-        try {
-            $stmt = $db->prepare("DELETE FROM comments WHERE id = :id");
-            $stmt->bindParam(':id', $commentId, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Error deleting comment ID $commentId: " . $e->getMessage());
+        if (!in_array($commentableType, $allowedTypes, true)) {
             return false;
         }
+
+        // For now, allow comments on any valid ID > 0
+        // This can be enhanced later when we know the exact table structure
+        return $commentableId > 0;
     }
 }

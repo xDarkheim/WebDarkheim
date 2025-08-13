@@ -196,46 +196,113 @@ if (!$userData) {
     ];
 }
 
-// Smart quick actions based on user state (using new statistics)
+// Smart quick actions based on user state and role
 $smart_suggestions = [];
 
-if ($user_stats['drafts'] > 0) {
-    $smart_suggestions[] = [
-        'type' => 'draft',
-        'text' => 'Finish Your Drafts',
-        'description' => "You have {$user_stats['drafts']} draft(s) waiting to be published",
-        'url' => '/index.php?page=manage_articles&filter=drafts',
-        'priority' => 'high'
-    ];
-}
+// Role-based dashboard sections
+$roleDashboardData = [];
 
-if ($user_stats['articles']['count'] === 0) {
-    $smart_suggestions[] = [
-        'type' => 'first_post',
-        'text' => 'Write Your First Article',
-        'description' => 'Share your thoughts and get started with content creation',
-        'url' => '/index.php?page=create_article',
-        'priority' => 'high'
-    ];
-} elseif ($user_stats['articles']['recent'] === 0) {
-    $smart_suggestions[] = [
-        'type' => 'new_post',
-        'text' => 'Time for a New Article',
-        'description' => 'You haven\'t posted in a while. Share something new!',
-        'url' => '/index.php?page=create_article',
-        'priority' => 'medium'
-    ];
-}
+// Get role-specific data and suggestions based on user role
+switch ($current_user_role) {
+    case 'admin':
+    case 'employee':
+        // Administrative features
+        try {
+            // Get moderation statistics
+            $moderationService = new \App\Application\Services\ModerationService($database_handler, $serviceProvider->getLogger());
+            $moderationStats = $moderationService->getDashboardStatistics();
+            $recentProjects = $moderationService->getRecentProjectsForModeration(3);
 
-// Use data from the common function for suggestions
-if ($accountProgress['percentage'] < 100) {
-    $smart_suggestions[] = [
-        'type' => 'profile',
-        'text' => 'Complete Your Profile',
-        'description' => "You're {$accountProgress['percentage']}% done. Complete your profile to connect with readers",
-        'url' => '/index.php?page=profile_edit',
-        'priority' => 'low'
-    ];
+            // Get recent comments for moderation
+            $commentsModel = new \App\Domain\Models\Comments($database_handler);
+            $recentComments = $commentsModel->getPendingComments(3);
+
+            $roleDashboardData = [
+                'moderation_stats' => $moderationStats,
+                'recent_projects' => $recentProjects,
+                'recent_comments' => $recentComments,
+                'is_moderator' => true
+            ];
+
+            // Add admin-specific suggestions
+            if ($moderationStats['pending_projects'] > 0) {
+                $smart_suggestions[] = [
+                    'type' => 'moderation',
+                    'title' => 'Projects Awaiting Moderation',
+                    'description' => $moderationStats['pending_projects'] . ' project(s) need your review',
+                    'action' => 'Review Projects',
+                    'url' => '/index.php?page=admin_moderation_projects&status=pending',
+                    'icon' => 'fas fa-tasks',
+                    'priority' => 'high'
+                ];
+            }
+
+            if ($moderationStats['pending_comments'] > 0) {
+                $smart_suggestions[] = [
+                    'type' => 'moderation',
+                    'title' => 'Comments Awaiting Moderation',
+                    'description' => $moderationStats['pending_comments'] . ' comment(s) need your review',
+                    'action' => 'Review Comments',
+                    'url' => '/index.php?page=admin_moderation_comments&status=pending',
+                    'icon' => 'fas fa-comments',
+                    'priority' => 'medium'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Dashboard moderation data error: " . $e->getMessage());
+            $roleDashboardData = ['is_moderator' => true, 'error' => 'Failed to load moderation data'];
+        }
+        break;
+
+    case 'client':
+        // Client-specific features
+        try {
+            // Get client portfolio data
+            $clientPortfolioController = new \App\Application\Controllers\ClientPortfolioController(
+                $database_handler, $serviceProvider->getAuth(), $serviceProvider->getFlashMessage(), $serviceProvider->getLogger()
+            );
+
+            $portfolioStats = $clientPortfolioController->getDashboardStats();
+
+            $roleDashboardData = [
+                'portfolio_stats' => $portfolioStats,
+                'is_client' => true
+            ];
+
+            // Add client-specific suggestions
+            if (($portfolioStats['total_projects'] ?? 0) === 0) {
+                $smart_suggestions[] = [
+                    'type' => 'portfolio',
+                    'title' => 'Create Your First Project',
+                    'description' => 'Start building your portfolio by adding your first project',
+                    'action' => 'Add Project',
+                    'url' => '/index.php?page=portfolio_create',
+                    'icon' => 'fas fa-plus-circle',
+                    'priority' => 'high'
+                ];
+            }
+
+            if (($portfolioStats['pending_projects'] ?? 0) > 0) {
+                $smart_suggestions[] = [
+                    'type' => 'portfolio',
+                    'title' => 'Projects Under Review',
+                    'description' => $portfolioStats['pending_projects'] . ' project(s) are being reviewed',
+                    'action' => 'View Projects',
+                    'url' => '/index.php?page=portfolio_manage',
+                    'icon' => 'fas fa-clock',
+                    'priority' => 'medium'
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Dashboard client data error: " . $e->getMessage());
+            $roleDashboardData = ['is_client' => true, 'error' => 'Failed to load portfolio data'];
+        }
+        break;
+
+    default:
+        // Guest or other roles
+        $roleDashboardData = ['is_guest' => true];
+        break;
 }
 
 // Primary actions - reorganized
@@ -449,13 +516,112 @@ function time_ago($datetime): string
             <div class="suggestion-card suggestion-<?php echo $suggestion['priority']; ?>">
                 <a href="<?php echo htmlspecialchars($suggestion['url']); ?>">
                     <div class="suggestion-content">
-                        <span class="suggestion-text"><?php echo htmlspecialchars($suggestion['text']); ?></span>
-                        <span class="suggestion-description"><?php echo htmlspecialchars($suggestion['description']); ?></span>
+                        <div class="suggestion-icon">
+                            <i class="<?php echo $suggestion['icon']; ?>"></i>
+                        </div>
+                        <div class="suggestion-text-content">
+                            <span class="suggestion-title"><?php echo htmlspecialchars($suggestion['title']); ?></span>
+                            <span class="suggestion-description"><?php echo htmlspecialchars($suggestion['description']); ?></span>
+                        </div>
                     </div>
-                    <i class="fas fa-arrow-right suggestion-arrow"></i>
+                    <div class="suggestion-action">
+                        <span class="suggestion-action-text"><?php echo htmlspecialchars($suggestion['action']); ?></span>
+                        <i class="fas fa-arrow-right suggestion-arrow"></i>
+                    </div>
                 </a>
             </div>
             <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <!-- Role-specific Dashboard Sections -->
+    <?php if (!empty($roleDashboardData['is_moderator']) && !isset($roleDashboardData['error'])) : ?>
+    <section class="dashboard-moderation-section">
+        <h2 class="dashboard-section-title">
+            <i class="fas fa-gavel"></i> Moderation Dashboard
+            <a href="/index.php?page=admin_moderation_dashboard" class="section-link">View Full Dashboard</a>
+        </h2>
+
+        <div class="moderation-stats-grid">
+            <div class="moderation-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['pending_projects'] ?? 0; ?></div>
+                <div class="stat-label">Pending Projects</div>
+                <a href="/index.php?page=admin_moderation_projects&status=pending" class="stat-action">Review</a>
+            </div>
+            <div class="moderation-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['pending_comments'] ?? 0; ?></div>
+                <div class="stat-label">Pending Comments</div>
+                <a href="/index.php?page=admin_moderation_comments&status=pending" class="stat-action">Review</a>
+            </div>
+            <div class="moderation-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['moderated_today'] ?? 0; ?></div>
+                <div class="stat-label">Moderated Today</div>
+            </div>
+            <div class="moderation-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['total_published'] ?? 0; ?></div>
+                <div class="stat-label">Total Published</div>
+            </div>
+        </div>
+
+        <?php if (!empty($roleDashboardData['recent_projects'])) : ?>
+        <div class="recent-moderation-items">
+            <h4>Recent Projects for Review</h4>
+            <div class="moderation-items-list">
+                <?php foreach ($roleDashboardData['recent_projects'] as $project) : ?>
+                <div class="moderation-item">
+                    <div class="moderation-item-content">
+                        <span class="moderation-item-title"><?php echo htmlspecialchars($project['title']); ?></span>
+                        <span class="moderation-item-meta">
+                            by <?php echo htmlspecialchars($project['client_username'] ?? 'Unknown'); ?> •
+                            <?php echo time_ago($project['created_at']); ?>
+                        </span>
+                    </div>
+                    <a href="/index.php?page=admin_moderation_project_details&id=<?php echo $project['id']; ?>"
+                       class="moderation-item-action">Review</a>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </section>
+    <?php elseif (!empty($roleDashboardData['is_client']) && !isset($roleDashboardData['error'])) : ?>
+    <section class="dashboard-portfolio-section">
+        <h2 class="dashboard-section-title">
+            <i class="fas fa-briefcase"></i> My Portfolio
+            <a href="/index.php?page=client_portfolio" class="section-link">Manage Portfolio</a>
+        </h2>
+
+        <div class="portfolio-stats-grid">
+            <div class="portfolio-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['total_projects'] ?? 0; ?></div>
+                <div class="stat-label">Total Projects</div>
+                <a href="/index.php?page=portfolio_manage" class="stat-action">Manage</a>
+            </div>
+            <div class="portfolio-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['pending_projects'] ?? 0; ?></div>
+                <div class="stat-label">Under Review</div>
+            </div>
+            <div class="portfolio-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['published_projects'] ?? 0; ?></div>
+                <div class="stat-label">Published</div>
+            </div>
+            <div class="portfolio-stat-card">
+                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['total_views'] ?? 0; ?></div>
+                <div class="stat-label">Total Views</div>
+            </div>
+        </div>
+
+        <div class="portfolio-quick-actions">
+            <a href="/index.php?page=portfolio_create" class="portfolio-action-primary">
+                <i class="fas fa-plus"></i> Add New Project
+            </a>
+            <a href="/index.php?page=portfolio_manage" class="portfolio-action-secondary">
+                <i class="fas fa-edit"></i> Manage Projects
+            </a>
+            <a href="/index.php?page=project_stats" class="portfolio-action-secondary">
+                <i class="fas fa-chart-line"></i> View Statistics
+            </a>
         </div>
     </section>
     <?php endif; ?>

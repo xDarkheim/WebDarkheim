@@ -184,8 +184,9 @@ class NewsService
     public function getArticleComments(int $articleId): array
     {
         try {
-            // Simplified - show all comments for all users
-            return Comments::findByArticleId($this->database, $articleId);
+            // Use the correct method from Comments model
+            $commentsModel = new \App\Domain\Models\Comments($this->database);
+            return $commentsModel->getCommentsByItem('article', $articleId, false);
         } catch (Exception $e) {
             throw new Exception("Error loading comments: " . $e->getMessage());
         }

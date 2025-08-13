@@ -91,6 +91,12 @@ return [
         'client_management' => ['file' => 'admin/client_management.php', 'title' => 'Client Management', 'auth' => true, 'admin' => true],
         'portfolio_settings' => ['file' => 'admin/portfolio_settings.php', 'title' => 'Portfolio Settings', 'auth' => true, 'admin' => true],
 
+        // PHASE 7: New moderation interface pages
+        'admin_moderation_dashboard' => ['file' => 'admin/moderation/dashboard.php', 'title' => 'Moderation Dashboard', 'auth' => true, 'admin' => true],
+        'admin_moderation_projects' => ['file' => 'admin/moderation/projects.php', 'title' => 'Projects Moderation', 'auth' => true, 'admin' => true],
+        'admin_moderation_project_details' => ['file' => 'admin/moderation/project_details.php', 'title' => 'Project Details', 'auth' => true, 'admin' => true],
+        'admin_moderation_comments' => ['file' => 'admin/moderation/comments.php', 'title' => 'Comments Moderation', 'auth' => true, 'admin' => true],
+
         // Client Portfolio pages
         'client_portfolio' => ['file' => 'user/portfolio/index.php', 'title' => 'My Portfolio', 'auth' => true],
         'portfolio_create' => ['file' => 'user/portfolio/add_project.php', 'title' => 'Add Project', 'auth' => true],
