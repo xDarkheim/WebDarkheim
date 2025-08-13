@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Project Documents - Client Portal
+ * Project Documents - Client Portal - DARK ADMIN THEME
  * Access and download project-related documents
  *
  * @author GitHub Copilot
@@ -65,126 +65,106 @@ $pageTitle = 'Project Documents - Client Portal';
 
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .document-card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .document-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .file-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-        .file-size {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-    </style>
-</head>
-<body class="bg-light">
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<div class="container py-4">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item active">Project Documents</li>
-        </ol>
-    </nav>
+<!-- Navigation -->
+<nav class="admin-nav">
+    <div class="admin-nav-container">
+        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
+            <i class="fas fa-folder"></i>
+            Document Portal
+        </a>
+        <div class="admin-nav-links">
+            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <button class="admin-nav-link" onclick="refreshDocuments()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</nav>
 
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-folder text-primary"></i>
-                        Project Documents
-                    </h1>
-                    <p class="text-muted">Access project specifications, designs, and deliverables</p>
+<!-- Header -->
+<header class="admin-header">
+    <div class="admin-header-container">
+        <div class="admin-header-content">
+            <div class="admin-header-title">
+                <i class="admin-header-icon fas fa-folder"></i>
+                <div class="admin-header-text">
+                    <h1>Project Documents</h1>
+                    <p>Access project specifications, designs, and deliverables</p>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-outline-secondary" onclick="refreshDocuments()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
+            </div>
+            <div class="admin-header-actions">
+                <button class="admin-btn admin-btn-secondary" onclick="refreshDocuments()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
         </div>
     </div>
+</header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
+<div class="admin-layout-main">
+    <div class="admin-content">
+        <!-- Flash Messages -->
+        <?php if (!empty($flashMessages)): ?>
+            <div class="admin-flash-messages">
                 <?php foreach ($flashMessages as $type => $messages): ?>
                     <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                            <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
+                            <div><?= htmlspecialchars($message['text']) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <!-- Documents by Project -->
-    <?php if (empty($projectDocuments)): ?>
-        <div class="card document-card text-center py-5">
-            <div class="card-body">
-                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No documents available</h5>
-                <p class="text-muted">Project documents will appear here as they become available.</p>
-            </div>
-        </div>
-    <?php else: ?>
-        <?php foreach ($projectDocuments as $projectName => $docs): ?>
-            <div class="card document-card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-project-diagram text-primary"></i>
-                        <?= htmlspecialchars($projectName) ?>
-                    </h5>
+        <!-- Documents by Project -->
+        <?php if (empty($projectDocuments)): ?>
+            <div class="admin-card" style="text-align: center; padding: 3rem 0;">
+                <div class="admin-card-body">
+                    <i class="fas fa-folder-open fa-3x" style="color: var(--admin-text-muted); margin-bottom: 1rem;"></i>
+                    <h5 style="color: var(--admin-text-muted); margin-bottom: 0.5rem;">No documents available</h5>
+                    <p style="color: var(--admin-text-muted);">Project documents will appear here as they become available.</p>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <?php foreach ($docs as $doc): ?>
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="file-icon text-<?= getFileIconColor($doc['document_type']) ?>">
+            </div>
+        <?php else: ?>
+            <?php foreach ($projectDocuments as $projectName => $docs): ?>
+                <div class="admin-card" style="margin-bottom: 1.5rem;">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-project-diagram"></i>
+                            <?= htmlspecialchars($projectName) ?>
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-3">
+                            <?php foreach ($docs as $doc): ?>
+                                <div class="admin-card" style="height: 100%; margin-bottom: 0;">
+                                    <div class="admin-card-body" style="text-align: center; padding: 1.5rem;">
+                                        <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--admin-<?= getFileIconColor($doc['document_type']) ?>);">
                                             <i class="<?= getFileIcon($doc['document_type']) ?>"></i>
                                         </div>
-                                        <h6 class="card-title"><?= htmlspecialchars($doc['document_name']) ?></h6>
-                                        <p class="card-text">
-                                            <span class="badge bg-light text-dark">
+                                        <h6 style="margin-bottom: 0.75rem; color: var(--admin-text-primary);"><?= htmlspecialchars($doc['document_name']) ?></h6>
+                                        <p style="margin-bottom: 1rem;">
+                                            <span class="admin-badge admin-badge-gray">
                                                 <?= ucfirst(str_replace('_', ' ', $doc['document_type'])) ?>
                                             </span>
                                         </p>
-                                        <div class="file-size mb-3">
+                                        <div style="font-size: 0.8rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
                                             <?= formatFileSize($doc['file_size']) ?>
                                         </div>
-                                        <div class="d-grid">
+                                        <div style="display: grid;">
                                             <a href="/index.php?page=user_documents_download&id=<?= $doc['id'] ?>"
-                                               class="btn btn-primary btn-sm" target="_blank">
+                                               class="admin-btn admin-btn-sm admin-btn-primary" target="_blank">
                                                 <i class="fas fa-download"></i> Download
                                             </a>
                                         </div>
                                     </div>
-                                    <div class="card-footer bg-transparent text-center">
-                                        <small class="text-muted">
+                                    <div class="admin-card-footer" style="text-align: center; background: var(--admin-bg-secondary);">
+                                        <small style="color: var(--admin-text-muted);">
                                             Uploaded <?= date('M j, Y', strtotime($doc['uploaded_at'])) ?>
                                             <?php if ($doc['uploaded_by_name']): ?>
                                                 by <?= htmlspecialchars($doc['uploaded_by_name']) ?>
@@ -192,50 +172,102 @@ $pageTitle = 'Project Documents - Client Portal';
                                         </small>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <!-- Document Types Legend -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Document Types
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: grid; gap: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-file-alt" style="color: var(--admin-primary);"></i>
+                        <div>
+                            <strong>Specification</strong>
+                            <br><small style="color: var(--admin-text-muted);">Project requirements and scope</small>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-paint-brush" style="color: var(--admin-success);"></i>
+                        <div>
+                            <strong>Design</strong>
+                            <br><small style="color: var(--admin-text-muted);">UI/UX designs and mockups</small>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-file-contract" style="color: var(--admin-warning);"></i>
+                        <div>
+                            <strong>Contract</strong>
+                            <br><small style="color: var(--admin-text-muted);">Legal agreements and terms</small>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-chart-line" style="color: var(--admin-info);"></i>
+                        <div>
+                            <strong>Report</strong>
+                            <br><small style="color: var(--admin-text-muted);">Progress reports and analytics</small>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-file" style="color: var(--admin-text-secondary);"></i>
+                        <div>
+                            <strong>Other</strong>
+                            <br><small style="color: var(--admin-text-muted);">Additional project materials</small>
+                        </div>
                     </div>
                 </div>
             </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-    <!-- Document Types Legend -->
-    <div class="card document-card mt-4">
-        <div class="card-header">
-            <h6 class="card-title mb-0">
-                <i class="fas fa-info-circle text-info"></i>
-                Document Types
-            </h6>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-file-alt text-primary"></i> <strong>Specification</strong> - Project requirements and scope</li>
-                        <li><i class="fas fa-paint-brush text-success"></i> <strong>Design</strong> - UI/UX designs and mockups</li>
-                        <li><i class="fas fa-file-contract text-warning"></i> <strong>Contract</strong> - Legal agreements and terms</li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-chart-line text-info"></i> <strong>Report</strong> - Progress reports and analytics</li>
-                        <li><i class="fas fa-file text-secondary"></i> <strong>Other</strong> - Additional project materials</li>
-                    </ul>
+
+        <!-- Help Section -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-question-circle"></i>
+                    Need Help?
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <p style="font-size: 0.875rem; margin-bottom: 1rem;">
+                    Can't find a document or having issues downloading?
+                </p>
+                <div style="display: grid; gap: 0.5rem;">
+                    <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-sm admin-btn-primary">
+                        <i class="fas fa-ticket-alt"></i> Create Support Ticket
+                    </a>
+                    <a href="mailto:support@darkheim.net" class="admin-btn admin-btn-sm admin-btn-secondary">
+                        <i class="fas fa-envelope"></i> Contact Support
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/admin.js"></script>
 <script>
 function refreshDocuments() {
     // Show loading state
-    const refreshBtn = document.querySelector('[onclick="refreshDocuments()"]');
-    const originalText = refreshBtn.innerHTML;
-    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
-    refreshBtn.disabled = true;
+    const refreshBtns = document.querySelectorAll('[onclick="refreshDocuments()"]');
+    const originalTexts = [];
+
+    refreshBtns.forEach((btn, index) => {
+        originalTexts[index] = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        btn.disabled = true;
+    });
 
     // Reload page after short delay
     setTimeout(() => {
@@ -243,9 +275,6 @@ function refreshDocuments() {
     }, 1000);
 }
 </script>
-
-</body>
-</html>
 
 <?php
 function getFileIcon($type): string
@@ -266,7 +295,7 @@ function getFileIconColor($type): string
         'design' => 'success',
         'contract' => 'warning',
         'report' => 'info',
-        default => 'secondary'
+        default => 'text-secondary'
     };
 }
 

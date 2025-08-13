@@ -1,18 +1,21 @@
 <?php
 /**
- * Portfolio Settings
+ * Portfolio Settings - PHASE 8 - DARK ADMIN THEME
+ * Modern portfolio settings interface
  */
 
-require_once __DIR__ . '/../../../includes/bootstrap.php';
+declare(strict_types=1);
 
-// Use global services from the architecture
-global $database_handler, $flashMessageService, $container;
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-use App\Application\Core\ServiceProvider;
+global $serviceProvider, $flashMessageService, $database_handler;
 
-// Get ServiceProvider instance
-$serviceProvider = ServiceProvider::getInstance($container);
-$authService = $serviceProvider->getAuth();
+try {
+    $authService = $serviceProvider->getAuth();
+} catch (Exception $e) {
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
+}
 
 // Check authentication
 if (!$authService->isAuthenticated()) {
@@ -33,7 +36,7 @@ $pageTitle = 'Portfolio Settings';
 $current_user_id = $authService->getCurrentUserId();
 
 // Get client profile
-$stmt = $database_handler->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
 $stmt->execute([$current_user_id]);
 $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -58,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $show_project_stats = isset($_POST['show_project_stats']) ? 1 : 0;
 
                 // Update basic visibility settings
-                $stmt = $database_handler->prepare("
+                $stmt = $database_handler->getConnection()->prepare("
                     UPDATE client_profiles 
                     SET portfolio_visibility = ?, allow_contact = ? 
                     WHERE user_id = ?
@@ -80,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'reset_settings':
                 // Reset settings to defaults
-                $stmt = $database_handler->prepare("
+                $stmt = $database_handler->getConnection()->prepare("
                     UPDATE client_profiles 
                     SET portfolio_visibility = 'public', allow_contact = 1
                     WHERE user_id = ?
@@ -92,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Refresh profile data
-        $stmt = $database_handler->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
+        $stmt = $database_handler->getConnection()->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
         $stmt->execute([$current_user_id]);
         $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -104,93 +107,169 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get project stats for preview
 $projectStats = ['total' => 0, 'total_views' => 0];
 if ($profileData) {
-    $stmt = $database_handler->prepare("SELECT COUNT(*) as total FROM client_portfolio WHERE client_profile_id = ?");
+    $stmt = $database_handler->getConnection()->prepare("SELECT COUNT(*) as total FROM client_portfolio WHERE client_profile_id = ?");
     $stmt->execute([$profileData['id']]);
     $projectStats['total'] = $stmt->fetchColumn();
 }
+
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-<div class="container mt-4">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
-            <li class="breadcrumb-item active">Settings</li>
-        </ol>
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <style>
+        .settings-nav {
+            position: sticky;
+            top: 2rem;
+        }
+        .settings-nav .admin-card-body {
+            padding: 0;
+        }
+        .settings-nav-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--admin-text-secondary);
+            text-decoration: none;
+            border-bottom: 1px solid var(--admin-border);
+            transition: var(--admin-transition);
+        }
+        .settings-nav-item:last-child {
+            border-bottom: none;
+        }
+        .settings-nav-item:hover,
+        .settings-nav-item.active {
+            background: var(--admin-bg-secondary);
+            color: var(--admin-text-primary);
+        }
+        .settings-nav-item i {
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-briefcase"></i>
+                Portfolio Management
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </div>
+        </div>
     </nav>
 
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-cog text-primary me-2"></i>
-            Portfolio Settings
-        </h1>
-        <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i>
-            Back to Portfolio
-        </a>
-    </div>
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-cog"></i>
+                    <div class="admin-header-text">
+                        <h1>Portfolio Settings</h1>
+                        <p>Manage your portfolio visibility and preferences</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Portfolio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    <?php if ($success): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            Settings saved successfully!
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages) || $success || $error): ?>
+        <div class="admin-flash-messages">
+            <?php if ($success): ?>
+                <div class="admin-flash-message admin-flash-success">
+                    <i class="fas fa-check-circle"></i>
+                    <div>Settings saved successfully!</div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($error): ?>
+                <div class="admin-flash-message admin-flash-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div><?= htmlspecialchars($error) ?></div>
+                </div>
+            <?php endif; ?>
+
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <?php if ($error): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <?= htmlspecialchars($error) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
-
-    <div class="row">
+    <div class="admin-layout-main">
         <!-- Settings Navigation -->
-        <div class="col-lg-3 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-list me-2"></i>
+        <div class="admin-sidebar">
+            <div class="admin-card settings-nav">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-list"></i>
                         Settings Sections
                     </h5>
                 </div>
-                <div class="list-group list-group-flush">
-                    <a href="#visibility" class="list-group-item list-group-item-action active" data-bs-toggle="tab">
-                        <i class="fas fa-eye me-2"></i>
-                        Visibility
+                <div class="admin-card-body">
+                    <a href="#visibility" class="settings-nav-item active" data-tab="visibility">
+                        <i class="fas fa-eye"></i>
+                        Visibility & Privacy
                     </a>
-                    <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="tab">
-                        <i class="fas fa-bell me-2"></i>
+                    <a href="#notifications" class="settings-nav-item" data-tab="notifications">
+                        <i class="fas fa-bell"></i>
                         Notifications
                     </a>
-                    <a href="#advanced" class="list-group-item list-group-item-action" data-bs-toggle="tab">
-                        <i class="fas fa-cogs me-2"></i>
-                        Advanced
+                    <a href="#advanced" class="settings-nav-item" data-tab="advanced">
+                        <i class="fas fa-cogs"></i>
+                        Advanced Settings
                     </a>
                 </div>
             </div>
 
             <!-- Quick Stats -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Quick Stats
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                        <i class="fas fa-chart-line"></i>
+                        Portfolio Stats
                     </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="text-primary h4 mb-0"><?= $projectStats['total'] ?></div>
-                            <small class="text-muted">Projects</small>
+                <div class="admin-card-body">
+                    <div class="admin-stats-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary); margin-bottom: 0.25rem;">
+                                <?= $projectStats['total'] ?>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Projects</small>
                         </div>
-                        <div class="col-6">
-                            <div class="text-success h4 mb-0"><?= number_format($projectStats['total_views']) ?></div>
-                            <small class="text-muted">Views</small>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-success); margin-bottom: 0.25rem;">
+                                <?= number_format($projectStats['total_views']) ?>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Views</small>
                         </div>
                     </div>
                 </div>
@@ -198,184 +277,239 @@ if ($profileData) {
         </div>
 
         <!-- Main Content -->
-        <div class="col-lg-9">
-            <div class="tab-content">
-                <!-- Visibility Settings -->
-                <div class="tab-pane fade show active" id="visibility">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-eye me-2"></i>
-                                Portfolio Visibility Settings
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="POST" action="">
-                                <input type="hidden" name="action" value="visibility">
+        <div class="admin-content">
+            <!-- Visibility Settings -->
+            <div class="tab-content active" id="visibility-tab">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-eye"></i>
+                            Portfolio Visibility Settings
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <form method="POST" action="">
+                            <input type="hidden" name="action" value="visibility">
 
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">Portfolio Visibility</label>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="portfolio_visibility"
-                                                       id="visibility_public" value="public"
-                                                       <?= $profileData['portfolio_visibility'] === 'public' ? 'checked' : '' ?>>
-                                                <label class="form-check-label" for="visibility_public">
-                                                    <strong>Public</strong>
-                                                    <small class="text-muted d-block">Portfolio visible to all visitors</small>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Portfolio Visibility</label>
+                                <div class="admin-grid admin-grid-cols-2">
+                                    <div>
+                                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border: 2px solid var(--admin-border); border-radius: var(--admin-border-radius); margin-bottom: 1rem; <?= $profileData['portfolio_visibility'] === 'public' ? 'border-color: var(--admin-primary); background: var(--admin-primary-bg);' : '' ?>">
+                                            <input type="radio" name="portfolio_visibility" id="visibility_public" value="public"
+                                                   style="margin-top: 0.125rem;"
+                                                   <?= $profileData['portfolio_visibility'] === 'public' ? 'checked' : '' ?>>
+                                            <div style="flex: 1;">
+                                                <label for="visibility_public" style="margin: 0; color: var(--admin-text-primary); font-weight: 600; cursor: pointer;">
+                                                    <i class="fas fa-globe" style="color: var(--admin-success); margin-right: 0.5rem;"></i>
+                                                    Public Portfolio
                                                 </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="portfolio_visibility"
-                                                       id="visibility_private" value="private"
-                                                       <?= $profileData['portfolio_visibility'] === 'private' ? 'checked' : '' ?>>
-                                                <label class="form-check-label" for="visibility_private">
-                                                    <strong>Private</strong>
-                                                    <small class="text-muted d-block">Portfolio visible only to you</small>
-                                                </label>
+                                                <div style="color: var(--admin-text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                                                    Portfolio visible to all visitors and search engines
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="allow_contact"
-                                               id="allow_contact" <?= $profileData['allow_contact'] ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="allow_contact">
-                                            <strong>Allow Contact</strong>
-                                            <small class="text-muted d-block">Visitors can contact you through contact form</small>
-                                        </label>
+                                    <div>
+                                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border: 2px solid var(--admin-border); border-radius: var(--admin-border-radius); <?= $profileData['portfolio_visibility'] === 'private' ? 'border-color: var(--admin-primary); background: var(--admin-primary-bg);' : '' ?>">
+                                            <input type="radio" name="portfolio_visibility" id="visibility_private" value="private"
+                                                   style="margin-top: 0.125rem;"
+                                                   <?= $profileData['portfolio_visibility'] === 'private' ? 'checked' : '' ?>>
+                                            <div style="flex: 1;">
+                                                <label for="visibility_private" style="margin: 0; color: var(--admin-text-primary); font-weight: 600; cursor: pointer;">
+                                                    <i class="fas fa-lock" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>
+                                                    Private Portfolio
+                                                </label>
+                                                <div style="color: var(--admin-text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                                                    Portfolio visible only to you
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="show_project_stats"
-                                               id="show_project_stats" checked>
-                                        <label class="form-check-label" for="show_project_stats">
-                                            <strong>Show Project Statistics</strong>
-                                            <small class="text-muted d-block">Display view counts on projects</small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i>
-                                    Save Visibility Settings
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notification Settings -->
-                <div class="tab-pane fade" id="notifications">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-bell me-2"></i>
-                                Notification Settings
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="POST" action="">
-                                <input type="hidden" name="action" value="notifications">
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="email_notifications"
-                                               id="email_notifications" checked>
-                                        <label class="form-check-label" for="email_notifications">
-                                            <strong>Email Notifications</strong>
-                                            <small class="text-muted d-block">Receive notifications via email</small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="moderation_notifications"
-                                               id="moderation_notifications" checked>
-                                        <label class="form-check-label" for="moderation_notifications">
-                                            <strong>Moderation Notifications</strong>
-                                            <small class="text-muted d-block">Notifications about project approval/rejection</small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="view_notifications"
-                                               id="view_notifications">
-                                        <label class="form-check-label" for="view_notifications">
-                                            <strong>View Milestone Notifications</strong>
-                                            <small class="text-muted d-block">Notifications when reaching view milestones (100, 500, 1000+)</small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="comment_notifications"
-                                               id="comment_notifications" checked>
-                                        <label class="form-check-label" for="comment_notifications">
-                                            <strong>Comment Notifications</strong>
-                                            <small class="text-muted d-block">Notifications about new project comments</small>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i>
-                                    Save Notification Settings
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Advanced Settings -->
-                <div class="tab-pane fade" id="advanced">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-cogs me-2"></i>
-                                Advanced Settings
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <!-- Public portfolio link -->
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Your Portfolio Link</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control"
-                                           value="<?= (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] ?>/index.php?page=public_client_portfolio&client_id=<?= $profileData['id'] ?>"
-                                           readonly>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this.previousElementSibling.value)">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                                <div class="form-text">Share this link to showcase your portfolio</div>
                             </div>
 
-                            <!-- Reset settings -->
-                            <div class="mb-4">
-                                <label class="form-label fw-bold text-danger">Reset Settings</label>
-                                <div>
-                                    <form method="POST" action="" class="d-inline"
-                                          onsubmit="return confirm('Are you sure you want to reset all portfolio settings to defaults?')">
-                                        <input type="hidden" name="action" value="reset_settings">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                                            <i class="fas fa-undo me-1"></i>
-                                            Reset to Default Settings
-                                        </button>
-                                    </form>
-                                    <div class="form-text">Restore all portfolio settings to their default values</div>
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="allow_contact" id="allow_contact"
+                                           style="margin-top: 0.25rem;"
+                                           <?= $profileData['allow_contact'] ? 'checked' : '' ?>>
+                                    <div style="flex: 1;">
+                                        <label for="allow_contact" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-envelope" style="color: var(--admin-info); margin-right: 0.5rem;"></i>
+                                            Allow Contact Messages
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Visitors can contact you through a contact form on your portfolio
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="show_project_stats" id="show_project_stats"
+                                           style="margin-top: 0.25rem;" checked>
+                                    <div style="flex: 1;">
+                                        <label for="show_project_stats" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-chart-bar" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>
+                                            Show Project Statistics
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Display view counts and engagement metrics on your projects
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="admin-btn admin-btn-primary">
+                                <i class="fas fa-save"></i> Save Visibility Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="tab-content" id="notifications-tab">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-bell"></i>
+                            Notification Preferences
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <form method="POST" action="">
+                            <input type="hidden" name="action" value="notifications">
+
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="email_notifications" id="email_notifications"
+                                           style="margin-top: 0.25rem;" checked>
+                                    <div style="flex: 1;">
+                                        <label for="email_notifications" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-envelope" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>
+                                            Email Notifications
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Receive notifications about portfolio activity via email
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="moderation_notifications" id="moderation_notifications"
+                                           style="margin-top: 0.25rem;" checked>
+                                    <div style="flex: 1;">
+                                        <label for="moderation_notifications" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-shield-alt" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>
+                                            Moderation Notifications
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Get notified when your projects are approved or rejected by moderators
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="view_notifications" id="view_notifications"
+                                           style="margin-top: 0.25rem;">
+                                    <div style="flex: 1;">
+                                        <label for="view_notifications" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-eye" style="color: var(--admin-success); margin-right: 0.5rem;"></i>
+                                            View Milestone Notifications
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Get notified when your projects reach view milestones (100, 500, 1000+ views)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <input type="checkbox" name="comment_notifications" id="comment_notifications"
+                                           style="margin-top: 0.25rem;" checked>
+                                    <div style="flex: 1;">
+                                        <label for="comment_notifications" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                            <i class="fas fa-comments" style="color: var(--admin-info); margin-right: 0.5rem;"></i>
+                                            Comment Notifications
+                                        </label>
+                                        <div class="admin-help-text" style="margin-top: 0.25rem;">
+                                            Get notified when someone comments on your projects
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="admin-btn admin-btn-primary">
+                                <i class="fas fa-save"></i> Save Notification Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="tab-content" id="advanced-tab">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-cogs"></i>
+                            Advanced Settings
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <!-- Public portfolio link -->
+                        <div class="admin-form-group">
+                            <label class="admin-label">Your Portfolio Link</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" class="admin-input" id="portfolio-link"
+                                       value="<?= (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] ?>/index.php?page=public_client_portfolio&client_id=<?= $profileData['id'] ?>"
+                                       readonly style="flex: 1;">
+                                <button type="button" class="admin-btn admin-btn-secondary" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <div class="admin-help-text">Share this link to showcase your portfolio publicly</div>
+                        </div>
+
+                        <!-- Export portfolio -->
+                        <div class="admin-form-group">
+                            <label class="admin-label">Export Portfolio Data</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                    <i class="fas fa-download"></i> Export as JSON
+                                </button>
+                                <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                    <i class="fas fa-file-pdf"></i> Export as PDF
+                                </button>
+                            </div>
+                            <div class="admin-help-text">Download your portfolio data for backup or migration</div>
+                        </div>
+
+                        <!-- Reset settings -->
+                        <div class="admin-form-group">
+                            <label class="admin-label" style="color: var(--admin-error);">Danger Zone</label>
+                            <div style="border: 2px solid var(--admin-error); border-radius: var(--admin-border-radius); padding: 1rem; background: var(--admin-error-bg);">
+                                <div style="margin-bottom: 1rem;">
+                                    <strong style="color: var(--admin-error-light);">Reset All Settings</strong>
+                                    <div style="color: var(--admin-error-light); font-size: 0.875rem; margin-top: 0.25rem;">
+                                        This will restore all portfolio settings to their default values
+                                    </div>
+                                </div>
+                                <form method="POST" action="" style="display: inline;"
+                                      onsubmit="return confirm('Are you sure you want to reset all portfolio settings to defaults? This action cannot be undone.')">
+                                    <input type="hidden" name="action" value="reset_settings">
+                                    <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">
+                                        <i class="fas fa-undo"></i> Reset to Default Settings
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -385,55 +519,62 @@ if ($profileData) {
     </div>
 </div>
 
+<script src="/public/assets/js/admin.js"></script>
 <script>
-// Copy to clipboard function
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        // Show success notification
-        const toast = document.createElement('div');
-        toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
-        toast.setAttribute('role', 'alert');
-        toast.style.zIndex = '9999';
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-check me-2"></i>
-                    Link copied to clipboard!
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-        document.body.appendChild(toast);
-
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
-
-        // Remove element after hiding
-        toast.addEventListener('hidden.bs.toast', function() {
-            document.body.removeChild(toast);
-        });
-    });
-}
-
-// Initialize tabs
+// Tab switching
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle tab switching
-    const tabLinks = document.querySelectorAll('[data-bs-toggle="tab"]');
+    const tabLinks = document.querySelectorAll('.settings-nav-item');
+    const tabContents = document.querySelectorAll('.tab-content');
+
     tabLinks.forEach(function(tabLink) {
-        tabLink.addEventListener('shown.bs.tab', function(e) {
-            // Update active state in navigation
+        tabLink.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const targetTab = this.getAttribute('data-tab');
+
+            // Update active nav item
             tabLinks.forEach(link => link.classList.remove('active'));
-            e.target.classList.add('active');
+            this.classList.add('active');
+
+            // Show target tab content
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(targetTab + '-tab').classList.add('active');
+
+            // Update URL hash
+            window.location.hash = targetTab;
         });
     });
 
     // Auto-switch to tab from URL hash
     if (window.location.hash) {
-        const targetTab = document.querySelector(`[href="${window.location.hash}"]`);
-        if (targetTab) {
-            const tab = new bootstrap.Tab(targetTab);
-            tab.show();
+        const hashTab = window.location.hash.substring(1);
+        const targetLink = document.querySelector(`[data-tab="${hashTab}"]`);
+        if (targetLink) {
+            targetLink.click();
         }
     }
+
+    // Auto-dismiss flash messages
+    setTimeout(function() {
+        document.querySelectorAll('.admin-flash-message').forEach(function(msg) {
+            msg.style.opacity = '0';
+            setTimeout(() => msg.remove(), 300);
+        });
+    }, 5000);
 });
+
+// Copy to clipboard function
+function copyToClipboard() {
+    const portfolioLink = document.getElementById('portfolio-link');
+    portfolioLink.select();
+    portfolioLink.setSelectionRange(0, 99999); // For mobile devices
+
+    try {
+        document.execCommand('copy');
+        window.adminPanel.showFlashMessage('success', 'Portfolio link copied to clipboard!');
+    } catch (err) {
+        window.adminPanel.showFlashMessage('error', 'Failed to copy link. Please select and copy manually.');
+    }
+}
 </script>
+

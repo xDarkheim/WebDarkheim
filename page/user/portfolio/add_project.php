@@ -1,18 +1,21 @@
 <?php
 /**
- * Add New Portfolio Project
+ * Add New Portfolio Project - PHASE 8 - DARK ADMIN THEME
+ * Modern project creation interface
  */
 
-require_once __DIR__ . '/../../../includes/bootstrap.php';
+declare(strict_types=1);
 
-// Use global services from the architecture
-global $database_handler, $flashMessageService, $container;
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-use App\Application\Core\ServiceProvider;
+global $serviceProvider, $flashMessageService, $database_handler;
 
-// Get ServiceProvider instance
-$serviceProvider = ServiceProvider::getInstance($container);
-$authService = $serviceProvider->getAuth();
+try {
+    $authService = $serviceProvider->getAuth();
+} catch (Exception $e) {
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
+}
 
 // Check authentication
 if (!$authService->isAuthenticated()) {
@@ -33,7 +36,7 @@ $pageTitle = 'Add New Project';
 $current_user_id = $authService->getCurrentUserId();
 
 // Get client profile
-$stmt = $database_handler->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
 $stmt->execute([$current_user_id]);
 $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -44,185 +47,288 @@ if (!$profileData) {
 }
 
 // Get project categories (simplified - using existing categories table)
-$stmt = $database_handler->prepare("SELECT * FROM categories WHERE status = 'active' ORDER BY name");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM categories WHERE status = 'active' ORDER BY name");
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
 
-<div class="container mt-4">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
-            <li class="breadcrumb-item active">Add Project</li>
-        </ol>
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
+?>
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <style>
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .image-preview-item {
+            position: relative;
+            border-radius: var(--admin-border-radius);
+            overflow: hidden;
+            border: 1px solid var(--admin-border);
+            background: var(--admin-bg-secondary);
+        }
+        .image-preview-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        .image-preview-info {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--admin-text-muted);
+            background: var(--admin-bg-tertiary);
+        }
+        .tech-input-container {
+            position: relative;
+        }
+        .tech-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--admin-bg-card);
+            border: 1px solid var(--admin-border);
+            border-top: none;
+            border-radius: 0 0 var(--admin-border-radius) var(--admin-border-radius);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+        .tech-suggestion {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--admin-text-primary);
+            font-size: 0.875rem;
+        }
+        .tech-suggestion:hover {
+            background: var(--admin-bg-secondary);
+        }
+    </style>
+
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-briefcase"></i>
+                Portfolio Management
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </div>
+        </div>
     </nav>
 
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-plus text-primary me-2"></i>
-            Add New Project
-        </h1>
-        <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i>
-            Back to Portfolio
-        </a>
-    </div>
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-plus"></i>
+                    <div class="admin-header-text">
+                        <h1>Add New Project</h1>
+                        <p>Create a new project for your portfolio</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Portfolio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 
     <form id="projectForm" enctype="multipart/form-data">
-        <div class="row">
-            <div class="col-lg-8">
+        <div class="admin-layout-main">
+            <div class="admin-content">
                 <!-- Project Information -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-info-circle"></i>
                             Project Information
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Project Title <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="title" name="title" required
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="title" class="admin-label admin-label-required">Project Title</label>
+                            <input type="text" class="admin-input" id="title" name="title" required
                                    placeholder="Enter your project title">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="4"
+                        <div class="admin-form-group">
+                            <label for="description" class="admin-label">Description</label>
+                            <textarea class="admin-input admin-textarea" id="description" name="description" rows="4"
                                       placeholder="Describe your project, its goals, and key features"></textarea>
+                            <div class="admin-help-text">Provide a detailed description of what your project does and its main features</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="technologies" class="form-label">Technologies Used</label>
-                            <input type="text" class="form-control" id="technologies" name="technologies"
-                                   placeholder="e.g., React, Node.js, MongoDB, AWS">
-                            <small class="form-text text-muted">
-                                List the main technologies, frameworks, and tools used in this project
-                            </small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="project_url" class="form-label">Live Project URL</label>
-                                    <input type="url" class="form-control" id="project_url" name="project_url"
-                                           placeholder="https://your-project.com">
-                                </div>
+                        <div class="admin-form-group">
+                            <label for="technologies" class="admin-label">Technologies Used</label>
+                            <div class="tech-input-container">
+                                <input type="text" class="admin-input" id="technologies" name="technologies"
+                                       placeholder="e.g., React, Node.js, MongoDB, AWS">
+                                <div class="tech-suggestions" id="techSuggestions"></div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="github_url" class="form-label">GitHub Repository</label>
-                                    <input type="url" class="form-control" id="github_url" name="github_url"
-                                           placeholder="https://github.com/username/repo">
-                                </div>
+                            <div class="admin-help-text">List the main technologies, frameworks, and tools used in this project</div>
+                        </div>
+
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="project_url" class="admin-label">Live Project URL</label>
+                                <input type="url" class="admin-input" id="project_url" name="project_url"
+                                       placeholder="https://your-project.com">
+                                <div class="admin-help-text">Link to your live project or demo</div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label for="github_url" class="admin-label">GitHub Repository</label>
+                                <input type="url" class="admin-input" id="github_url" name="github_url"
+                                       placeholder="https://github.com/username/repo">
+                                <div class="admin-help-text">Link to your source code repository</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Project Images -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-images me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-images"></i>
                             Project Images
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="images" class="form-label">Upload Images</label>
-                            <input type="file" class="form-control" id="images" name="images[]"
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="images" class="admin-label">Upload Images</label>
+                            <input type="file" class="admin-input" id="images" name="images[]"
                                    multiple accept="image/*">
-                            <small class="form-text text-muted">
-                                Upload screenshots, mockups, or other visual representations of your project.
-                                Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per file.
-                            </small>
+                            <div class="admin-help-text">
+                                Upload screenshots, mockups, or other visual representations of your project.<br>
+                                <strong>Supported formats:</strong> JPEG, PNG, GIF, WebP | <strong>Max size:</strong> 5MB per file
+                            </div>
                         </div>
 
-                        <div id="imagePreview" class="row mt-3"></div>
+                        <div id="imagePreview" class="image-preview-grid"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-4">
+            <!-- Sidebar -->
+            <div class="admin-sidebar">
                 <!-- Project Settings -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-cog me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-cog"></i>
                             Project Settings
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="visibility" class="form-label">Visibility</label>
-                            <select class="form-select" id="visibility" name="visibility">
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="visibility" class="admin-label">Visibility</label>
+                            <select class="admin-input admin-select" id="visibility" name="visibility">
                                 <option value="private">Private - Only visible to you</option>
                                 <option value="public">Public - Visible to everyone (after approval)</option>
                             </select>
+                            <div class="admin-help-text">Control who can see this project</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Categories</label>
-                            <?php foreach ($categories as $category): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="categories[]" value="<?= $category['id'] ?>"
-                                           id="category_<?= $category['id'] ?>">
-                                    <label class="form-check-label" for="category_<?= $category['id'] ?>">
-                                        <?= htmlspecialchars($category['name']) ?>
-                                    </label>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php if (!empty($categories)): ?>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Categories</label>
+                                <?php foreach ($categories as $category): ?>
+                                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                                        <input type="checkbox"
+                                               name="categories[]"
+                                               value="<?= $category['id'] ?>"
+                                               id="category_<?= $category['id'] ?>"
+                                               style="margin-right: 0.5rem;">
+                                        <label for="category_<?= $category['id'] ?>" style="margin: 0; color: var(--admin-text-primary); font-size: 0.875rem;">
+                                            <?= htmlspecialchars($category['name']) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                                <div class="admin-help-text">Select relevant categories for better discovery</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Quick Help -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-lightbulb me-2"></i>
+                <!-- Tips for Success -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                            <i class="fas fa-lightbulb"></i>
                             Tips for Success
                         </h6>
                     </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled small">
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success me-1"></i>
-                                Use clear, descriptive project titles
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success me-1"></i>
-                                Add multiple high-quality screenshots
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success me-1"></i>
-                                Include live demo and source code links
-                            </li>
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success me-1"></i>
-                                Select relevant categories for better discovery
-                            </li>
-                        </ul>
+                    <div class="admin-card-body">
+                        <div style="font-size: 0.75rem; line-height: 1.4;">
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <i class="fas fa-check-circle" style="color: var(--admin-success); margin-right: 0.5rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+                                <span style="color: var(--admin-text-muted);">Use clear, descriptive project titles</span>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <i class="fas fa-check-circle" style="color: var(--admin-success); margin-right: 0.5rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+                                <span style="color: var(--admin-text-muted);">Add multiple high-quality screenshots</span>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <i class="fas fa-check-circle" style="color: var(--admin-success); margin-right: 0.5rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+                                <span style="color: var(--admin-text-muted);">Include live demo and source code links</span>
+                            </div>
+                            <div style="display: flex; align-items: flex-start;">
+                                <i class="fas fa-check-circle" style="color: var(--admin-success); margin-right: 0.5rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+                                <span style="color: var(--admin-text-muted);">Select relevant categories for better discovery</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-secondary" data-action="draft">
-                                <i class="fas fa-save me-1"></i> Save as Draft
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                            <i class="fas fa-bolt"></i>
+                            Actions
+                        </h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm" data-action="draft">
+                                <i class="fas fa-save"></i> Save as Draft
                             </button>
-                            <button type="submit" class="btn btn-success" data-action="submit">
-                                <i class="fas fa-paper-plane me-1"></i> Save & Submit for Review
+                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" data-action="submit">
+                                <i class="fas fa-paper-plane"></i> Save & Submit for Review
                             </button>
-                            <a href="/index.php?page=client_portfolio" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-1"></i> Cancel
+                            <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-times"></i> Cancel
                             </a>
                         </div>
                     </div>
@@ -232,11 +338,24 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </form>
 </div>
 
+<script src="/public/assets/js/admin.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('projectForm');
     const imageInput = document.getElementById('images');
     const imagePreview = document.getElementById('imagePreview');
+    const techInput = document.getElementById('technologies');
+    const techSuggestions = document.getElementById('techSuggestions');
+
+    // Popular technologies for suggestions
+    const popularTech = [
+        'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Express.js',
+        'PHP', 'Laravel', 'Symfony', 'Python', 'Django', 'Flask', 'Java', 'Spring',
+        'C#', '.NET', 'Ruby', 'Rails', 'Go', 'Rust', 'MySQL', 'PostgreSQL', 'MongoDB',
+        'Redis', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'Google Cloud', 'Firebase',
+        'Git', 'GitHub', 'GitLab', 'Jenkins', 'Webpack', 'Vite', 'Sass', 'Tailwind CSS',
+        'Bootstrap', 'Material-UI', 'Ant Design', 'GraphQL', 'REST API', 'WebSocket'
+    ];
 
     // Handle image preview
     imageInput.addEventListener('change', function() {
@@ -247,20 +366,69 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-4 mb-3';
-                    col.innerHTML = `
-                        <div class="card">
-                            <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="${file.name}">
-                            <div class="card-body p-2">
-                                <small class="text-muted">${file.name}</small>
-                            </div>
+                    const item = document.createElement('div');
+                    item.className = 'image-preview-item';
+                    item.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <div class="image-preview-info">
+                            <div style="font-weight: 500; color: var(--admin-text-primary); margin-bottom: 0.25rem;">${file.name}</div>
+                            <div>${(file.size / 1024 / 1024).toFixed(2)} MB</div>
                         </div>
                     `;
-                    imagePreview.appendChild(col);
+                    imagePreview.appendChild(item);
                 };
                 reader.readAsDataURL(file);
             }
+        }
+    });
+
+    // Technology suggestions
+    techInput.addEventListener('input', function() {
+        const value = this.value;
+        const lastComma = value.lastIndexOf(',');
+        const currentTech = lastComma >= 0 ? value.substring(lastComma + 1).trim() : value.trim();
+
+        if (currentTech.length >= 2) {
+            const matches = popularTech.filter(tech =>
+                tech.toLowerCase().includes(currentTech.toLowerCase()) &&
+                !value.toLowerCase().includes(tech.toLowerCase())
+            ).slice(0, 5);
+
+            if (matches.length > 0) {
+                techSuggestions.innerHTML = matches.map(tech =>
+                    `<div class="tech-suggestion" data-tech="${tech}">${tech}</div>`
+                ).join('');
+                techSuggestions.style.display = 'block';
+            } else {
+                techSuggestions.style.display = 'none';
+            }
+        } else {
+            techSuggestions.style.display = 'none';
+        }
+    });
+
+    // Handle technology suggestion clicks
+    techSuggestions.addEventListener('click', function(e) {
+        if (e.target.classList.contains('tech-suggestion')) {
+            const tech = e.target.dataset.tech;
+            const value = techInput.value;
+            const lastComma = value.lastIndexOf(',');
+
+            if (lastComma >= 0) {
+                techInput.value = value.substring(0, lastComma + 1) + ' ' + tech + ', ';
+            } else {
+                techInput.value = tech + ', ';
+            }
+
+            techSuggestions.style.display = 'none';
+            techInput.focus();
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!techInput.contains(e.target) && !techSuggestions.contains(e.target)) {
+            techSuggestions.style.display = 'none';
         }
     });
 
@@ -281,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show loading state
         const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         submitButton.disabled = true;
 
         fetch('/page/api/portfolio/create_project.php', {
@@ -291,25 +459,46 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(action === 'submit' ?
+                window.adminPanel.showFlashMessage('success',
+                    action === 'submit' ?
                     'Project created and submitted for review!' :
                     'Project saved as draft!'
                 );
-                window.location.href = '/index.php?page=client_portfolio';
+                setTimeout(() => {
+                    window.location.href = '/index.php?page=user_portfolio';
+                }, 1500);
             } else {
-                alert('Error: ' + (data.error || 'Unknown error occurred'));
+                window.adminPanel.showFlashMessage('error', 'Error: ' + (data.error || 'Unknown error occurred'));
                 // Restore button state
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
             }
         })
         .catch(error => {
-            alert('An error occurred while creating the project.');
+            window.adminPanel.showFlashMessage('error', 'An error occurred while creating the project.');
             console.error('Error:', error);
             // Restore button state
             submitButton.innerHTML = originalText;
             submitButton.disabled = false;
         });
+    });
+
+    // Character counter for description
+    const descTextarea = document.getElementById('description');
+    descTextarea.addEventListener('input', function() {
+        const maxLength = 1000;
+        const currentLength = this.value.length;
+
+        let counter = document.getElementById('desc-counter');
+        if (!counter) {
+            counter = document.createElement('small');
+            counter.id = 'desc-counter';
+            counter.style.cssText = 'color: var(--admin-text-muted); float: right; margin-top: 0.25rem;';
+            this.parentNode.appendChild(counter);
+        }
+
+        counter.textContent = `${currentLength} / ${maxLength} characters`;
+        counter.style.color = currentLength > maxLength * 0.9 ? 'var(--admin-warning)' : 'var(--admin-text-muted)';
     });
 });
 </script>

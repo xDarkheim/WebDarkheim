@@ -359,7 +359,6 @@ function calculateProfileCompletion($database, $userId): array
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Navigation -->
@@ -619,7 +618,7 @@ function calculateProfileCompletion($database, $userId): array
                     </div>
                 </div>
                 <?php endif; ?>
-                
+
                 <!-- Administrative Actions for Admin/Employee -->
                 <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
                 <div class="admin-card">

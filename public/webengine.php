@@ -10,6 +10,8 @@
  * @author Dmytro Hovenko
  */
 
+declare(strict_types=1);
+
 global $container;
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
@@ -43,7 +45,7 @@ try {
             // Always use the pretty error.php page (in both debug and production)
         } else {
             // Fallback if services are unavailable
-            error_log("Critical Error (no services): " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+            error_log('Critical Error (no services): ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
 
             // Save to session for a legacy system
             $_SESSION['error_message'] = $e->getMessage();
@@ -63,11 +65,11 @@ try {
         include ROOT_PATH . DS . 'page' . DS . 'system' . DS . 'error.php';
     } catch (Throwable $fallbackError) {
         // Last level of protection
-        error_log("Fallback error handler failed: " . $fallbackError->getMessage());
-        echo "<h1>Critical System Error</h1>";
-        echo "<p>A critical error occurred and the error handling system failed. Please contact the administrator.</p>";
+        error_log('Fallback error handler failed: ' . $fallbackError->getMessage());
+        echo '<h1>Critical System Error</h1>';
+        echo '<p>A critical error occurred and the error handling system failed. Please contact the administrator.</p>';
         if (isDebugMode()) {
-            echo "<pre>Original Error: " . htmlspecialchars($e->getMessage()) . "\nFallback Error: " . htmlspecialchars($fallbackError->getMessage()) . "</pre>";
+            echo '<pre>Original Error: ' . htmlspecialchars($e->getMessage()) . "\nFallback Error: " . htmlspecialchars($fallbackError->getMessage()) . '</pre>';
         }
     }
     exit;

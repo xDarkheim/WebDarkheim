@@ -93,7 +93,6 @@ $flashMessages = $flashMessageService->getAllMessages();
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .log-container {
             background: var(--admin-bg-primary);

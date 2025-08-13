@@ -18,7 +18,7 @@ global $container;
 try {
     // Get ServiceProvider
     $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
-    
+
     // Get required services
     $authService = $serviceProvider->getAuth();
     $database = $serviceProvider->getDatabase();
@@ -32,7 +32,7 @@ try {
     }
 
     $currentUser = $authService->getCurrentUser();
-    
+
     // Check if user can access client area
     if (!in_array($currentUser['role'], ['client', 'employee', 'admin'])) {
         header('Location: /index.php?page=home');
@@ -57,7 +57,7 @@ try {
     // Get ticket details
     $_GET['id'] = $ticketId; // Ensure ID is in $_GET for controller
     $ticketResponse = $ticketController->getTicketDetails();
-    
+
     if (!$ticketResponse['success']) {
         header('Location: /index.php?page=user_tickets');
         exit;
@@ -78,364 +78,300 @@ try {
     if (isset($logger)) {
         $logger->critical("Critical error in ticket view page: " . $e->getMessage());
     }
-    
+
     header('Location: /index.php?page=user_tickets');
     exit;
 }
 
 ?>
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .ticket-header {
-            border-left: 4px solid var(--bs-primary);
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-        .priority-critical { border-left-color: #dc3545 !important; }
-        .priority-high { border-left-color: #fd7e14 !important; }
-        .priority-medium { border-left-color: #0d6efd !important; }
-        .priority-low { border-left-color: #6c757d !important; }
-        
-        .message-item {
-            transition: all 0.3s ease;
-        }
-        .message-item:hover {
-            transform: translateX(5px);
-        }
-        .message-admin {
-            border-left: 3px solid #28a745;
-        }
-        .message-client {
-            border-left: 3px solid #0d6efd;
-        }
-        .message-internal {
-            background-color: #fff3cd;
-            border-left: 3px solid #ffc107;
-        }
-        .message-textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        .status-badge {
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=user_dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=user_tickets">Support Tickets</a></li>
-            <li class="breadcrumb-item active">Ticket #<?= $ticket['id'] ?></li>
-        </ol>
-    </nav>
+<!-- Navigation -->
+<nav class="admin-nav">
+    <div class="admin-nav-container">
+        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
+            <i class="fas fa-ticket-alt"></i>
+            Support Portal
+        </a>
+        <div class="admin-nav-links">
+            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="/index.php?page=user_tickets" class="admin-nav-link">
+                <i class="fas fa-list"></i> All Tickets
+            </a>
+        </div>
+    </div>
+</nav>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
+<!-- Header -->
+<header class="admin-header">
+    <div class="admin-header-container">
+        <div class="admin-header-content">
+            <div class="admin-header-title">
+                <i class="admin-header-icon fas fa-ticket-alt"></i>
+                <div class="admin-header-text">
+                    <h1>Ticket #<?= $ticket['id'] ?> - <?= htmlspecialchars($ticket['subject']) ?></h1>
+                    <p>Created <?= date('M j, Y \a\t g:i A', strtotime($ticket['created_at'])) ?> • Last updated <?= date('M j, Y \a\t g:i A', strtotime($ticket['updated_at'])) ?></p>
+                </div>
+            </div>
+            <div class="admin-header-actions">
+                <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Tickets
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="admin-layout-main">
+    <div class="admin-content">
+        <!-- Flash Messages -->
+        <?php if (!empty($flashMessages)): ?>
+            <div class="admin-flash-messages">
                 <?php foreach ($flashMessages as $type => $messages): ?>
                     <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                            <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
+                            <div><?= htmlspecialchars($message['text']) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <!-- Ticket Header -->
-    <div class="card ticket-header priority-<?= htmlspecialchars($ticket['priority']) ?> mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h2 class="h4 mb-2">
-                        <i class="fas fa-ticket-alt text-primary"></i>
-                        Ticket #<?= $ticket['id'] ?>
-                    </h2>
-                    <h3 class="h5 text-muted mb-3"><?= htmlspecialchars($ticket['subject']) ?></h3>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge <?= $ticket['status_badge_class'] ?> status-badge">
-                            <i class="fas fa-circle-notch"></i> <?= ucfirst(str_replace('_', ' ', $ticket['status'])) ?>
-                        </span>
-                        <span class="badge <?= $ticket['priority_badge_class'] ?> status-badge">
-                            <i class="fas fa-exclamation-triangle"></i> <?= ucfirst($ticket['priority']) ?> Priority
-                        </span>
-                        <?php if ($ticket['category']): ?>
-                            <span class="badge bg-light text-dark status-badge">
-                                <i class="fas fa-tag"></i> <?= htmlspecialchars($ticket['category']) ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="text-muted small">
-                        <div><strong>Created:</strong> <?= date('M j, Y \a\t g:i A', strtotime($ticket['created_at'])) ?></div>
-                        <div><strong>Updated:</strong> <?= date('M j, Y \a\t g:i A', strtotime($ticket['updated_at'])) ?></div>
-                    </div>
-                    <div class="mt-3">
-                        <a href="/index.php?page=user_tickets" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Tickets
-                        </a>
-                    </div>
+        <!-- Original Request -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-file-alt"></i>
+                    Original Request
+                </h3>
+            </div>
+            <div class="admin-card-body">
+                <div style="padding: 1rem; background: var(--admin-bg-secondary); border-radius: var(--admin-border-radius); border-left: 3px solid var(--admin-primary);">
+                    <p style="margin: 0;"><?= nl2br(htmlspecialchars($ticket['description'])) ?></p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row">
-        <!-- Messages Column -->
-        <div class="col-lg-8">
-            <!-- Original Description -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-file-alt text-primary"></i>
-                        Original Request
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="message-item message-client p-3 bg-light rounded">
-                        <p class="mb-0"><?= nl2br(htmlspecialchars($ticket['description'])) ?></p>
-                    </div>
-                </div>
+        <!-- Messages -->
+        <div class="admin-card">
+            <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-comments"></i>
+                    Conversation (<?= count($messages) ?>)
+                </h3>
+                <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="refreshMessages()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
-
-            <!-- Messages -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-comments text-primary"></i>
-                        Conversation (<?= count($messages) ?>)
-                    </h5>
-                    <button class="btn btn-sm btn-outline-primary" onclick="refreshMessages()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-                <div class="card-body" id="messagesContainer">
-                    <?php if (empty($messages)): ?>
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-comments fa-3x mb-3"></i>
-                            <p>No messages yet. Start the conversation below.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($messages as $message): ?>
-                            <div class="message-item <?= $message['is_internal'] ? 'message-internal' : ($message['role'] === 'client' ? 'message-client' : 'message-admin') ?> p-3 mb-3 rounded">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-user-circle fa-lg me-2 text-<?= $message['role'] === 'client' ? 'primary' : 'success' ?>"></i>
-                                        <div>
-                                            <strong><?= htmlspecialchars($message['username']) ?></strong>
-                                            <span class="badge bg-<?= $message['role'] === 'client' ? 'primary' : 'success' ?> ms-2">
-                                                <?= ucfirst($message['role']) ?>
-                                            </span>
-                                            <?php if ($message['is_internal']): ?>
-                                                <span class="badge bg-warning ms-1">Internal</span>
-                                            <?php endif; ?>
-                                        </div>
+            <div class="admin-card-body" id="messagesContainer">
+                <?php if (empty($messages)): ?>
+                    <div style="text-align: center; padding: 3rem 0; color: var(--admin-text-muted);">
+                        <i class="fas fa-comments fa-3x" style="margin-bottom: 1rem;"></i>
+                        <p>No messages yet. Start the conversation below.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($messages as $message): ?>
+                        <div style="padding: 1rem; margin-bottom: 1rem; border-radius: var(--admin-border-radius); <?= $message['is_internal'] ? 'background: var(--admin-warning-bg); border-left: 3px solid var(--admin-warning);' : ($message['role'] === 'client' ? 'background: var(--admin-primary-bg); border-left: 3px solid var(--admin-primary);' : 'background: var(--admin-success-bg); border-left: 3px solid var(--admin-success);') ?>">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div style="display: flex; align-items: center;">
+                                    <i class="fas fa-user-circle" style="font-size: 1.25rem; margin-right: 0.75rem; color: <?= $message['role'] === 'client' ? 'var(--admin-primary)' : 'var(--admin-success)' ?>;"></i>
+                                    <div>
+                                        <strong><?= htmlspecialchars($message['username']) ?></strong>
+                                        <span class="admin-badge admin-badge-<?= $message['role'] === 'client' ? 'primary' : 'success' ?>" style="margin-left: 0.5rem;">
+                                            <?= ucfirst($message['role']) ?>
+                                        </span>
+                                        <?php if ($message['is_internal']): ?>
+                                            <span class="admin-badge admin-badge-warning" style="margin-left: 0.25rem;">Internal</span>
+                                        <?php endif; ?>
                                     </div>
-                                    <small class="text-muted">
-                                        <?= date('M j, Y \a\t g:i A', strtotime($message['created_at'])) ?>
-                                    </small>
                                 </div>
-                                <div class="message-content">
-                                    <?= nl2br(htmlspecialchars($message['message'])) ?>
-                                </div>
+                                <small style="color: var(--admin-text-muted);">
+                                    <?= date('M j, Y \a\t g:i A', strtotime($message['created_at'])) ?>
+                                </small>
                             </div>
-                        <?php endforeach; ?>
+                            <div>
+                                <?= nl2br(htmlspecialchars($message['message'])) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Reply Form -->
+        <?php if (in_array($ticket['status'], ['open', 'in_progress', 'waiting_client'])): ?>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-reply"></i>
+                        Add Response
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <form id="replyForm">
+                        <input type="hidden" name="ticket_id" value="<?= $ticket['id'] ?>">
+
+                        <div class="admin-form-group">
+                            <label for="message" class="admin-label">Your Message</label>
+                            <textarea class="admin-input admin-textarea" id="message" name="message"
+                                      placeholder="Type your response here..." required minlength="3" rows="6"></textarea>
+                            <div class="admin-help-text">Provide additional information or ask questions about your ticket.</div>
+                        </div>
+
+                        <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
+                            <div class="admin-form-group">
+                                <label class="admin-label" style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="is_internal" name="is_internal" style="margin-right: 0.5rem;">
+                                    <i class="fas fa-eye-slash" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>
+                                    Internal note (not visible to client)
+                                </label>
+                            </div>
+                        <?php endif; ?>
+
+                        <div style="text-align: right;">
+                            <button type="submit" class="admin-btn admin-btn-primary" id="replyBtn">
+                                <i class="fas fa-paper-plane"></i> Send Response
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="admin-card">
+                <div class="admin-card-body" style="text-align: center; color: var(--admin-text-muted);">
+                    <i class="fas fa-lock fa-2x" style="margin-bottom: 1rem;"></i>
+                    <p>This ticket is <?= $ticket['status'] ?>. No new messages can be added.</p>
+                    <?php if ($ticket['status'] === 'resolved' && $currentUser['role'] === 'client'): ?>
+                        <button class="admin-btn admin-btn-primary" onclick="reopenTicket()">
+                            <i class="fas fa-undo"></i> Reopen Ticket
+                        </button>
                     <?php endif; ?>
                 </div>
             </div>
+        <?php endif; ?>
+    </div>
 
-            <!-- Reply Form -->
-            <?php if (in_array($ticket['status'], ['open', 'in_progress', 'waiting_client'])): ?>
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-reply text-primary"></i>
-                            Add Response
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form id="replyForm">
-                            <input type="hidden" name="ticket_id" value="<?= $ticket['id'] ?>">
-                            
-                            <div class="mb-3">
-                                <label for="message" class="form-label">Your Message</label>
-                                <textarea class="form-control message-textarea" id="message" name="message" 
-                                          placeholder="Type your response here..." required minlength="3"></textarea>
-                                <div class="form-text">Provide additional information or ask questions about your ticket.</div>
-                            </div>
-                            
-                            <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal">
-                                        <label class="form-check-label" for="is_internal">
-                                            <i class="fas fa-eye-slash text-warning"></i>
-                                            Internal note (not visible to client)
-                                        </label>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <div class="d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary" id="replyBtn">
-                                    <i class="fas fa-paper-plane"></i> Send Response
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <!-- Ticket Details -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Ticket Details
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; align-items: center;">
+                    <strong>Status:</strong>
+                    <span class="admin-badge admin-badge-<?= $ticket['status_badge_class'] ?? 'gray' ?>">
+                        <?= ucfirst(str_replace('_', ' ', $ticket['status'])) ?>
+                    </span>
+
+                    <strong>Priority:</strong>
+                    <span class="admin-badge admin-badge-<?= $ticket['priority_badge_class'] ?? 'gray' ?>">
+                        <?= ucfirst($ticket['priority']) ?>
+                    </span>
+
+                    <?php if ($ticket['category']): ?>
+                        <strong>Category:</strong>
+                        <span><?= htmlspecialchars($ticket['category']) ?></span>
+                    <?php endif; ?>
+
+                    <strong>Created:</strong>
+                    <span style="font-size: 0.875rem;"><?= date('M j, Y', strtotime($ticket['created_at'])) ?></span>
+
+                    <strong>Last Update:</strong>
+                    <span style="font-size: 0.875rem;"><?= date('M j, Y', strtotime($ticket['updated_at'])) ?></span>
                 </div>
-            <?php else: ?>
-                <div class="card">
-                    <div class="card-body text-center text-muted">
-                        <i class="fas fa-lock fa-2x mb-3"></i>
-                        <p>This ticket is <?= $ticket['status'] ?>. No new messages can be added.</p>
-                        <?php if ($ticket['status'] === 'resolved' && $currentUser['role'] === 'client'): ?>
-                            <button class="btn btn-outline-primary" onclick="reopenTicket()">
-                                <i class="fas fa-undo"></i> Reopen Ticket
+            </div>
+        </div>
+
+        <!-- Quick Actions (Admin/Employee only) -->
+        <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h4 class="admin-card-title">
+                        <i class="fas fa-tools"></i>
+                        Quick Actions
+                    </h4>
+                </div>
+                <div class="admin-card-body">
+                    <div style="display: grid; gap: 0.5rem;">
+                        <?php if ($ticket['status'] !== 'in_progress'): ?>
+                            <button class="admin-btn admin-btn-sm admin-btn-warning" onclick="updateStatus('in_progress')">
+                                <i class="fas fa-play"></i> Start Working
+                            </button>
+                        <?php endif; ?>
+
+                        <?php if ($ticket['status'] !== 'waiting_client'): ?>
+                            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="updateStatus('waiting_client')">
+                                <i class="fas fa-clock"></i> Wait for Client
+                            </button>
+                        <?php endif; ?>
+
+                        <?php if ($ticket['status'] !== 'resolved'): ?>
+                            <button class="admin-btn admin-btn-sm admin-btn-success" onclick="updateStatus('resolved')">
+                                <i class="fas fa-check"></i> Mark Resolved
+                            </button>
+                        <?php endif; ?>
+
+                        <?php if ($ticket['status'] !== 'closed'): ?>
+                            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="updateStatus('closed')">
+                                <i class="fas fa-times"></i> Close Ticket
                             </button>
                         <?php endif; ?>
                     </div>
                 </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Ticket Details -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <i class="fas fa-info-circle text-primary"></i>
-                        Ticket Details
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-5">Status:</dt>
-                        <dd class="col-7">
-                            <span class="badge <?= $ticket['status_badge_class'] ?>">
-                                <?= ucfirst(str_replace('_', ' ', $ticket['status'])) ?>
-                            </span>
-                        </dd>
-                        
-                        <dt class="col-5">Priority:</dt>
-                        <dd class="col-7">
-                            <span class="badge <?= $ticket['priority_badge_class'] ?>">
-                                <?= ucfirst($ticket['priority']) ?>
-                            </span>
-                        </dd>
-                        
-                        <?php if ($ticket['category']): ?>
-                            <dt class="col-5">Category:</dt>
-                            <dd class="col-7"><?= htmlspecialchars($ticket['category']) ?></dd>
-                        <?php endif; ?>
-                        
-                        <dt class="col-5">Created:</dt>
-                        <dd class="col-7 small"><?= date('M j, Y', strtotime($ticket['created_at'])) ?></dd>
-                        
-                        <dt class="col-5">Last Update:</dt>
-                        <dd class="col-7 small"><?= date('M j, Y', strtotime($ticket['updated_at'])) ?></dd>
-                    </dl>
-                </div>
             </div>
+        <?php endif; ?>
 
-            <!-- Quick Actions (Admin/Employee only) -->
-            <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-tools text-primary"></i>
-                            Quick Actions
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <?php if ($ticket['status'] !== 'in_progress'): ?>
-                                <button class="btn btn-warning btn-sm" onclick="updateStatus('in_progress')">
-                                    <i class="fas fa-play"></i> Start Working
-                                </button>
-                            <?php endif; ?>
-                            
-                            <?php if ($ticket['status'] !== 'waiting_client'): ?>
-                                <button class="btn btn-info btn-sm" onclick="updateStatus('waiting_client')">
-                                    <i class="fas fa-clock"></i> Wait for Client
-                                </button>
-                            <?php endif; ?>
-                            
-                            <?php if ($ticket['status'] !== 'resolved'): ?>
-                                <button class="btn btn-success btn-sm" onclick="updateStatus('resolved')">
-                                    <i class="fas fa-check"></i> Mark Resolved
-                                </button>
-                            <?php endif; ?>
-                            
-                            <?php if ($ticket['status'] !== 'closed'): ?>
-                                <button class="btn btn-secondary btn-sm" onclick="updateStatus('closed')">
-                                    <i class="fas fa-times"></i> Close Ticket
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Help Section -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <i class="fas fa-question-circle text-info"></i>
-                        Need Help?
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <p class="small text-muted mb-3">
-                        Our support team typically responds within:
-                    </p>
-                    <ul class="small mb-3">
-                        <li><strong>Critical:</strong> 2 hours</li>
-                        <li><strong>High:</strong> 8 hours</li>
-                        <li><strong>Medium:</strong> 24-48 hours</li>
-                        <li><strong>Low:</strong> 3-5 business days</li>
-                    </ul>
-                    <a href="/index.php?page=user_tickets_create" class="btn btn-outline-primary btn-sm w-100">
-                        <i class="fas fa-plus"></i> Create New Ticket
-                    </a>
-                </div>
+        <!-- Help Section -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-question-circle"></i>
+                    Need Help?
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <p style="font-size: 0.875rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                    Our support team typically responds within:
+                </p>
+                <ul style="font-size: 0.875rem; margin-bottom: 1rem;">
+                    <li><strong>Critical:</strong> 2 hours</li>
+                    <li><strong>High:</strong> 8 hours</li>
+                    <li><strong>Medium:</strong> 24-48 hours</li>
+                    <li><strong>Low:</strong> 3-5 business days</li>
+                </ul>
+                <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-sm admin-btn-primary" style="width: 100%;">
+                    <i class="fas fa-plus"></i> Create New Ticket
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/admin.js"></script>
 <script>
 // Handle reply form submission
 document.getElementById('replyForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const replyBtn = document.getElementById('replyBtn');
     const originalText = replyBtn.innerHTML;
-    
+
     // Show loading state
     replyBtn.disabled = true;
     replyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-    
+
     // Get form data
     const formData = new FormData(this);
-    
+
     // Submit via AJAX
     fetch('/page/api/tickets/add_message.php', {
         method: 'POST',
@@ -446,11 +382,11 @@ document.getElementById('replyForm').addEventListener('submit', function(e) {
         if (data.success) {
             // Show success message
             showToast('Response sent successfully!', 'success');
-            
+
             // Clear form
             document.getElementById('message').value = '';
             document.getElementById('is_internal').checked = false;
-            
+
             // Refresh messages after short delay
             setTimeout(refreshMessages, 1000);
         } else {
@@ -471,7 +407,7 @@ document.getElementById('replyForm').addEventListener('submit', function(e) {
 // Refresh messages
 function refreshMessages() {
     const ticketId = <?= $ticket['id'] ?>;
-    
+
     fetch(`/page/api/tickets/get_details.php?id=${ticketId}`)
         .then(response => response.json())
         .then(data => {
@@ -489,7 +425,7 @@ function refreshMessages() {
 // Update messages display
 function updateMessagesDisplay(messages) {
     const container = document.getElementById('messagesContainer');
-    
+
     if (messages.length === 0) {
         container.innerHTML = `
             <div class="text-center py-4 text-muted">
@@ -499,13 +435,13 @@ function updateMessagesDisplay(messages) {
         `;
         return;
     }
-    
+
     let html = '';
     messages.forEach(message => {
-        const messageClass = message.is_internal ? 'message-internal' : 
+        const messageClass = message.is_internal ? 'message-internal' :
                            (message.role === 'client' ? 'message-client' : 'message-admin');
         const userColor = message.role === 'client' ? 'primary' : 'success';
-        
+
         html += `
             <div class="message-item ${messageClass} p-3 mb-3 rounded">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -530,7 +466,7 @@ function updateMessagesDisplay(messages) {
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
 }
 
@@ -539,11 +475,11 @@ function updateStatus(newStatus) {
     if (!confirm(`Are you sure you want to change the ticket status to "${newStatus.replace('_', ' ')}"?`)) {
         return;
     }
-    
+
     const formData = new FormData();
     formData.append('ticket_id', <?= $ticket['id'] ?>);
     formData.append('status', newStatus);
-    
+
     fetch('/page/api/tickets/update_status.php', {
         method: 'POST',
         body: formData
@@ -571,7 +507,7 @@ function reopenTicket() {
     if (!confirm('Are you sure you want to reopen this ticket?')) {
         return;
     }
-    
+
     updateStatus('open');
 }
 
@@ -585,7 +521,7 @@ function showToast(message, type = 'info') {
             </div>
         </div>
     `;
-    
+
     let toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
@@ -593,13 +529,13 @@ function showToast(message, type = 'info') {
         toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
         document.body.appendChild(toastContainer);
     }
-    
+
     toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-    
+
     const toastElement = toastContainer.lastElementChild;
     const toast = new bootstrap.Toast(toastElement);
     toast.show();
-    
+
     toastElement.addEventListener('hidden.bs.toast', () => {
         toastElement.remove();
     });
@@ -612,6 +548,3 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 </script>
-
-</body>
-</html>

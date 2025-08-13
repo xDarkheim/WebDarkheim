@@ -1,10 +1,7 @@
 <?php
-
 /**
- * Studio Projects - Client Portal
+ * Studio Projects - Client Portal - PHASE 8 - DARK ADMIN THEME
  * View active development projects from the studio
- *
- * @author GitHub Copilot
  */
 
 declare(strict_types=1);
@@ -56,173 +53,302 @@ try {
 
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
-$pageTitle = 'Studio Projects - Client Portal';
+$pageTitle = 'Studio Projects';
 
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .project-card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: var(--admin-transition);
+            overflow: hidden;
         }
         .project-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: var(--admin-shadow-lg);
+        }
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            position: relative;
+            margin: 0 auto;
         }
         .progress-ring {
             transform: rotate(-90deg);
         }
-        .status-badge {
-            font-size: 0.8rem;
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--admin-text-primary);
+        }
+        .project-type-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--admin-text-muted);
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
         }
     </style>
-</head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item active">Studio Projects</li>
-        </ol>
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-code"></i>
+                Studio Projects
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_tickets" class="admin-nav-link">
+                    <i class="fas fa-ticket-alt"></i> Support
+                </a>
+                <a href="/index.php?page=user_invoices" class="admin-nav-link">
+                    <i class="fas fa-file-invoice"></i> Invoices
+                </a>
+            </div>
+        </div>
     </nav>
 
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="h3 mb-0">
-                <i class="fas fa-code text-primary"></i>
-                Studio Projects
-            </h1>
-            <p class="text-muted">Track your development projects with our studio</p>
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-code"></i>
+                    <div class="admin-header-text">
+                        <h1>Studio Projects</h1>
+                        <p>Track your development projects with our studio</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=contact" class="admin-btn admin-btn-primary">
+                        <i class="fas fa-plus"></i> Start New Project
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
+    </header>
 
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
                 <?php endforeach; ?>
-            </div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <!-- Projects List -->
-    <div class="row">
-        <?php if (empty($projects)): ?>
-            <div class="col-12">
-                <div class="card project-card text-center py-5">
-                    <div class="card-body">
-                        <i class="fas fa-code fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No active projects</h5>
-                        <p class="text-muted">You don't have any active development projects with our studio yet.</p>
-                        <a href="/index.php?page=contact" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Start a Project
+    <div class="admin-layout-main">
+        <div class="admin-content">
+            <!-- Projects Grid -->
+            <?php if (empty($projects)): ?>
+                <div class="admin-card">
+                    <div class="admin-card-body">
+                        <div class="empty-state">
+                            <i class="fas fa-code"></i>
+                            <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem;">No Active Projects</h4>
+                            <p style="margin-bottom: 2rem;">You don't have any active development projects with our studio yet.</p>
+                            <a href="/index.php?page=contact" class="admin-btn admin-btn-primary">
+                                <i class="fas fa-plus"></i> Start a Project
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="admin-grid admin-grid-cols-3">
+                    <?php foreach ($projects as $project): ?>
+                        <div class="admin-card project-card">
+                            <div class="admin-card-body" style="position: relative;">
+                                <!-- Project Type Badge -->
+                                <div class="project-type-badge">
+                                    <span class="admin-badge admin-badge-gray">
+                                        <?= ucfirst($project['project_type'] ?? 'Project') ?>
+                                    </span>
+                                </div>
+
+                                <!-- Project Title -->
+                                <h5 style="color: var(--admin-text-primary); margin-bottom: 1rem; margin-top: 0;">
+                                    <?= htmlspecialchars($project['project_name']) ?>
+                                </h5>
+
+                                <!-- Progress Circle -->
+                                <div style="text-align: center; margin: 1.5rem 0;">
+                                    <div class="progress-circle">
+                                        <svg width="80" height="80" class="progress-ring">
+                                            <circle cx="40" cy="40" r="30" stroke="var(--admin-border)" stroke-width="4" fill="transparent"/>
+                                            <circle cx="40" cy="40" r="30" stroke="var(--admin-primary)" stroke-width="4" fill="transparent"
+                                                    stroke-dasharray="<?= 2 * 3.14159 * 30 ?>"
+                                                    stroke-dashoffset="<?= 2 * 3.14159 * 30 * (1 - ($project['progress_percentage'] ?? 0) / 100) ?>"/>
+                                        </svg>
+                                        <div class="progress-text">
+                                            <?= $project['progress_percentage'] ?? 0 ?>%
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Project Status -->
+                                <div style="text-align: center; margin-bottom: 1rem;">
+                                    <span class="admin-badge <?= getStatusBadgeClass($project['status'] ?? 'planning') ?>">
+                                        <?= ucfirst(str_replace('_', ' ', $project['status'] ?? 'planning')) ?>
+                                    </span>
+                                </div>
+
+                                <!-- Project Description -->
+                                <p style="color: var(--admin-text-muted); font-size: 0.875rem; line-height: 1.4; margin-bottom: 1rem;">
+                                    <?= htmlspecialchars(substr($project['description'] ?? '', 0, 100)) ?>
+                                    <?= strlen($project['description'] ?? '') > 100 ? '...' : '' ?>
+                                </p>
+
+                                <!-- Project Details -->
+                                <div style="font-size: 0.75rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                                    <?php if ($project['start_date']): ?>
+                                        <div style="margin-bottom: 0.25rem;">
+                                            <i class="fas fa-play"></i> Started: <?= date('M j, Y', strtotime($project['start_date'])) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($project['estimated_completion']): ?>
+                                        <div style="margin-bottom: 0.25rem;">
+                                            <i class="fas fa-flag-checkered"></i> Est. Completion: <?= date('M j, Y', strtotime($project['estimated_completion'])) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($project['milestone_count'] > 0): ?>
+                                        <div>
+                                            <i class="fas fa-tasks"></i> Milestones: <?= $project['completed_milestones'] ?>/<?= $project['milestone_count'] ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <div class="admin-card-footer">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a href="/index.php?page=user_projects_details&id=<?= $project['id'] ?>"
+                                       class="admin-btn admin-btn-primary admin-btn-sm" style="flex: 1;">
+                                        <i class="fas fa-eye"></i> Details
+                                    </a>
+                                    <a href="/index.php?page=user_projects_timeline&id=<?= $project['id'] ?>"
+                                       class="admin-btn admin-btn-secondary admin-btn-sm" style="flex: 1;">
+                                        <i class="fas fa-clock"></i> Timeline
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <!-- Project Overview -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">Project Overview</h6>
+                </div>
+                <div class="admin-card-body">
+                    <div class="admin-stats-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary); margin-bottom: 0.25rem;">
+                                <?= count($projects) ?>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Total Projects</small>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-success); margin-bottom: 0.25rem;">
+                                <?php
+                                $activeProjects = array_filter($projects, fn($p) => in_array($p['status'], ['development', 'testing']));
+                                echo count($activeProjects);
+                                ?>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Active</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">Quick Actions</h6>
+                </div>
+                <div class="admin-card-body">
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="/index.php?page=contact" class="admin-btn admin-btn-primary admin-btn-sm">
+                            <i class="fas fa-plus"></i> Start New Project
+                        </a>
+                        <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-secondary admin-btn-sm">
+                            <i class="fas fa-ticket-alt"></i> Create Support Ticket
+                        </a>
+                        <a href="/index.php?page=user_documents" class="admin-btn admin-btn-secondary admin-btn-sm">
+                            <i class="fas fa-folder"></i> View Documents
                         </a>
                     </div>
                 </div>
             </div>
-        <?php else: ?>
-            <?php foreach ($projects as $project): ?>
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card project-card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <small class="text-muted"><?= ucfirst($project['project_type']) ?></small>
-                            <span class="badge <?= getStatusBadgeClass($project['status']) ?> status-badge">
-                                <?= ucfirst(str_replace('_', ' ', $project['status'])) ?>
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title mb-3"><?= htmlspecialchars($project['project_name']) ?></h5>
 
-                            <!-- Progress Circle -->
-                            <div class="text-center mb-3">
-                                <div class="position-relative d-inline-block">
-                                    <svg width="80" height="80" class="progress-ring">
-                                        <circle cx="40" cy="40" r="30" stroke="#e9ecef" stroke-width="6" fill="transparent"/>
-                                        <circle cx="40" cy="40" r="30" stroke="#0d6efd" stroke-width="6" fill="transparent"
-                                                stroke-dasharray="<?= 2 * 3.14159 * 30 ?>"
-                                                stroke-dashoffset="<?= 2 * 3.14159 * 30 * (1 - ($project['progress_percentage'] ?? 0) / 100) ?>"/>
-                                    </svg>
-                                    <div class="position-absolute top-50 start-50 translate-middle">
-                                        <strong><?= $project['progress_percentage'] ?? 0 ?>%</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <p class="card-text text-muted small mb-3">
-                                <?= htmlspecialchars(substr($project['description'] ?? '', 0, 100)) ?><?= strlen($project['description'] ?? '') > 100 ? '...' : '' ?>
-                            </p>
-
-                            <!-- Project Details -->
-                            <div class="mb-3">
-                                <?php if ($project['start_date']): ?>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-play"></i> Started: <?= date('M j, Y', strtotime($project['start_date'])) ?>
-                                    </small>
-                                <?php endif; ?>
-                                <?php if ($project['estimated_completion']): ?>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-flag-checkered"></i> Est. Completion: <?= date('M j, Y', strtotime($project['estimated_completion'])) ?>
-                                    </small>
-                                <?php endif; ?>
-                                <?php if ($project['milestone_count'] > 0): ?>
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-tasks"></i> Milestones: <?= $project['completed_milestones'] ?>/<?= $project['milestone_count'] ?>
-                                    </small>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-0">
-                            <div class="d-flex justify-content-between">
-                                <a href="/index.php?page=user_projects_details&id=<?= $project['id'] ?>" class="btn btn-outline-primary btn-sm">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-                                <a href="/index.php?page=user_projects_timeline&id=<?= $project['id'] ?>" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-clock"></i> Timeline
-                                </a>
-                            </div>
-                        </div>
+            <!-- Support Information -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">Need Help?</h6>
+                </div>
+                <div class="admin-card-body">
+                    <p style="color: var(--admin-text-muted); font-size: 0.75rem; margin-bottom: 1rem;">
+                        Have questions about your projects? Our support team is here to help.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-success admin-btn-sm">
+                            <i class="fas fa-headset"></i> Support Center
+                        </a>
+                        <a href="/index.php?page=contact" class="admin-btn admin-btn-secondary admin-btn-sm">
+                            <i class="fas fa-envelope"></i> Contact Us
+                        </a>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+<script src="/public/assets/js/admin.js"></script>
 
 <?php
 function getStatusBadgeClass($status): string
 {
     return match($status) {
-        'planning' => 'bg-secondary',
-        'development' => 'bg-primary',
-        'testing' => 'bg-warning',
-        'deployment' => 'bg-info',
-        'completed' => 'bg-success',
-        'on_hold' => 'bg-danger',
-        default => 'bg-secondary'
+        'planning' => 'admin-badge-gray',
+        'development' => 'admin-badge-primary',
+        'testing' => 'admin-badge-warning',
+        'deployment' => 'admin-badge-primary',
+        'completed' => 'admin-badge-success',
+        'on_hold' => 'admin-badge-error',
+        default => 'admin-badge-gray'
     };
 }
 ?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * User Profile View Page - PHASE 8
+ * User Profile View Page - PHASE 8 - DARK ADMIN THEME
  * Shows user profile information (read-only view)
  */
 
@@ -39,120 +39,209 @@ try {
 }
 
 $pageTitle = 'My Profile';
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2">
-                    <i class="fas fa-user text-primary"></i>
-                    My Profile
-                </h1>
-                <div class="d-flex gap-2">
-                    <a href="/index.php?page=profile_edit" class="btn btn-primary">
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
+?>
+
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-user-circle"></i>
+                Client Portal
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
+                </a>
+                <a href="/index.php?page=user_profile_settings" class="admin-nav-link">
+                    <i class="fas fa-cogs"></i> Settings
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-user"></i>
+                    <div class="admin-header-text">
+                        <h1>My Profile</h1>
+                        <p>View and manage your profile information</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-primary">
                         <i class="fas fa-edit"></i> Edit Profile
                     </a>
-                    <a href="/index.php?page=user_profile_settings" class="btn btn-outline-secondary">
+                    <a href="/index.php?page=user_profile_settings" class="admin-btn admin-btn-secondary">
                         <i class="fas fa-cogs"></i> Settings
-                    </a>
-                    <a href="/index.php?page=dashboard" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
                     </a>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="row">
-        <!-- Basic Information -->
-        <div class="col-lg-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle text-primary"></i>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Main Content -->
+    <div class="admin-layout-main">
+        <div class="admin-content">
+            <!-- Basic Information -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-info-circle"></i>
                         Basic Information
                     </h5>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Username:</strong> <?= htmlspecialchars($currentUser['username']) ?></p>
-                            <p><strong>Email:</strong> <?= htmlspecialchars($currentUser['email']) ?></p>
-                            <p><strong>Role:</strong> <span class="badge bg-primary"><?= ucfirst($currentUser['role']) ?></span></p>
+                <div class="admin-card-body">
+                    <div class="admin-grid admin-grid-cols-2">
+                        <div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Username</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= htmlspecialchars($currentUser['username']) ?>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Email</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= htmlspecialchars($currentUser['email']) ?>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Role</label>
+                                <div>
+                                    <span class="admin-badge admin-badge-primary">
+                                        <i class="fas fa-user"></i>
+                                        <?= ucfirst($currentUser['role']) ?>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>Member since:</strong> <?= date('F j, Y', strtotime($currentUser['created_at'])) ?></p>
-                            <p><strong>Last updated:</strong> <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?></p>
+                        <div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Member Since</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= date('F j, Y', strtotime($currentUser['created_at'])) ?>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Last Updated</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Extended Profile (Client Profile) -->
+            <!-- Extended Profile -->
             <?php if ($clientProfile): ?>
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-briefcase text-primary"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-briefcase"></i>
                             Professional Information
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div>
                                 <?php if (!empty($clientProfile['company_name'])): ?>
-                                    <p><strong>Company:</strong> <?= htmlspecialchars($clientProfile['company_name']) ?></p>
+                                    <div class="admin-form-group">
+                                        <label class="admin-label">Company</label>
+                                        <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                            <?= htmlspecialchars($clientProfile['company_name']) ?>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                                 <?php if (!empty($clientProfile['position'])): ?>
-                                    <p><strong>Position:</strong> <?= htmlspecialchars($clientProfile['position']) ?></p>
+                                    <div class="admin-form-group">
+                                        <label class="admin-label">Position</label>
+                                        <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                            <?= htmlspecialchars($clientProfile['position']) ?>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                                 <?php if (!empty($clientProfile['location'])): ?>
-                                    <p><strong>Location:</strong> <?= htmlspecialchars($clientProfile['location']) ?></p>
+                                    <div class="admin-form-group">
+                                        <label class="admin-label">Location</label>
+                                        <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                            <?= htmlspecialchars($clientProfile['location']) ?>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                             </div>
-                            <div class="col-md-6">
+                            <div>
                                 <?php if (!empty($clientProfile['website'])): ?>
-                                    <p><strong>Website:</strong> 
-                                        <a href="<?= htmlspecialchars($clientProfile['website']) ?>" target="_blank">
-                                            <?= htmlspecialchars($clientProfile['website']) ?>
-                                        </a>
-                                    </p>
+                                    <div class="admin-form-group">
+                                        <label class="admin-label">Website</label>
+                                        <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                            <a href="<?= htmlspecialchars($clientProfile['website']) ?>"
+                                               target="_blank"
+                                               style="color: var(--admin-primary-light);">
+                                                <?= htmlspecialchars($clientProfile['website']) ?>
+                                            </a>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
-                                <p><strong>Portfolio Visibility:</strong> 
-                                    <span class="badge bg-<?= $clientProfile['portfolio_visibility'] === 'public' ? 'success' : 'secondary' ?>">
-                                        <?= ucfirst($clientProfile['portfolio_visibility']) ?>
-                                    </span>
-                                </p>
+                                <div class="admin-form-group">
+                                    <label class="admin-label">Portfolio Visibility</label>
+                                    <div>
+                                        <span class="admin-badge <?= $clientProfile['portfolio_visibility'] === 'public' ? 'admin-badge-success' : 'admin-badge-gray' ?>">
+                                            <i class="fas fa-<?= $clientProfile['portfolio_visibility'] === 'public' ? 'eye' : 'eye-slash' ?>"></i>
+                                            <?= ucfirst($clientProfile['portfolio_visibility']) ?>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        
+
                         <?php if (!empty($clientProfile['bio'])): ?>
-                            <div class="mt-3">
-                                <h6>Bio:</h6>
-                                <p><?= nl2br(htmlspecialchars($clientProfile['bio'])) ?></p>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Bio</label>
+                                <div class="admin-input admin-textarea" style="background: var(--admin-bg-secondary); border: none; min-height: auto; padding: 1rem;">
+                                    <?= nl2br(htmlspecialchars($clientProfile['bio'])) ?>
+                                </div>
                             </div>
                         <?php endif; ?>
 
                         <?php if (!empty($clientProfile['skills'])): ?>
-                            <div class="mt-3">
-                                <h6>Skills:</h6>
-                                <div class="d-flex flex-wrap gap-1">
-                                    <?php 
+                            <div class="admin-form-group">
+                                <label class="admin-label">Skills</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    <?php
                                     $skills = json_decode($clientProfile['skills'], true);
                                     if ($skills && is_array($skills)):
                                         foreach ($skills as $skill): ?>
-                                            <span class="badge bg-light text-dark"><?= htmlspecialchars($skill) ?></span>
+                                            <span class="admin-badge admin-badge-primary">
+                                                <i class="fas fa-code"></i>
+                                                <?= htmlspecialchars($skill) ?>
+                                            </span>
                                         <?php endforeach;
                                     endif; ?>
                                 </div>
@@ -161,12 +250,12 @@ $pageTitle = 'My Profile';
                     </div>
                 </div>
             <?php else: ?>
-                <div class="card mb-4">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
-                        <h5>Complete Your Profile</h5>
-                        <p class="text-muted">Add professional information to make your profile complete.</p>
-                        <a href="/index.php?page=profile_edit" class="btn btn-primary">
+                <div class="admin-card">
+                    <div class="admin-card-body" style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-user-plus" style="font-size: 3rem; color: var(--admin-text-muted); margin-bottom: 1rem;"></i>
+                        <h5 style="color: var(--admin-text-primary); margin-bottom: 0.5rem;">Complete Your Profile</h5>
+                        <p style="color: var(--admin-text-muted); margin-bottom: 1.5rem;">Add professional information to make your profile complete.</p>
+                        <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-primary">
                             <i class="fas fa-plus"></i> Complete Profile
                         </a>
                     </div>
@@ -175,21 +264,21 @@ $pageTitle = 'My Profile';
         </div>
 
         <!-- Sidebar -->
-        <div class="col-lg-4">
+        <div class="admin-sidebar">
             <!-- Profile Actions -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Quick Actions</h6>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">Quick Actions</h6>
                 </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="/index.php?page=profile_edit" class="btn btn-outline-primary btn-sm">
+                <div class="admin-card-body">
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-primary admin-btn-sm">
                             <i class="fas fa-edit"></i> Edit Profile
                         </a>
-                        <a href="/index.php?page=user_portfolio" class="btn btn-outline-success btn-sm">
+                        <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-success admin-btn-sm">
                             <i class="fas fa-briefcase"></i> View Portfolio
                         </a>
-                        <a href="/index.php?page=user_profile_settings" class="btn btn-outline-secondary btn-sm">
+                        <a href="/index.php?page=user_profile_settings" class="admin-btn admin-btn-secondary admin-btn-sm">
                             <i class="fas fa-cogs"></i> Account Settings
                         </a>
                     </div>
@@ -197,14 +286,14 @@ $pageTitle = 'My Profile';
             </div>
 
             <!-- Profile Statistics -->
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Profile Statistics</h6>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">Profile Statistics</h6>
                 </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <h4 class="text-primary mb-0">
+                <div class="admin-card-body">
+                    <div class="admin-stats-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary); margin-bottom: 0.25rem;">
                                 <?php
                                 // Get portfolio projects count
                                 try {
@@ -218,11 +307,11 @@ $pageTitle = 'My Profile';
                                     echo '0';
                                 }
                                 ?>
-                            </h4>
-                            <small class="text-muted">Projects</small>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Projects</small>
                         </div>
-                        <div class="col-6">
-                            <h4 class="text-success mb-0">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-success); margin-bottom: 0.25rem;">
                                 <?php
                                 // Get completion percentage
                                 if ($clientProfile) {
@@ -236,8 +325,8 @@ $pageTitle = 'My Profile';
                                     echo '0';
                                 }
                                 ?>%
-                            </h4>
-                            <small class="text-muted">Complete</small>
+                            </div>
+                            <small style="color: var(--admin-text-muted);">Complete</small>
                         </div>
                     </div>
                 </div>
@@ -246,6 +335,4 @@ $pageTitle = 'My Profile';
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script src="/public/assets/js/admin.js"></script>

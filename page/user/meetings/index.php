@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Meetings & Consultations - Client Portal
+ * Meetings & Consultations - Client Portal - DARK ADMIN THEME
  * Schedule and manage meetings with the studio team
  *
  * @author GitHub Copilot
@@ -41,16 +41,16 @@ try {
             LEFT JOIN studio_projects sp ON cm.project_id = sp.id
             WHERE cm.client_id = ?
             ORDER BY cm.meeting_date ASC";
-    
+
     $stmt = $database_handler->getConnection()->prepare($sql);
     $stmt->execute([$currentUser['id']]);
     $meetings = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Separate upcoming and past meetings
     $upcomingMeetings = [];
     $pastMeetings = [];
     $now = time();
-    
+
     foreach ($meetings as $meeting) {
         if (strtotime($meeting['meeting_date']) > $now) {
             $upcomingMeetings[] = $meeting;
@@ -58,7 +58,7 @@ try {
             $pastMeetings[] = $meeting;
         }
     }
-    
+
 } catch (Exception $e) {
     error_log("Error getting meetings: " . $e->getMessage());
     $meetings = [];
@@ -72,258 +72,289 @@ $pageTitle = 'Meetings & Consultations - Client Portal';
 
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .meeting-card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .meeting-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .meeting-upcoming {
-            border-left: 4px solid #0d6efd;
-        }
-        .meeting-past {
-            border-left: 4px solid #6c757d;
-        }
-        .time-badge {
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body class="bg-light">
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<div class="container py-4">
-    <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item active">Meetings & Consultations</li>
-        </ol>
-    </nav>
+<!-- Navigation -->
+<nav class="admin-nav">
+    <div class="admin-nav-container">
+        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
+            <i class="fas fa-calendar-alt"></i>
+            Meeting Portal
+        </a>
+        <div class="admin-nav-links">
+            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="/index.php?page=user_meetings_schedule" class="admin-nav-link">
+                <i class="fas fa-plus"></i> Schedule Meeting
+            </a>
+        </div>
+    </div>
+</nav>
 
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-calendar-alt text-primary"></i>
-                        Meetings & Consultations
-                    </h1>
-                    <p class="text-muted">Schedule and manage your meetings with our team</p>
+<!-- Header -->
+<header class="admin-header">
+    <div class="admin-header-container">
+        <div class="admin-header-content">
+            <div class="admin-header-title">
+                <i class="admin-header-icon fas fa-calendar-alt"></i>
+                <div class="admin-header-text">
+                    <h1>Meetings & Consultations</h1>
+                    <p>Schedule and manage your meetings with our team</p>
                 </div>
-                <a href="/index.php?page=user_meetings_schedule" class="btn btn-primary">
+            </div>
+            <div class="admin-header-actions">
+                <a href="/index.php?page=user_meetings_schedule" class="admin-btn admin-btn-primary">
                     <i class="fas fa-plus"></i> Schedule Meeting
                 </a>
             </div>
         </div>
     </div>
+</header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
+<div class="admin-layout-main">
+    <div class="admin-content">
+        <!-- Flash Messages -->
+        <?php if (!empty($flashMessages)): ?>
+            <div class="admin-flash-messages">
                 <?php foreach ($flashMessages as $type => $messages): ?>
                     <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                            <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
+                            <div><?= htmlspecialchars($message['text']) ?></div>
                         </div>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <!-- Upcoming Meetings -->
-    <div class="card meeting-card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-clock text-primary"></i>
-                Upcoming Meetings (<?= count($upcomingMeetings) ?>)
-            </h5>
-        </div>
-        <div class="card-body">
-            <?php if (empty($upcomingMeetings)): ?>
-                <div class="text-center py-4">
-                    <i class="fas fa-calendar-plus fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">No upcoming meetings</h6>
-                    <p class="text-muted">Schedule a consultation or project review meeting.</p>
-                    <a href="/index.php?page=user_meetings_schedule" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Schedule Meeting
-                    </a>
-                </div>
-            <?php else: ?>
-                <?php foreach ($upcomingMeetings as $meeting): ?>
-                    <div class="card meeting-upcoming mb-3">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <h6 class="card-title mb-1"><?= htmlspecialchars($meeting['title']) ?></h6>
-                                    <p class="card-text text-muted mb-2">
-                                        <?= htmlspecialchars($meeting['description'] ?? 'No description provided') ?>
-                                    </p>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-primary time-badge">
-                                            <i class="fas fa-calendar"></i> <?= date('M j, Y', strtotime($meeting['meeting_date'])) ?>
-                                        </span>
-                                        <span class="badge bg-info time-badge">
-                                            <i class="fas fa-clock"></i> <?= date('g:i A', strtotime($meeting['meeting_date'])) ?>
-                                        </span>
-                                        <span class="badge bg-secondary time-badge">
-                                            <i class="fas fa-hourglass-half"></i> <?= $meeting['duration_minutes'] ?> minutes
-                                        </span>
-                                        <?php if ($meeting['project_name']): ?>
-                                            <span class="badge bg-success time-badge">
-                                                <i class="fas fa-project-diagram"></i> <?= htmlspecialchars($meeting['project_name']) ?>
+        <!-- Upcoming Meetings -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-clock"></i>
+                    Upcoming Meetings (<?= count($upcomingMeetings) ?>)
+                </h3>
+            </div>
+            <div class="admin-card-body">
+                <?php if (empty($upcomingMeetings)): ?>
+                    <div style="text-align: center; padding: 3rem 0;">
+                        <i class="fas fa-calendar-plus fa-3x" style="color: var(--admin-text-muted); margin-bottom: 1rem;"></i>
+                        <h6 style="color: var(--admin-text-muted); margin-bottom: 0.5rem;">No upcoming meetings</h6>
+                        <p style="color: var(--admin-text-muted); margin-bottom: 1.5rem;">Schedule a consultation or project review meeting.</p>
+                        <a href="/index.php?page=user_meetings_schedule" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-plus"></i> Schedule Meeting
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($upcomingMeetings as $meeting): ?>
+                        <div class="admin-card" style="margin-bottom: 1rem; border-left: 3px solid var(--admin-primary);">
+                            <div class="admin-card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <h6 style="margin-bottom: 0.5rem; color: var(--admin-text-primary);"><?= htmlspecialchars($meeting['title']) ?></h6>
+                                        <p style="color: var(--admin-text-muted); margin-bottom: 1rem;">
+                                            <?= htmlspecialchars($meeting['description'] ?? 'No description provided') ?>
+                                        </p>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            <span class="admin-badge admin-badge-primary">
+                                                <i class="fas fa-calendar"></i> <?= date('M j, Y', strtotime($meeting['meeting_date'])) ?>
                                             </span>
-                                        <?php endif; ?>
+                                            <span class="admin-badge admin-badge-info">
+                                                <i class="fas fa-clock"></i> <?= date('g:i A', strtotime($meeting['meeting_date'])) ?>
+                                            </span>
+                                            <span class="admin-badge admin-badge-secondary">
+                                                <i class="fas fa-hourglass-half"></i> <?= $meeting['duration_minutes'] ?> minutes
+                                            </span>
+                                            <?php if ($meeting['project_name']): ?>
+                                                <span class="admin-badge admin-badge-success">
+                                                    <i class="fas fa-project-diagram"></i> <?= htmlspecialchars($meeting['project_name']) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4 text-md-end">
-                                    <div class="btn-group btn-group-sm">
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                         <?php if ($meeting['online_link']): ?>
-                                            <a href="<?= htmlspecialchars($meeting['online_link']) ?>" 
-                                               class="btn btn-primary" target="_blank">
+                                            <a href="<?= htmlspecialchars($meeting['online_link']) ?>"
+                                               class="admin-btn admin-btn-sm admin-btn-primary" target="_blank">
                                                 <i class="fas fa-video"></i> Join
                                             </a>
                                         <?php endif; ?>
-                                        <button class="btn btn-outline-secondary" onclick="showMeetingDetails(<?= $meeting['id'] ?>)">
+                                        <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="showMeetingDetails(<?= $meeting['id'] ?>)">
                                             <i class="fas fa-info"></i> Details
                                         </button>
                                     </div>
-                                    <?php if ($meeting['location']): ?>
-                                        <div class="mt-2">
-                                            <small class="text-muted">
-                                                <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($meeting['location']) ?>
-                                            </small>
-                                        </div>
-                                    <?php endif; ?>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Past Meetings -->
-    <?php if (!empty($pastMeetings)): ?>
-        <div class="card meeting-card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-history text-secondary"></i>
-                    Meeting History (<?= count($pastMeetings) ?>)
-                </h5>
-            </div>
-            <div class="card-body">
-                <?php foreach (array_slice($pastMeetings, 0, 5) as $meeting): ?>
-                    <div class="card meeting-past mb-3">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <div class="col-md-10">
-                                    <h6 class="card-title mb-1"><?= htmlspecialchars($meeting['title']) ?></h6>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-secondary time-badge">
-                                            <i class="fas fa-calendar"></i> <?= date('M j, Y', strtotime($meeting['meeting_date'])) ?>
-                                        </span>
-                                        <span class="badge <?= getMeetingStatusBadgeClass($meeting['status']) ?> time-badge">
-                                            <?= ucfirst($meeting['status']) ?>
-                                        </span>
-                                        <?php if ($meeting['project_name']): ?>
-                                            <span class="badge bg-light text-dark time-badge">
-                                                <i class="fas fa-project-diagram"></i> <?= htmlspecialchars($meeting['project_name']) ?>
-                                            </span>
-                                        <?php endif; ?>
+                                <?php if ($meeting['location']): ?>
+                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--admin-border);">
+                                        <small style="color: var(--admin-text-muted);">
+                                            <i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($meeting['location']) ?>
+                                        </small>
                                     </div>
-                                </div>
-                                <div class="col-md-2 text-md-end">
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="showMeetingDetails(<?= $meeting['id'] ?>)">
-                                        <i class="fas fa-eye"></i> View
-                                    </button>
-                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-                
-                <?php if (count($pastMeetings) > 5): ?>
-                    <div class="text-center">
-                        <button class="btn btn-outline-primary" onclick="loadMoreMeetings()">
-                            <i class="fas fa-chevron-down"></i> Load More
-                        </button>
-                    </div>
+                    <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </div>
-    <?php endif; ?>
-</div>
 
-<!-- Meeting Details Modal -->
-<div class="modal fade" id="meetingModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Meeting Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="meetingModalBody">
-                <div class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
+        <!-- Past Meetings -->
+        <?php if (!empty($pastMeetings)): ?>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-history"></i>
+                        Meeting History (<?= count($pastMeetings) ?>)
+                    </h3>
                 </div>
+                <div class="admin-card-body">
+                    <?php foreach (array_slice($pastMeetings, 0, 5) as $meeting): ?>
+                        <div class="admin-card" style="margin-bottom: 1rem; border-left: 3px solid var(--admin-border);">
+                            <div class="admin-card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <h6 style="margin-bottom: 0.5rem; color: var(--admin-text-primary);"><?= htmlspecialchars($meeting['title']) ?></h6>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                            <span class="admin-badge admin-badge-gray">
+                                                <i class="fas fa-calendar"></i> <?= date('M j, Y', strtotime($meeting['meeting_date'])) ?>
+                                            </span>
+                                            <span class="admin-badge admin-badge-<?= getMeetingStatusBadgeClass($meeting['status']) ?>">
+                                                <?= ucfirst($meeting['status']) ?>
+                                            </span>
+                                            <?php if ($meeting['project_name']): ?>
+                                                <span class="admin-badge admin-badge-gray">
+                                                    <i class="fas fa-project-diagram"></i> <?= htmlspecialchars($meeting['project_name']) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="showMeetingDetails(<?= $meeting['id'] ?>)">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+
+                    <?php if (count($pastMeetings) > 5): ?>
+                        <div style="text-align: center; padding-top: 1rem;">
+                            <button class="admin-btn admin-btn-secondary" onclick="loadMoreMeetings()">
+                                <i class="fas fa-chevron-down"></i> Load More
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <!-- Quick Actions -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: grid; gap: 0.75rem;">
+                    <a href="/index.php?page=user_meetings_schedule" class="admin-btn admin-btn-sm admin-btn-primary" style="width: 100%;">
+                        <i class="fas fa-calendar-plus"></i> Schedule New Meeting
+                    </a>
+                    <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-sm admin-btn-secondary" style="width: 100%;">
+                        <i class="fas fa-ticket-alt"></i> Create Support Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting Guidelines -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h4 class="admin-card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Meeting Guidelines
+                </h4>
+            </div>
+            <div class="admin-card-body">
+                <h6>Preparation Tips</h6>
+                <ul style="font-size: 0.875rem; margin-bottom: 1rem;">
+                    <li>Prepare an agenda or list of topics</li>
+                    <li>Have relevant documents ready</li>
+                    <li>Test your audio/video beforehand</li>
+                    <li>Join 5 minutes early</li>
+                </ul>
+
+                <h6>Meeting Types</h6>
+                <ul style="font-size: 0.875rem;">
+                    <li><strong>Consultation:</strong> Project planning</li>
+                    <li><strong>Review:</strong> Progress updates</li>
+                    <li><strong>Support:</strong> Technical assistance</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Meeting Details Modal -->
+<div class="admin-modal admin-hidden" id="meetingModal">
+    <div class="admin-modal-content">
+        <div class="admin-modal-header">
+            <h5>Meeting Details</h5>
+            <button type="button" data-modal-close>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="admin-modal-body" id="meetingModalBody">
+            <div style="text-align: center; padding: 2rem;">
+                <div class="admin-spinner"></div>
+                <p style="color: var(--admin-text-muted); margin-top: 1rem;">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/public/assets/js/admin.js"></script>
 <script>
 function showMeetingDetails(meetingId) {
-    const modal = new bootstrap.Modal(document.getElementById('meetingModal'));
-    modal.show();
-    
+    const modal = document.getElementById('meetingModal');
+    modal.classList.remove('admin-hidden');
+    modal.style.display = 'flex';
+
     // Here you would load meeting details via AJAX
     // For now, just show a placeholder
     setTimeout(() => {
         document.getElementById('meetingModalBody').innerHTML = `
             <h6>Meeting Details</h6>
             <p>Detailed meeting information for meeting #${meetingId} would be loaded here via AJAX.</p>
+            <div class="admin-flash-message admin-flash-info">
+                <i class="fas fa-construction"></i>
+                <div>Full meeting details functionality is under development in Phase 8.</div>
+            </div>
         `;
     }, 500);
 }
 
 function loadMoreMeetings() {
     // Implementation for loading more historical meetings
-    alert('Load more meetings functionality would be implemented here.');
+    window.adminPanel.showFlashMessage('info', 'Load more meetings functionality would be implemented here.');
 }
 </script>
-
-</body>
-</html>
 
 <?php
 function getMeetingStatusBadgeClass($status): string
 {
     return match($status) {
-        'scheduled' => 'bg-info',
-        'completed' => 'bg-success',
-        'cancelled' => 'bg-danger',
-        'rescheduled' => 'bg-warning',
-        default => 'bg-secondary'
+        'scheduled' => 'primary',
+        'completed' => 'success',
+        'cancelled' => 'error',
+        'rescheduled' => 'warning',
+        default => 'gray'
     };
 }
 ?>

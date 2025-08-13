@@ -1,6 +1,6 @@
 <?php
 /**
- * User Profile Settings Page - PHASE 8
+ * User Profile Settings Page - PHASE 8 - DARK ADMIN THEME
  * Security and account settings for user profiles
  */
 
@@ -147,52 +147,19 @@ try {
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
     <style>
-        .settings-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .settings-section {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: none;
-        }
-        .settings-section h5 {
-            color: #495057;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
         .danger-zone {
-            border: 2px solid #dc3545;
-            background: #fff5f5;
+            border: 2px solid var(--admin-error);
+            background: var(--admin-error-bg);
         }
-        .danger-zone h5 {
-            color: #dc3545;
-            border-bottom-color: #dc3545;
+        .danger-zone .admin-card-header {
+            background: var(--admin-error-bg);
+            border-bottom-color: var(--admin-error);
         }
-        .btn-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-        }
-        .btn-gradient:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            color: white;
+        .danger-zone .admin-card-title {
+            color: var(--admin-error-light);
         }
         .security-indicator {
             display: inline-block;
@@ -201,304 +168,367 @@ $flashMessages = $flashMessageService->getAllMessages();
             border-radius: 50%;
             margin-right: 8px;
         }
-        .security-strong { background-color: #28a745; }
-        .security-medium { background-color: #ffc107; }
-        .security-weak { background-color: #dc3545; }
+        .security-strong { background-color: var(--admin-success); }
+        .security-medium { background-color: var(--admin-warning); }
+        .security-weak { background-color: var(--admin-error); }
     </style>
-</head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <!-- Header Section -->
-    <div class="settings-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="mb-2">
-                    <i class="fas fa-shield-alt"></i>
-                    Profile Security & Settings
-                </h1>
-                <p class="mb-0 opacity-75">Manage your account security and preferences</p>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <a href="/index.php?page=user_profile" class="btn btn-light">
-                    <i class="fas fa-arrow-left"></i> Back to Profile
+
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-user-circle"></i>
+                Client Portal
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
                 </a>
             </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-shield-alt"></i>
+                    <div class="admin-header-text">
+                        <h1>Profile Security & Settings</h1>
+                        <p>Manage your account security and preferences</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=user_profile" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
                 <?php endforeach; ?>
-            </div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <div class="row">
-        <!-- Left Column -->
-        <div class="col-lg-8">
+    <div class="admin-layout-main">
+        <div class="admin-content">
             <!-- Password Security -->
-            <div class="settings-section">
-                <h5>
-                    <i class="fas fa-key text-primary"></i>
-                    Password Security
-                </h5>
-
-                <div class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <span class="security-indicator security-medium"></span>
-                        <span>Current security level: <strong>Medium</strong></span>
-                    </div>
-                    <small class="text-muted">Last changed: <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?></small>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-key"></i>
+                        Password Security
+                    </h5>
                 </div>
-
-                <form method="POST" action="/index.php?page=user_profile_settings">
-                    <input type="hidden" name="action" value="change_password">
-
-                    <div class="mb-3">
-                        <label for="current_password" class="form-label">Current Password</label>
-                        <input type="password"
-                               class="form-control"
-                               id="current_password"
-                               name="current_password"
-                               required>
+                <div class="admin-card-body">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="security-indicator security-medium"></span>
+                            <span style="color: var(--admin-text-primary);">Current security level: <strong>Medium</strong></span>
+                        </div>
+                        <small style="color: var(--admin-text-muted);">Last changed: <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?></small>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="new_password" class="form-label">New Password</label>
+                    <form method="POST" action="/index.php?page=user_profile_settings">
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="admin-form-group">
+                            <label for="current_password" class="admin-label admin-label-required">Current Password</label>
+                            <input type="password"
+                                   class="admin-input"
+                                   id="current_password"
+                                   name="current_password"
+                                   required>
+                        </div>
+
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="new_password" class="admin-label admin-label-required">New Password</label>
                                 <input type="password"
-                                       class="form-control"
+                                       class="admin-input"
                                        id="new_password"
                                        name="new_password"
                                        minlength="8"
                                        required>
-                                <div class="form-text">At least 8 characters long</div>
+                                <div class="admin-help-text">At least 8 characters long</div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <div class="admin-form-group">
+                                <label for="confirm_password" class="admin-label admin-label-required">Confirm New Password</label>
                                 <input type="password"
-                                       class="form-control"
+                                       class="admin-input"
                                        id="confirm_password"
                                        name="confirm_password"
                                        required>
                             </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn btn-gradient">
-                        <i class="fas fa-shield-alt"></i> Update Password
-                    </button>
-                </form>
+                        <button type="submit" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-shield-alt"></i> Update Password
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- Notification Preferences -->
-            <div class="settings-section">
-                <h5>
-                    <i class="fas fa-bell text-primary"></i>
-                    Notification Preferences
-                </h5>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-bell"></i>
+                        Notification Preferences
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <form method="POST" action="/index.php?page=user_profile_settings">
+                        <input type="hidden" name="action" value="update_preferences">
 
-                <form method="POST" action="/index.php?page=user_profile_settings">
-                    <input type="hidden" name="action" value="update_preferences">
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input"
-                                   type="checkbox"
-                                   id="email_notifications"
-                                   name="email_notifications"
-                                   <?= !empty($preferences['email_notifications']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="email_notifications">
-                                <strong>Email Notifications</strong>
-                            </label>
-                            <div class="form-text">Receive notifications about your account activity</div>
+                        <div class="admin-form-group">
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <input type="checkbox"
+                                       id="email_notifications"
+                                       name="email_notifications"
+                                       style="margin-top: 0.25rem;"
+                                       <?= !empty($preferences['email_notifications']) ? 'checked' : '' ?>>
+                                <div style="flex: 1;">
+                                    <label for="email_notifications" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                        Email Notifications
+                                    </label>
+                                    <div class="admin-help-text" style="margin-top: 0.25rem;">Receive notifications about your account activity</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input"
-                                   type="checkbox"
-                                   id="marketing_emails"
-                                   name="marketing_emails"
-                                   <?= !empty($preferences['marketing_emails']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="marketing_emails">
-                                <strong>Marketing Emails</strong>
-                            </label>
-                            <div class="form-text">Receive updates about new features and promotions</div>
+                        <div class="admin-form-group">
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <input type="checkbox"
+                                       id="marketing_emails"
+                                       name="marketing_emails"
+                                       style="margin-top: 0.25rem;"
+                                       <?= !empty($preferences['marketing_emails']) ? 'checked' : '' ?>>
+                                <div style="flex: 1;">
+                                    <label for="marketing_emails" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                        Marketing Emails
+                                    </label>
+                                    <div class="admin-help-text" style="margin-top: 0.25rem;">Receive updates about new features and promotions</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input"
-                                   type="checkbox"
-                                   id="two_factor_enabled"
-                                   name="two_factor_enabled"
-                                   <?= !empty($preferences['two_factor_enabled']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="two_factor_enabled">
-                                <strong>Two-Factor Authentication</strong>
-                                <span class="badge bg-warning ms-2">Recommended</span>
-                            </label>
-                            <div class="form-text">Add an extra layer of security to your account</div>
+                        <div class="admin-form-group">
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <input type="checkbox"
+                                       id="two_factor_enabled"
+                                       name="two_factor_enabled"
+                                       style="margin-top: 0.25rem;"
+                                       <?= !empty($preferences['two_factor_enabled']) ? 'checked' : '' ?>>
+                                <div style="flex: 1;">
+                                    <label for="two_factor_enabled" style="margin: 0; color: var(--admin-text-primary); font-weight: 500;">
+                                        Two-Factor Authentication
+                                        <span class="admin-badge admin-badge-warning" style="margin-left: 0.5rem; font-size: 0.65rem;">Recommended</span>
+                                    </label>
+                                    <div class="admin-help-text" style="margin-top: 0.25rem;">Add an extra layer of security to your account</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn btn-gradient">
-                        <i class="fas fa-save"></i> Save Preferences
-                    </button>
-                </form>
+                        <button type="submit" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-save"></i> Save Preferences
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- Account Information -->
-            <div class="settings-section">
-                <h5>
-                    <i class="fas fa-info-circle text-primary"></i>
-                    Account Information
-                </h5>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <div class="form-control-plaintext"><?= htmlspecialchars($currentUser['username']) ?></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email Address</label>
-                            <div class="form-control-plaintext"><?= htmlspecialchars($currentUser['email']) ?></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label">Account Role</label>
-                            <div class="form-control-plaintext">
-                                <span class="badge bg-primary"><?= ucfirst($currentUser['role']) ?></span>
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-info-circle"></i>
+                        Account Information
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="admin-grid admin-grid-cols-2">
+                        <div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Username</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= htmlspecialchars($currentUser['username']) ?>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Email Address</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= htmlspecialchars($currentUser['email']) ?>
+                                </div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Member Since</label>
-                            <div class="form-control-plaintext"><?= date('F j, Y', strtotime($currentUser['created_at'])) ?></div>
+                        <div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Account Role</label>
+                                <div>
+                                    <span class="admin-badge admin-badge-primary">
+                                        <i class="fas fa-user"></i>
+                                        <?= ucfirst($currentUser['role']) ?>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Member Since</label>
+                                <div class="admin-input" style="background: var(--admin-bg-secondary); border: none;">
+                                    <?= date('F j, Y', strtotime($currentUser['created_at'])) ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    To update your username or email, please <a href="/index.php?page=profile_edit">edit your profile</a>.
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column -->
-        <div class="col-lg-4">
-            <!-- Security Overview -->
-            <div class="settings-section">
-                <h5>
-                    <i class="fas fa-shield-check text-primary"></i>
-                    Security Overview
-                </h5>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Account Security</span>
-                        <span class="badge bg-warning">Medium</span>
+                    <div style="background: var(--admin-info-bg); border: 1px solid var(--admin-info);
+                                border-radius: var(--admin-border-radius); padding: 1rem; margin-top: 1rem;">
+                        <i class="fas fa-info-circle" style="color: var(--admin-info); margin-right: 0.5rem;"></i>
+                        <span style="color: var(--admin-info-light);">
+                            To update your username or email, please <a href="/index.php?page=profile_edit" style="color: var(--admin-primary-light);">edit your profile</a>.
+                        </span>
                     </div>
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: 60%"></div>
-                    </div>
-                    <small class="text-muted">Based on your security settings</small>
-                </div>
-
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="fas fa-check text-success"></i> Email Verified</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="fas fa-key text-success"></i> Strong Password</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="fas fa-times text-danger"></i> 2FA Disabled</span>
-                        <small class="text-muted">Enable for better security</small>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="settings-section">
-                <h5>
-                    <i class="fas fa-bolt text-primary"></i>
-                    Quick Actions
-                </h5>
-                <div class="d-grid gap-2">
-                    <a href="/index.php?page=profile_edit" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-edit"></i> Edit Profile
-                    </a>
-                    <a href="/index.php?page=user_portfolio" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-briefcase"></i> Manage Portfolio
-                    </a>
-                    <a href="/index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
                 </div>
             </div>
 
             <!-- Danger Zone -->
-            <div class="settings-section danger-zone">
-                <h5>
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Danger Zone
-                </h5>
+            <div class="admin-card danger-zone">
+                <div class="admin-card-header">
+                    <h5 class="admin-card-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Danger Zone
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <p style="color: var(--admin-text-muted); margin-bottom: 1rem;">
+                        These actions are irreversible. Please proceed with caution.
+                    </p>
 
-                <p class="text-muted">
-                    These actions are irreversible. Please proceed with caution.
-                </p>
+                    <button type="button" class="admin-btn admin-btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        <i class="fas fa-trash-alt"></i> Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
-                    <i class="fas fa-trash-alt"></i> Delete Account
-                </button>
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <!-- Security Overview -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                        <i class="fas fa-shield-check"></i>
+                        Security Overview
+                    </h6>
+                </div>
+                <div class="admin-card-body">
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="color: var(--admin-text-primary);">Account Security</span>
+                            <span class="admin-badge admin-badge-warning">Medium</span>
+                        </div>
+                        <div style="background: var(--admin-bg-secondary); border-radius: 9999px; height: 6px; overflow: hidden;">
+                            <div style="background: var(--admin-warning); height: 100%; width: 60%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <small style="color: var(--admin-text-muted); display: block; margin-top: 0.5rem;">Based on your security settings</small>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--admin-text-primary); display: flex; align-items: center;">
+                                <i class="fas fa-check" style="color: var(--admin-success); margin-right: 0.5rem;"></i>
+                                Email Verified
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--admin-text-primary); display: flex; align-items: center;">
+                                <i class="fas fa-key" style="color: var(--admin-success); margin-right: 0.5rem;"></i>
+                                Strong Password
+                            </span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--admin-text-primary); display: flex; align-items: center;">
+                                <i class="fas fa-times" style="color: var(--admin-error); margin-right: 0.5rem;"></i>
+                                2FA Disabled
+                            </span>
+                            <small style="color: var(--admin-text-muted);">Enable for better security</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
+                    </h6>
+                </div>
+                <div class="admin-card-body">
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-primary admin-btn-sm">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                        <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-success admin-btn-sm">
+                            <i class="fas fa-briefcase"></i> Manage Portfolio
+                        </a>
+                        <a href="/index.php?page=dashboard" class="admin-btn admin-btn-secondary admin-btn-sm">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Delete Account Modal -->
-<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle text-danger"></i>
+        <div class="modal-content" style="background: var(--admin-bg-card); border: 1px solid var(--admin-border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--admin-border);">
+                <h5 class="modal-title" id="deleteAccountModalLabel" style="color: var(--admin-text-primary);">
+                    <i class="fas fa-exclamation-triangle" style="color: var(--admin-error); margin-right: 0.5rem;"></i>
                     Delete Account
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-danger">
-                    <strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.
+                <div style="background: var(--admin-error-bg); border: 1px solid var(--admin-error);
+                            border-radius: var(--admin-border-radius); padding: 1rem; margin-bottom: 1rem;">
+                    <strong style="color: var(--admin-error-light);">Warning:</strong>
+                    <span style="color: var(--admin-error-light);">This action cannot be undone. All your data will be permanently deleted.</span>
                 </div>
 
                 <form method="POST" action="/index.php?page=user_profile_settings" id="deleteAccountForm">
                     <input type="hidden" name="action" value="delete_account">
 
-                    <div class="mb-3">
-                        <label for="delete_confirmation" class="form-label">
+                    <div class="admin-form-group">
+                        <label for="delete_confirmation" class="admin-label admin-label-required">
                             Type <strong>DELETE</strong> to confirm:
                         </label>
                         <input type="text"
-                               class="form-control"
+                               class="admin-input"
                                id="delete_confirmation"
                                name="delete_confirmation"
                                placeholder="DELETE"
@@ -506,9 +536,9 @@ $flashMessages = $flashMessageService->getAllMessages();
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="deleteAccountForm" class="btn btn-danger">
+            <div class="modal-footer" style="border-top: 1px solid var(--admin-border);">
+                <button type="button" class="admin-btn admin-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="deleteAccountForm" class="admin-btn admin-btn-danger">
                     <i class="fas fa-trash-alt"></i> Delete My Account
                 </button>
             </div>
@@ -516,6 +546,7 @@ $flashMessages = $flashMessageService->getAllMessages();
     </div>
 </div>
 
+<script src="/public/assets/js/admin.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -539,12 +570,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (password && confirm) {
                 if (password === confirm) {
                     this.setCustomValidity('');
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
+                    this.style.borderColor = 'var(--admin-success)';
                 } else {
                     this.setCustomValidity('Passwords do not match');
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
+                    this.style.borderColor = 'var(--admin-error)';
                 }
             }
         });
@@ -566,18 +595,5 @@ document.addEventListener('DOMContentLoaded', function() {
         // Implementation for password strength indicator
         // This could be enhanced with visual feedback
     }
-
-    // Auto-dismiss alerts
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
 });
 </script>
-
-</body>
-</html>
-

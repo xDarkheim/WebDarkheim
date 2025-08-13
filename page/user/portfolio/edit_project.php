@@ -1,18 +1,21 @@
 <?php
 /**
- * Edit Portfolio Project
+ * Edit Portfolio Project - PHASE 8 - DARK ADMIN THEME
+ * Modern project editing interface
  */
 
-require_once __DIR__ . '/../../../includes/bootstrap.php';
+declare(strict_types=1);
 
-// Use global services from the architecture
-global $database_handler, $flashMessageService, $container;
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-use App\Application\Core\ServiceProvider;
+global $serviceProvider, $flashMessageService, $database_handler;
 
-// Get ServiceProvider instance
-$serviceProvider = ServiceProvider::getInstance($container);
-$authService = $serviceProvider->getAuth();
+try {
+    $authService = $serviceProvider->getAuth();
+} catch (Exception $e) {
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
+}
 
 // Check authentication
 if (!$authService->isAuthenticated()) {
@@ -35,12 +38,12 @@ $current_user_id = $authService->getCurrentUserId();
 // Get project ID
 $projectId = (int)($_GET['id'] ?? 0);
 if ($projectId <= 0) {
-    header('Location: /index.php?page=portfolio_manage');
+    header('Location: /index.php?page=user_portfolio');
     exit();
 }
 
 // Get client profile
-$stmt = $database_handler->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM client_profiles WHERE user_id = ?");
 $stmt->execute([$current_user_id]);
 $profileData = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -51,18 +54,18 @@ if (!$profileData) {
 }
 
 // Get project and verify ownership
-$stmt = $database_handler->prepare("SELECT * FROM client_portfolio WHERE id = ? AND client_profile_id = ?");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM client_portfolio WHERE id = ? AND client_profile_id = ?");
 $stmt->execute([$projectId, $profileData['id']]);
 $projectData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$projectData) {
     $flashMessageService->addError('Project not found or access denied.');
-    header('Location: /index.php?page=portfolio_manage');
+    header('Location: /index.php?page=user_portfolio');
     exit();
 }
 
 // Get project categories (simplified - using existing categories table)
-$stmt = $database_handler->prepare("SELECT * FROM categories WHERE status = 'active' ORDER BY name");
+$stmt = $database_handler->getConnection()->prepare("SELECT * FROM categories WHERE status = 'active' ORDER BY name");
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -70,114 +73,234 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $assignedCategories = [];
 
 $images = json_decode($projectData['images'] ?? '[]', true);
+
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-<div class="container mt-4">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/index.php?page=dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=client_portfolio">Portfolio</a></li>
-            <li class="breadcrumb-item"><a href="/index.php?page=portfolio_manage">My Projects</a></li>
-            <li class="breadcrumb-item active">Edit Project</li>
-        </ol>
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <style>
+        .image-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .image-preview-item {
+            position: relative;
+            border-radius: var(--admin-border-radius);
+            overflow: hidden;
+            border: 1px solid var(--admin-border);
+            background: var(--admin-bg-secondary);
+        }
+        .image-preview-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        .image-preview-info {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--admin-text-muted);
+            background: var(--admin-bg-tertiary);
+        }
+        .remove-image-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--admin-error);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        .remove-image-btn:hover {
+            background: var(--admin-error-light);
+        }
+        .tech-input-container {
+            position: relative;
+        }
+        .tech-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--admin-bg-card);
+            border: 1px solid var(--admin-border);
+            border-top: none;
+            border-radius: 0 0 var(--admin-border-radius) var(--admin-border-radius);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+        .tech-suggestion {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            color: var(--admin-text-primary);
+            font-size: 0.875rem;
+        }
+        .tech-suggestion:hover {
+            background: var(--admin-bg-secondary);
+        }
+    </style>
+
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-briefcase"></i>
+                Portfolio Management
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </div>
+        </div>
     </nav>
 
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0">
-                <i class="fas fa-edit text-primary me-2"></i>
-                Edit Project
-            </h1>
-            <a href="/index.php?page=portfolio_manage" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left me-1"></i>
-                Back to Projects
-            </a>
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-edit"></i>
+                    <div class="admin-header-text">
+                        <h1>Edit Project</h1>
+                        <p>Update your project information and settings</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <?php
+                        $statusConfig = [
+                            'rejected' => ['class' => 'admin-badge-error', 'icon' => 'fas fa-times-circle'],
+                            'pending' => ['class' => 'admin-badge-warning', 'icon' => 'fas fa-clock'],
+                            'published' => ['class' => 'admin-badge-success', 'icon' => 'fas fa-check-circle'],
+                            'draft' => ['class' => 'admin-badge-gray', 'icon' => 'fas fa-edit']
+                        ];
+                        $config = $statusConfig[$projectData['status']] ?? $statusConfig['draft'];
+                        ?>
+                        <span class="admin-badge <?= $config['class'] ?>">
+                            <i class="<?= $config['icon'] ?>"></i>
+                            <?= ucfirst($projectData['status']) ?>
+                        </span>
+                        <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Portfolio
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div>
-            <?php if ($projectData['status'] === 'rejected'): ?>
-                <span class="badge bg-danger">Rejected</span>
-            <?php elseif ($projectData['status'] === 'pending'): ?>
-                <span class="badge bg-warning">Under Review</span>
-            <?php elseif ($projectData['status'] === 'published'): ?>
-                <span class="badge bg-success">Published</span>
-            <?php else: ?>
-                <span class="badge bg-secondary">Draft</span>
-            <?php endif; ?>
-        </div>
-    </div>
+    </header>
 
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Status Alerts -->
     <?php if ($projectData['status'] === 'pending'): ?>
-        <div class="alert alert-warning">
-            <i class="fas fa-clock me-2"></i>
-            <strong>Project Under Review</strong><br>
-            This project is currently being reviewed by our team. You can still make changes, but they won't be visible until the next review cycle.
+        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
+            <div class="admin-flash-message admin-flash-warning">
+                <i class="fas fa-clock"></i>
+                <div>
+                    <strong>Project Under Review</strong><br>
+                    This project is currently being reviewed by our team. You can still make changes, but they won't be visible until the next review cycle.
+                </div>
+            </div>
         </div>
     <?php endif; ?>
 
     <?php if ($projectData['status'] === 'rejected' && !empty($projectData['moderation_notes'])): ?>
-        <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <strong>Project Rejected</strong><br>
-            <strong>Reason:</strong> <?= htmlspecialchars($projectData['moderation_notes']) ?><br>
-            <small>Please address the issues above and resubmit your project.</small>
+        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
+            <div class="admin-flash-message admin-flash-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Project Rejected</strong><br>
+                    <strong>Reason:</strong> <?= htmlspecialchars($projectData['moderation_notes']) ?><br>
+                    <small>Please address the issues above and resubmit your project.</small>
+                </div>
+            </div>
         </div>
     <?php endif; ?>
 
     <form id="projectForm" enctype="multipart/form-data">
         <input type="hidden" name="project_id" value="<?= $projectId ?>">
 
-        <div class="row">
-            <div class="col-lg-8">
+        <div class="admin-layout-main">
+            <div class="admin-content">
                 <!-- Project Information -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-info-circle me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-info-circle"></i>
                             Project Information
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Project Title <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="title" name="title" required
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="title" class="admin-label admin-label-required">Project Title</label>
+                            <input type="text" class="admin-input" id="title" name="title" required
                                    value="<?= htmlspecialchars($projectData['title']) ?>"
                                    placeholder="Enter your project title">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="4"
+                        <div class="admin-form-group">
+                            <label for="description" class="admin-label">Description</label>
+                            <textarea class="admin-input admin-textarea" id="description" name="description" rows="4"
                                       placeholder="Describe your project, its goals, and key features"><?= htmlspecialchars($projectData['description'] ?? '') ?></textarea>
+                            <div class="admin-help-text">Provide a detailed description of what your project does and its main features</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="technologies" class="form-label">Technologies Used</label>
-                            <input type="text" class="form-control" id="technologies" name="technologies"
-                                   value="<?= htmlspecialchars($projectData['technologies'] ?? '') ?>"
-                                   placeholder="e.g., React, Node.js, MongoDB, AWS">
-                            <small class="form-text text-muted">
-                                List the main technologies, frameworks, and tools used in this project
-                            </small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="project_url" class="form-label">Live Project URL</label>
-                                    <input type="url" class="form-control" id="project_url" name="project_url"
-                                           value="<?= htmlspecialchars($projectData['project_url'] ?? '') ?>"
-                                           placeholder="https://your-project.com">
-                                </div>
+                        <div class="admin-form-group">
+                            <label for="technologies" class="admin-label">Technologies Used</label>
+                            <div class="tech-input-container">
+                                <input type="text" class="admin-input" id="technologies" name="technologies"
+                                       value="<?= htmlspecialchars($projectData['technologies'] ?? '') ?>"
+                                       placeholder="e.g., React, Node.js, MongoDB, AWS">
+                                <div class="tech-suggestions" id="techSuggestions"></div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="github_url" class="form-label">GitHub Repository</label>
-                                    <input type="url" class="form-control" id="github_url" name="github_url"
-                                           value="<?= htmlspecialchars($projectData['github_url'] ?? '') ?>"
-                                           placeholder="https://github.com/username/repo">
-                                </div>
+                            <div class="admin-help-text">List the main technologies, frameworks, and tools used in this project</div>
+                        </div>
+
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="project_url" class="admin-label">Live Project URL</label>
+                                <input type="url" class="admin-input" id="project_url" name="project_url"
+                                       value="<?= htmlspecialchars($projectData['project_url'] ?? '') ?>"
+                                       placeholder="https://your-project.com">
+                                <div class="admin-help-text">Link to your live project or demo</div>
+                            </div>
+                            <div class="admin-form-group">
+                                <label for="github_url" class="admin-label">GitHub Repository</label>
+                                <input type="url" class="admin-input" id="github_url" name="github_url"
+                                       value="<?= htmlspecialchars($projectData['github_url'] ?? '') ?>"
+                                       placeholder="https://github.com/username/repo">
+                                <div class="admin-help-text">Link to your source code repository</div>
                             </div>
                         </div>
                     </div>
@@ -185,27 +308,25 @@ $images = json_decode($projectData['images'] ?? '[]', true);
 
                 <!-- Current Images -->
                 <?php if (!empty($images) && is_array($images)): ?>
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-images me-2"></i>
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h5 class="admin-card-title">
+                                <i class="fas fa-images"></i>
                                 Current Images
                             </h5>
                         </div>
-                        <div class="card-body">
-                            <div class="row" id="currentImages">
+                        <div class="admin-card-body">
+                            <div class="image-preview-grid" id="currentImages">
                                 <?php foreach ($images as $index => $image): ?>
-                                    <div class="col-md-4 mb-3" data-image="<?= htmlspecialchars($image) ?>">
-                                        <div class="card">
-                                            <img src="/storage/uploads/portfolio/<?= htmlspecialchars($image) ?>"
-                                                 class="card-img-top" style="height: 150px; object-fit: cover;"
-                                                 alt="Project image">
-                                            <div class="card-body p-2">
-                                                <button type="button" class="btn btn-sm btn-outline-danger w-100"
-                                                        onclick="removeImage('<?= htmlspecialchars($image) ?>')">
-                                                    <i class="fas fa-trash me-1"></i> Remove
-                                                </button>
-                                            </div>
+                                    <div class="image-preview-item" data-image="<?= htmlspecialchars($image) ?>">
+                                        <img src="/storage/uploads/portfolio/<?= htmlspecialchars($image) ?>"
+                                             alt="Project image">
+                                        <button type="button" class="remove-image-btn"
+                                                onclick="removeImage('<?= htmlspecialchars($image) ?>')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <div class="image-preview-info">
+                                            <?= htmlspecialchars($image) ?>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -215,42 +336,43 @@ $images = json_decode($projectData['images'] ?? '[]', true);
                 <?php endif; ?>
 
                 <!-- Add New Images -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-plus me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-plus"></i>
                             Add New Images
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="images" class="form-label">Upload New Images</label>
-                            <input type="file" class="form-control" id="images" name="images[]"
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="images" class="admin-label">Upload New Images</label>
+                            <input type="file" class="admin-input" id="images" name="images[]"
                                    multiple accept="image/*">
-                            <small class="form-text text-muted">
-                                Upload additional screenshots, mockups, or other visual representations.
-                                Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per file.
-                            </small>
+                            <div class="admin-help-text">
+                                Upload additional screenshots, mockups, or other visual representations.<br>
+                                <strong>Supported formats:</strong> JPEG, PNG, GIF, WebP | <strong>Max size:</strong> 5MB per file
+                            </div>
                         </div>
 
-                        <div id="imagePreview" class="row mt-3"></div>
+                        <div id="imagePreview" class="image-preview-grid"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-4">
+            <!-- Sidebar -->
+            <div class="admin-sidebar">
                 <!-- Project Settings -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-cog me-2"></i>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-cog"></i>
                             Project Settings
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="visibility" class="form-label">Visibility</label>
-                            <select class="form-select" id="visibility" name="visibility">
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="visibility" class="admin-label">Visibility</label>
+                            <select class="admin-input admin-select" id="visibility" name="visibility">
                                 <option value="private" <?= $projectData['visibility'] === 'private' ? 'selected' : '' ?>>
                                     Private - Only visible to you
                                 </option>
@@ -258,67 +380,83 @@ $images = json_decode($projectData['images'] ?? '[]', true);
                                     Public - Visible to everyone (after approval)
                                 </option>
                             </select>
+                            <div class="admin-help-text">Control who can see this project</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Categories</label>
-                            <?php foreach ($categories as $category): ?>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="categories[]" value="<?= $category['id'] ?>"
-                                           id="category_<?= $category['id'] ?>"
-                                           <?= in_array($category['id'], $assignedCategories) ? 'checked' : '' ?>>
-                                    <label class="form-check-label" for="category_<?= $category['id'] ?>">
-                                        <?= htmlspecialchars($category['name']) ?>
-                                    </label>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php if (!empty($categories)): ?>
+                            <div class="admin-form-group">
+                                <label class="admin-label">Categories</label>
+                                <?php foreach ($categories as $category): ?>
+                                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                                        <input type="checkbox"
+                                               name="categories[]"
+                                               value="<?= $category['id'] ?>"
+                                               id="category_<?= $category['id'] ?>"
+                                               style="margin-right: 0.5rem;"
+                                               <?= in_array($category['id'], $assignedCategories) ? 'checked' : '' ?>>
+                                        <label for="category_<?= $category['id'] ?>" style="margin: 0; color: var(--admin-text-primary); font-size: 0.875rem;">
+                                            <?= htmlspecialchars($category['name']) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                                <div class="admin-help-text">Select relevant categories for better discovery</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Project Stats -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Project Stats
+                <!-- Project Statistics -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-chart-bar"></i>
+                            Project Statistics
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="h5 mb-0"><?= rand(0, 500) ?></div>
-                                <small class="text-muted">Views</small>
+                    <div class="admin-card-body">
+                        <div class="admin-stats-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary); margin-bottom: 0.25rem;">
+                                    <?= rand(0, 500) ?>
+                                </div>
+                                <small style="color: var(--admin-text-muted);">Views</small>
                             </div>
-                            <div class="col-6">
-                                <div class="h5 mb-0"><?= date('M j, Y', strtotime($projectData['created_at'])) ?></div>
-                                <small class="text-muted">Created</small>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-success); margin-bottom: 0.25rem;">
+                                    <?= date('M j, Y', strtotime($projectData['created_at'])) ?>
+                                </div>
+                                <small style="color: var(--admin-text-muted);">Created</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary" data-action="save">
-                                <i class="fas fa-save me-1"></i> Save Changes
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title" style="font-size: 0.875rem;">
+                            <i class="fas fa-bolt"></i>
+                            Actions
+                        </h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm" data-action="save">
+                                <i class="fas fa-save"></i> Save Changes
                             </button>
 
                             <?php if ($projectData['status'] === 'draft'): ?>
-                                <button type="submit" class="btn btn-success" data-action="submit">
-                                    <i class="fas fa-paper-plane me-1"></i> Save & Submit for Review
+                                <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" data-action="submit">
+                                    <i class="fas fa-paper-plane"></i> Save & Submit for Review
                                 </button>
                             <?php elseif ($projectData['status'] === 'rejected'): ?>
-                                <button type="submit" class="btn btn-success" data-action="submit">
-                                    <i class="fas fa-paper-plane me-1"></i> Save & Resubmit
+                                <button type="submit" class="admin-btn admin-btn-success admin-btn-sm" data-action="submit">
+                                    <i class="fas fa-paper-plane"></i> Save & Resubmit
                                 </button>
                             <?php endif; ?>
 
-                            <a href="/index.php?page=portfolio_manage" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-1"></i> Cancel
+                            <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-times"></i> Cancel
                             </a>
                         </div>
                     </div>
@@ -328,6 +466,7 @@ $images = json_decode($projectData['images'] ?? '[]', true);
     </form>
 </div>
 
+<script src="/public/assets/js/admin.js"></script>
 <script>
 let removedImages = [];
 
@@ -335,6 +474,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('projectForm');
     const imageInput = document.getElementById('images');
     const imagePreview = document.getElementById('imagePreview');
+    const techInput = document.getElementById('technologies');
+    const techSuggestions = document.getElementById('techSuggestions');
+
+    // Popular technologies for suggestions
+    const popularTech = [
+        'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'Express.js',
+        'PHP', 'Laravel', 'Symfony', 'Python', 'Django', 'Flask', 'Java', 'Spring',
+        'C#', '.NET', 'Ruby', 'Rails', 'Go', 'Rust', 'MySQL', 'PostgreSQL', 'MongoDB',
+        'Redis', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'Google Cloud', 'Firebase'
+    ];
 
     // Handle new image preview
     imageInput.addEventListener('change', function() {
@@ -345,21 +494,49 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-4 mb-3';
-                    col.innerHTML = `
-                        <div class="card">
-                            <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="${file.name}">
-                            <div class="card-body p-2">
-                                <small class="text-muted">${file.name}</small>
-                            </div>
+                    const item = document.createElement('div');
+                    item.className = 'image-preview-item';
+                    item.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <div class="image-preview-info">
+                            <div style="font-weight: 500; color: var(--admin-text-primary); margin-bottom: 0.25rem;">${file.name}</div>
+                            <div>${(file.size / 1024 / 1024).toFixed(2)} MB</div>
                         </div>
                     `;
-                    imagePreview.appendChild(col);
+                    imagePreview.appendChild(item);
                 };
                 reader.readAsDataURL(file);
             }
         }
+    });
+
+    // Technology suggestions
+    techInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        techSuggestions.innerHTML = '';
+
+        if (query.length > 0) {
+            const filteredTech = popularTech.filter(tech => tech.toLowerCase().includes(query));
+            filteredTech.forEach(tech => {
+                const suggestion = document.createElement('div');
+                suggestion.className = 'tech-suggestion';
+                suggestion.textContent = tech;
+                suggestion.addEventListener('click', function() {
+                    techInput.value = tech;
+                    techSuggestions.innerHTML = '';
+                });
+                techSuggestions.appendChild(suggestion);
+            });
+            techSuggestions.style.display = 'block';
+        } else {
+            techSuggestions.style.display = 'none';
+        }
+    });
+
+    techInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            techSuggestions.style.display = 'none';
+        }, 100);
     });
 
     // Handle form submission
@@ -382,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show loading state
         const originalText = submitButton.innerHTML;
-        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         submitButton.disabled = true;
 
         fetch('/page/api/portfolio/update_project.php', {
@@ -392,20 +569,23 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(action === 'submit' ?
+                window.adminPanel.showFlashMessage('success',
+                    action === 'submit' ?
                     'Project updated and submitted for review!' :
                     'Project updated successfully!'
                 );
-                window.location.href = '/page/user/portfolio/my_projects.php';
+                setTimeout(() => {
+                    window.location.href = '/index.php?page=user_portfolio';
+                }, 1500);
             } else {
-                alert('Error: ' + (data.error || 'Unknown error occurred'));
+                window.adminPanel.showFlashMessage('error', 'Error: ' + (data.error || 'Unknown error occurred'));
                 // Restore button state
                 submitButton.innerHTML = originalText;
                 submitButton.disabled = false;
             }
         })
         .catch(error => {
-            alert('An error occurred while updating the project.');
+            window.adminPanel.showFlashMessage('error', 'An error occurred while updating the project.');
             console.error('Error:', error);
             // Restore button state
             submitButton.innerHTML = originalText;
@@ -421,3 +601,4 @@ function removeImage(imageName) {
     }
 }
 </script>
+

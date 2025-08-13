@@ -1,6 +1,6 @@
 <?php
 /**
- * Profile Edit Page - PHASE 8
+ * Profile Edit Page - PHASE 8 - DARK ADMIN THEME
  * Modern profile editing interface with client profile integration
  */
 
@@ -181,49 +181,28 @@ function calculateProfileCompletion($user, $profile): array {
 
 $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
     <style>
-        .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .form-section {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: none;
-        }
-        .form-section h5 {
-            color: #495057;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
         .skill-tag {
-            display: inline-block;
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            background: var(--admin-primary-bg);
+            color: var(--admin-primary-light);
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
             margin: 0.25rem;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
+            border: 1px solid var(--admin-primary);
         }
         .skill-tag .remove-skill {
             margin-left: 0.5rem;
             cursor: pointer;
-            color: #f44336;
+            color: var(--admin-error);
+            font-weight: bold;
+        }
+        .skill-tag .remove-skill:hover {
+            color: var(--admin-error-light);
         }
         .social-input-group {
             position: relative;
@@ -233,7 +212,7 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6c757d;
+            color: var(--admin-text-muted);
             z-index: 10;
         }
         .social-input {
@@ -248,93 +227,98 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
             justify-content: center;
             font-weight: bold;
             color: white;
-        }
-        .btn-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-        }
-        .btn-gradient:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            color: white;
+            background: var(--admin-primary);
         }
     </style>
-</head>
-<body class="bg-light">
 
-<div class="container py-4">
-    <!-- Header Section -->
-    <div class="profile-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="mb-2">
-                    <i class="fas fa-user-edit"></i>
-                    Edit Your Profile
-                </h1>
-                <p class="mb-0 opacity-75">Keep your information up to date to get the most out of our platform</p>
+<div class="admin-container">
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-user-circle"></i>
+                Client Portal
+            </a>
+            <div class="admin-nav-links">
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i> Portfolio
+                </a>
             </div>
-            <div class="col-md-4 text-md-end">
-                <div class="d-flex align-items-center justify-content-md-end gap-3">
-                    <div>
-                        <div class="progress-circle" style="background: rgba(255,255,255,0.2);">
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-user-edit"></i>
+                    <div class="admin-header-text">
+                        <h1>Edit Your Profile</h1>
+                        <p>Keep your information up to date to get the most out of our platform</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="progress-circle">
                             <?= $completion['percentage'] ?>%
                         </div>
-                        <small class="d-block text-center mt-1">Complete</small>
-                    </div>
-                    <div>
-                        <a href="/index.php?page=user_profile" class="btn btn-light btn-sm">
+                        <a href="/index.php?page=user_profile" class="admin-btn admin-btn-secondary">
                             <i class="fas fa-eye"></i> View Profile
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
+                        <div><?= htmlspecialchars($message['text']) ?></div>
+                    </div>
                 <?php endforeach; ?>
-            </div>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
     <form method="POST" action="/index.php?page=profile_edit">
-        <div class="row">
-            <!-- Left Column -->
-            <div class="col-lg-8">
+        <div class="admin-layout-main">
+            <div class="admin-content">
                 <!-- Basic Information -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-user text-primary"></i>
-                        Basic Information
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="username" 
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-user"></i>
+                            Basic Information
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="username" class="admin-label admin-label-required">Username</label>
+                                <input type="text"
+                                       class="admin-input"
+                                       id="username"
                                        name="username" 
                                        value="<?= htmlspecialchars($currentUser['username']) ?>"
                                        required>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
-                                <input type="email" 
-                                       class="form-control" 
-                                       id="email" 
+                            <div class="admin-form-group">
+                                <label for="email" class="admin-label admin-label-required">Email Address</label>
+                                <input type="email"
+                                       class="admin-input"
+                                       id="email"
                                        name="email" 
                                        value="<?= htmlspecialchars($currentUser['email']) ?>"
                                        required>
@@ -344,256 +328,279 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
                 </div>
 
                 <!-- Professional Information -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-briefcase text-primary"></i>
-                        Professional Information
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="company_name" class="form-label">Company Name</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="company_name" 
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-briefcase"></i>
+                            Professional Information
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="company_name" class="admin-label">Company Name</label>
+                                <input type="text"
+                                       class="admin-input"
+                                       id="company_name"
                                        name="company_name" 
                                        value="<?= htmlspecialchars($clientProfile['company_name'] ?? '') ?>"
                                        placeholder="Your company or organization">
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="position" class="form-label">Position/Title</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="position" 
+                            <div class="admin-form-group">
+                                <label for="position" class="admin-label">Position/Title</label>
+                                <input type="text"
+                                       class="admin-input"
+                                       id="position"
                                        name="position" 
                                        value="<?= htmlspecialchars($clientProfile['position'] ?? '') ?>"
                                        placeholder="Your job title or role">
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="location" class="form-label">Location</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="location" 
+
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div class="admin-form-group">
+                                <label for="location" class="admin-label">Location</label>
+                                <input type="text"
+                                       class="admin-input"
+                                       id="location"
                                        name="location" 
                                        value="<?= htmlspecialchars($clientProfile['location'] ?? '') ?>"
                                        placeholder="City, Country">
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="website" class="form-label">Website</label>
-                                <input type="url" 
-                                       class="form-control" 
-                                       id="website" 
+                            <div class="admin-form-group">
+                                <label for="website" class="admin-label">Website</label>
+                                <input type="url"
+                                       class="admin-input"
+                                       id="website"
                                        name="website" 
                                        value="<?= htmlspecialchars($clientProfile['website'] ?? '') ?>"
                                        placeholder="https://yourwebsite.com">
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="bio" class="form-label">Bio</label>
-                        <textarea class="form-control" 
-                                  id="bio" 
-                                  name="bio" 
-                                  rows="4" 
-                                  placeholder="Tell us about yourself, your experience, and what you do..."><?= htmlspecialchars($clientProfile['bio'] ?? '') ?></textarea>
-                        <div class="form-text">A good bio helps others understand your background and expertise.</div>
+                        <div class="admin-form-group">
+                            <label for="bio" class="admin-label">Bio</label>
+                            <textarea class="admin-input admin-textarea"
+                                      id="bio"
+                                      name="bio"
+                                      rows="4"
+                                      placeholder="Tell us about yourself, your experience, and what you do..."><?= htmlspecialchars($clientProfile['bio'] ?? '') ?></textarea>
+                            <div class="admin-help-text">A good bio helps others understand your background and expertise.</div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Skills -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-code text-primary"></i>
-                        Skills & Technologies
-                    </h5>
-                    <div class="mb-3">
-                        <label for="skill-input" class="form-label">Add Skills</label>
-                        <div class="input-group">
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="skill-input" 
-                                   placeholder="Type a skill and press Enter">
-                            <button type="button" class="btn btn-outline-primary" id="add-skill-btn">
-                                <i class="fas fa-plus"></i> Add
-                            </button>
-                        </div>
-                        <div class="form-text">Add technologies, programming languages, tools you work with</div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-code"></i>
+                            Skills & Technologies
+                        </h5>
                     </div>
-                    
-                    <div id="skills-container" class="mb-3">
-                        <?php 
-                        $skills = [];
-                        if (!empty($clientProfile['skills'])) {
-                            $skills = json_decode($clientProfile['skills'], true) ?: [];
-                        }
-                        foreach ($skills as $skill): ?>
-                            <span class="skill-tag">
-                                <?= htmlspecialchars($skill) ?>
-                                <span class="remove-skill">&times;</span>
-                                <input type="hidden" name="skills[]" value="<?= htmlspecialchars($skill) ?>">
-                            </span>
-                        <?php endforeach; ?>
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="skill-input" class="admin-label">Add Skills</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text"
+                                       class="admin-input"
+                                       id="skill-input"
+                                       placeholder="Type a skill and press Enter"
+                                       style="flex: 1;">
+                                <button type="button" class="admin-btn admin-btn-primary" id="add-skill-btn">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                            <div class="admin-help-text">Add technologies, programming languages, tools you work with</div>
+                        </div>
+
+                        <div id="skills-container" style="margin-top: 1rem;">
+                            <?php
+                            $skills = [];
+                            if (!empty($clientProfile['skills'])) {
+                                $skills = json_decode($clientProfile['skills'], true) ?: [];
+                            }
+                            foreach ($skills as $skill): ?>
+                                <span class="skill-tag">
+                                    <?= htmlspecialchars($skill) ?>
+                                    <span class="remove-skill">&times;</span>
+                                    <input type="hidden" name="skills[]" value="<?= htmlspecialchars($skill) ?>">
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Social Links -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-share-alt text-primary"></i>
-                        Social Links
-                    </h5>
-                    <div class="row">
-                        <?php 
-                        $socialPlatforms = [
-                            'linkedin' => ['icon' => 'fab fa-linkedin', 'placeholder' => 'LinkedIn profile URL'],
-                            'github' => ['icon' => 'fab fa-github', 'placeholder' => 'GitHub profile URL'],
-                            'twitter' => ['icon' => 'fab fa-twitter', 'placeholder' => 'Twitter profile URL'],
-                            'behance' => ['icon' => 'fab fa-behance', 'placeholder' => 'Behance profile URL'],
-                            'dribbble' => ['icon' => 'fab fa-dribbble', 'placeholder' => 'Dribbble profile URL']
-                        ];
-                        
-                        $existingSocial = [];
-                        if (!empty($clientProfile['social_links'])) {
-                            $existingSocial = json_decode($clientProfile['social_links'], true) ?: [];
-                        }
-                        
-                        foreach ($socialPlatforms as $platform => $config): ?>
-                            <div class="col-md-6 mb-3">
-                                <label for="<?= $platform ?>" class="form-label"><?= ucfirst($platform) ?></label>
-                                <div class="social-input-group">
-                                    <i class="<?= $config['icon'] ?> social-icon"></i>
-                                    <input type="url" 
-                                           class="form-control social-input" 
-                                           id="<?= $platform ?>" 
-                                           name="<?= $platform ?>" 
-                                           value="<?= htmlspecialchars($existingSocial[$platform] ?? '') ?>"
-                                           placeholder="<?= $config['placeholder'] ?>">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-share-alt"></i>
+                            Social Links
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-2">
+                            <?php
+                            $socialPlatforms = [
+                                'linkedin' => ['icon' => 'fab fa-linkedin', 'placeholder' => 'LinkedIn profile URL'],
+                                'github' => ['icon' => 'fab fa-github', 'placeholder' => 'GitHub profile URL'],
+                                'twitter' => ['icon' => 'fab fa-twitter', 'placeholder' => 'Twitter profile URL'],
+                                'behance' => ['icon' => 'fab fa-behance', 'placeholder' => 'Behance profile URL'],
+                                'dribbble' => ['icon' => 'fab fa-dribbble', 'placeholder' => 'Dribbble profile URL']
+                            ];
+
+                            $existingSocial = [];
+                            if (!empty($clientProfile['social_links'])) {
+                                $existingSocial = json_decode($clientProfile['social_links'], true) ?: [];
+                            }
+
+                            foreach ($socialPlatforms as $platform => $config): ?>
+                                <div class="admin-form-group">
+                                    <label for="<?= $platform ?>" class="admin-label"><?= ucfirst($platform) ?></label>
+                                    <div class="social-input-group">
+                                        <i class="<?= $config['icon'] ?> social-icon"></i>
+                                        <input type="url"
+                                               class="admin-input social-input"
+                                               id="<?= $platform ?>"
+                                               name="<?= $platform ?>"
+                                               value="<?= htmlspecialchars($existingSocial[$platform] ?? '') ?>"
+                                               placeholder="<?= $config['placeholder'] ?>">
+                                    </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column -->
-            <div class="col-lg-4">
+            <!-- Sidebar -->
+            <div class="admin-sidebar">
                 <!-- Profile Settings -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-cogs text-primary"></i>
-                        Privacy Settings
-                    </h5>
-                    
-                    <div class="mb-3">
-                        <label for="portfolio_visibility" class="form-label">Portfolio Visibility</label>
-                        <select class="form-select" id="portfolio_visibility" name="portfolio_visibility">
-                            <option value="private" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'private' ? 'selected' : '' ?>>
-                                Private - Only I can see
-                            </option>
-                            <option value="public" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'public' ? 'selected' : '' ?>>
-                                Public - Visible to everyone
-                            </option>
-                        </select>
-                        <div class="form-text">Control who can see your portfolio projects</div>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-cogs"></i>
+                            Privacy Settings
+                        </h5>
                     </div>
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <label for="portfolio_visibility" class="admin-label">Portfolio Visibility</label>
+                            <select class="admin-input admin-select" id="portfolio_visibility" name="portfolio_visibility">
+                                <option value="private" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'private' ? 'selected' : '' ?>>
+                                    Private - Only I can see
+                                </option>
+                                <option value="public" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'public' ? 'selected' : '' ?>>
+                                    Public - Visible to everyone
+                                </option>
+                            </select>
+                            <div class="admin-help-text">Control who can see your portfolio projects</div>
+                        </div>
 
-                    <div class="form-check">
-                        <input class="form-check-input" 
-                               type="checkbox" 
-                               id="allow_contact" 
-                               name="allow_contact" 
-                               <?= !empty($clientProfile['allow_contact']) ? 'checked' : '' ?>>
-                        <label class="form-check-label" for="allow_contact">
-                            Allow others to contact me
-                        </label>
-                        <div class="form-text">Allow other users to send you messages</div>
+                        <div class="admin-form-group">
+                            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
+                                <input type="checkbox"
+                                       id="allow_contact"
+                                       name="allow_contact"
+                                       style="margin-top: 0.25rem;"
+                                       <?= !empty($clientProfile['allow_contact']) ? 'checked' : '' ?>>
+                                <label for="allow_contact" style="margin: 0; color: var(--admin-text-primary);">
+                                    Allow others to contact me
+                                    <div class="admin-help-text" style="margin-top: 0.25rem;">Allow other users to send you messages</div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Profile Completion -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-chart-pie text-primary"></i>
-                        Profile Completion
-                    </h5>
-                    
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>Progress</span>
-                            <span class="badge bg-primary"><?= $completion['percentage'] ?>%</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-gradient" 
-                                 role="progressbar" 
-                                 style="width: <?= $completion['percentage'] ?>%"></div>
-                        </div>
-                        <small class="text-muted"><?= $completion['completed'] ?> of <?= $completion['total'] ?> fields completed</small>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Profile Completion
+                        </h5>
                     </div>
-
-                    <?php if (!empty($completion['missing'])): ?>
-                        <div class="alert alert-info p-2">
-                            <small>
-                                <strong>To complete your profile, add:</strong><br>
-                                <?php foreach (array_slice($completion['missing'], 0, 3) as $field): ?>
-                                    • <?= ucfirst(str_replace('_', ' ', $field)) ?><br>
-                                <?php endforeach; ?>
+                    <div class="admin-card-body">
+                        <div class="admin-form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="color: var(--admin-text-primary);">Progress</span>
+                                <span class="admin-badge admin-badge-primary"><?= $completion['percentage'] ?>%</span>
+                            </div>
+                            <div style="background: var(--admin-bg-secondary); border-radius: 9999px; height: 8px; overflow: hidden;">
+                                <div style="background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-primary-light) 100%);
+                                           height: 100%; width: <?= $completion['percentage'] ?>%; transition: width 0.3s ease;"></div>
+                            </div>
+                            <small style="color: var(--admin-text-muted); display: block; margin-top: 0.5rem;">
+                                <?= $completion['completed'] ?> of <?= $completion['total'] ?> fields completed
                             </small>
                         </div>
-                    <?php endif; ?>
+
+                        <?php if (!empty($completion['missing'])): ?>
+                            <div style="background: var(--admin-info-bg); border: 1px solid var(--admin-info);
+                                        border-radius: var(--admin-border-radius); padding: 0.75rem; margin-top: 1rem;">
+                                <small style="color: var(--admin-info-light);">
+                                    <strong>To complete your profile, add:</strong><br>
+                                    <?php foreach (array_slice($completion['missing'], 0, 3) as $field): ?>
+                                        • <?= ucfirst(str_replace('_', ' ', $field)) ?><br>
+                                    <?php endforeach; ?>
+                                </small>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="form-section">
-                    <h5>
-                        <i class="fas fa-bolt text-primary"></i>
-                        Quick Actions
-                    </h5>
-                    <div class="d-grid gap-2">
-                        <a href="/index.php?page=user_profile" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-eye"></i> View Public Profile
-                        </a>
-                        <a href="/index.php?page=user_portfolio" class="btn btn-outline-success btn-sm">
-                            <i class="fas fa-briefcase"></i> Manage Portfolio
-                        </a>
-                        <a href="/index.php?page=user_profile_settings" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-shield-alt"></i> Security Settings
-                        </a>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h5 class="admin-card-title">
+                            <i class="fas fa-bolt"></i>
+                            Quick Actions
+                        </h5>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <a href="/index.php?page=user_profile" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-eye"></i> View Public Profile
+                            </a>
+                            <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-success admin-btn-sm">
+                                <i class="fas fa-briefcase"></i> Manage Portfolio
+                            </a>
+                            <a href="/index.php?page=user_profile_settings" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-shield-alt"></i> Security Settings
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Submit Section -->
-        <div class="form-section">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">Ready to save your changes?</h6>
-                    <small class="text-muted">Make sure all information is accurate before saving</small>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="/index.php?page=user_profile" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancel
-                    </a>
-                    <button type="submit" class="btn btn-gradient">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
+        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem 2rem 1rem;">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h6 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary);">Ready to save your changes?</h6>
+                            <small style="color: var(--admin-text-muted);">Make sure all information is accurate before saving</small>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <a href="/index.php?page=user_profile" class="admin-btn admin-btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="admin-btn admin-btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/admin.js"></script>
 <script>
 // Skills management
 document.addEventListener('DOMContentLoaded', function() {
@@ -646,35 +653,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Auto-dismiss alerts
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
-
     // Character counter for bio
     const bioTextarea = document.getElementById('bio');
     bioTextarea.addEventListener('input', function() {
         const maxLength = 500;
         const currentLength = this.value.length;
-        const remaining = maxLength - currentLength;
 
         let counter = document.getElementById('bio-counter');
         if (!counter) {
             counter = document.createElement('small');
             counter.id = 'bio-counter';
-            counter.className = 'text-muted float-end';
+            counter.style.cssText = 'color: var(--admin-text-muted); float: right; margin-top: 0.25rem;';
             this.parentNode.appendChild(counter);
         }
 
         counter.textContent = `${currentLength} / ${maxLength} characters`;
-        counter.className = remaining < 50 ? 'text-warning float-end' : 'text-muted float-end';
+        counter.style.color = currentLength > maxLength * 0.9 ? 'var(--admin-warning)' : 'var(--admin-text-muted)';
     });
 });
 </script>
-
-</body>
-</html>
