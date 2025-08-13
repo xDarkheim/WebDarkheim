@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Manage Articles Page
+ * Manage Articles Page - MODERN DARK ADMIN INTERFACE
+ *
+ * Modern dark administrative interface for managing articles
+ * with improved UX and consistent styling
  *
  * @author Dmytro Hovenko
  */
@@ -15,7 +18,26 @@ use App\Application\Middleware\CSRFMiddleware;
 use App\Domain\Repositories\ArticleRepository;
 
 // Use global services from bootstrap.php
-global $flashMessageService, $database_handler, $auth;
+global $flashMessageService, $database_handler, $serviceProvider;
+
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Get AuthenticationService
+try {
+    $authService = $serviceProvider->getAuth();
+} catch (Exception $e) {
+    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
+    die("A critical system error occurred. Please try again later.");
+}
+
+// Check authentication and admin rights
+if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
+    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    header('Location: /index.php?page=login');
+    exit();
+}
 
 // Check for required services
 if (!isset($flashMessageService)) {
@@ -25,21 +47,16 @@ if (!isset($flashMessageService)) {
 
 if (!isset($database_handler)) {
     error_log("Critical: Database handler not available in manage_articles.php");
-    echo "<p class='message message--error'>Database connection error. Please try again later.</p>";
-    return;
+    $flashMessageService->addError("Database connection error. Please try again later.");
+    header('Location: /index.php?page=dashboard');
+    exit();
 }
 
-// Check authorization
-if (!$auth || !$auth->isAuthenticated()) {
-    $flashMessageService->addError('You must be logged in to manage articles.');
-    $redirect_url = urlencode('/index.php?page=manage_articles');
-    header('Location: /index.php?page=login&redirect=' . $redirect_url);
-    exit;
-}
-
-$currentUser = $auth->getCurrentUser();
+$currentUser = $authService->getCurrentUser();
 $current_user_id = (int)$currentUser['id'];
 $user_role = $currentUser['role'] ?? 'user';
+
+$page_title = "Manage Articles";
 
 // Get CSRF token via global system
 $csrf_token = CSRFMiddleware::getToken();
@@ -138,7 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $articles_view_data = [];
-$page_title = "Manage Articles";
 
 // Get status filter from GET parameters
 $status_filter = filter_input(INPUT_GET, 'filter', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -189,462 +205,550 @@ try {
     }
 } catch (Exception $e) {
     error_log("Error loading articles in manage_articles.php: " . $e->getMessage());
-    echo "<p class='message message--error'>Error loading articles. Please try again later.</p>";
-    return;
+    $flashMessageService->addError("Error loading articles. Please try again later.");
 }
+
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
+
 ?>
-    <div class="admin-layout page-manage-articles">
-        <!-- Enhanced Main Header Section -->
-        <header class="page-header">
-            <div class="page-header-content">
-                <div class="page-header-main">
-                    <h1 class="page-title">
-                        <i class="fas fa-newspaper"></i>
-                        <?php echo htmlspecialchars($page_title); ?>
-                    </h1>
-                    <div class="page-header-description">
-                        <p>Manage and organize your published articles</p>
+
+    <!-- Admin Dark Theme Styles -->
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin Panel</span>
+            </a>
+
+            <div class="admin-nav-links">
+                <a href="/index.php?page=manage_articles" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Articles</span>
+                </a>
+                <a href="/index.php?page=manage_categories" class="admin-nav-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="/index.php?page=manage_users" class="admin-nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="/index.php?page=site_settings" class="admin-nav-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-newspaper"></i>
+                    <div class="admin-header-text">
+                        <h1>Manage Articles</h1>
+                        <p>Create, edit and manage your articles and content</p>
                     </div>
                 </div>
-                <div class="page-header-actions">
-                    <a href="/index.php?page=create_article" class="btn btn-create">
-                        <i class="fas fa-plus"></i>
-                        <span>Create Article</span>
+
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=create_article" class="admin-btn admin-btn-primary">
+                        <i class="fas fa-plus"></i>Create Article
                     </a>
-                    <?php if ($user_role === 'admin'): ?>
-                        <a href="/index.php?page=manage_categories" class="btn btn-categories">
-                            <i class="fas fa-tags"></i>
-                            <span>Categories</span>
-                        </a>
-                    <?php endif; ?>
+                    <a href="/index.php?page=manage_categories" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-tags"></i>Categories
+                    </a>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Flash Messages -->
-        <?php
-        $flashMessages = $flashMessageService->getMessages();
-        if (!empty($flashMessages)):
-        ?>
-            <div class="flash-messages-container">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="message message--<?php echo htmlspecialchars($type); ?>">
-                            <p><?php echo $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']); ?></p>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+    <div class="admin-flash-messages">
+        <?php foreach ($flashMessages as $type => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="admin-flash-message admin-flash-<?= $type ?>">
+                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
+                <div>
+                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
+                </div>
             </div>
-        <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
-        <!-- Main Content Layout -->
-        <div class="content-layout">
-            <!-- Primary Content Area -->
-            <main class="main-content" style="flex: 1; max-width: none;">
-                <?php if (empty($articles_view_data)): ?>
-                    <!-- Enhanced Empty State -->
-                    <div class="empty-state-wrapper">
-                        <div class="card card-large">
-                            <div class="card-body">
-                                <div class="empty-state">
-                                    <div class="empty-state-visual">
-                                        <div class="empty-state-icon">
-                                            <i class="fas fa-file-alt"></i>
-                                        </div>
-                                    </div>
-                                    <div class="empty-state-content">
-                                        <h2 class="empty-state-title">No Articles Found</h2>
-                                        <p class="empty-state-description">
-                                            <?php if ($user_role === 'admin'): ?>
-                                                No articles have been created yet. Start building your content library and engage with your audience.
-                                            <?php else: ?>
-                                                You haven't created any articles yet. Share your thoughts, insights, and stories with the world!
-                                            <?php endif; ?>
-                                        </p>
-                                        <div class="empty-state-actions">
-                                            <a href="/index.php?page=create_article" class="btn btn-create btn-large">
-                                                <i class="fas fa-plus"></i>
-                                                <span>Create Your First Article</span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- Main Content -->
+    <main>
+        <div class="admin-layout-main">
+            <div class="admin-content">
+
+                <!-- Filter Bar -->
+                <div class="admin-card">
+                    <div class="admin-card-body">
+                        <div style="display: flex; justify-content: between; align-items: center; gap: 1rem;">
+                            <div>
+                                <h3 style="margin: 0; color: var(--admin-text-primary);">
+                                    <i class="fas fa-filter"></i> Filter Articles
+                                </h3>
                             </div>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <select id="statusFilter" class="admin-input admin-select" onchange="updateStatusFilter()" style="width: auto;">
+                                    <option value="all" <?= $status_filter === 'all' ? 'selected' : '' ?>>All Statuses</option>
+                                    <option value="published" <?= $status_filter === 'published' ? 'selected' : '' ?>>Published</option>
+                                    <option value="draft" <?= $status_filter === 'draft' ? 'selected' : '' ?>>Draft</option>
+                                    <option value="pending_review" <?= $status_filter === 'pending_review' ? 'selected' : '' ?>>Pending Review</option>
+                                    <option value="rejected" <?= $status_filter === 'rejected' ? 'selected' : '' ?>>Rejected</option>
+                                </select>
+                                <input type="text" id="searchInput" placeholder="Search articles..." class="admin-input" style="width: 300px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (empty($articles_view_data)): ?>
+                    <!-- Empty State -->
+                    <div class="admin-card admin-glow-primary">
+                        <div class="admin-card-body" style="text-align: center; padding: 3rem;">
+                            <div style="font-size: 4rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem;">No Articles Found</h3>
+                            <p style="color: var(--admin-text-muted); margin-bottom: 2rem;">
+                                <?php if ($user_role === 'admin'): ?>
+                                    No articles have been created yet. Start building your content library and engage with your audience.
+                                <?php else: ?>
+                                    You haven't created any articles yet. Share your thoughts, insights, and stories with the world!
+                                <?php endif; ?>
+                            </p>
+                            <a href="/index.php?page=create_article" class="admin-btn admin-btn-primary admin-btn-lg">
+                                <i class="fas fa-plus"></i>Create Your First Article
+                            </a>
                         </div>
                     </div>
                 <?php else: ?>
-                    <!-- Articles Management Section -->
-                    <div class="articles-section">
-                        <div class="card">
-                            <div class="card-header card-header-enhanced">
-                                <div class="card-header-content">
-                                    <h2 class="card-title">
-                                        <i class="fas fa-list"></i>
-                                        Your Articles
-                                        <span class="articles-count">(<?php echo count($articles_view_data); ?>)</span>
-                                    </h2>
+                    <!-- Articles Statistics -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card admin-glow-success">
+                            <div class="admin-stat-content">
+                                <div class="admin-stat-icon" style="background: var(--admin-success-bg); color: var(--admin-success);">
+                                    <i class="fas fa-check-circle"></i>
                                 </div>
-                                <!-- Search and Filter Bar -->
-                                <div class="articles-controls">
-                                    <div class="search-section">
-                                        <div class="search-box">
-                                            <label for="articleSearch"></label><input type="text" id="articleSearch" placeholder="Search articles..." class="search-input">
-                                            <i class="fas fa-search search-icon"></i>
-                                        </div>
-                                        <div class="filter-options">
-                                            <label for="categoryFilter"></label><select id="categoryFilter" class="filter-select">
-                                                <option value="">All Categories</option>
-                                                <?php
-                                                try {
-                                                    $all_categories = Category::findAll($database_handler);
-                                                    foreach ($all_categories as $category) {
-                                                        echo '<option value="' . htmlspecialchars($category->name) . '">' . htmlspecialchars($category->name) . '</option>';
-                                                    }
-                                                } catch (Exception $e) {
-                                                    // Silently handle error
-                                                }
-                                                ?>
-                                            </select>
-                                            <?php if ($user_role === 'admin'): ?>
-                                                <label for="authorFilter"></label><select id="authorFilter" class="filter-select">
-                                                    <option value="">All Authors</option>
-                                                    <?php
-                                                    $authors = array_unique(array_column($articles_view_data, 'author_name'));
-                                                    foreach ($authors as $author) {
-                                                        echo '<option value="' . htmlspecialchars($author) . '">' . htmlspecialchars($author) . '</option>';
-                                                    }
-                                                    ?>
-                                                </select>
-                                            <?php endif; ?>
-                                            <label for="statusFilter"></label><select id="statusFilter" class="filter-select">
-                                                <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Statuses</option>
-                                                <option value="published" <?php echo $status_filter === 'published' ? 'selected' : ''; ?>>Published</option>
-                                                <option value="draft" <?php echo $status_filter === 'draft' ? 'selected' : ''; ?>>Draft</option>
-                                                <option value="pending_review" <?php echo $status_filter === 'pending_review' ? 'selected' : ''; ?>>Pending Review</option>
-                                                <option value="rejected" <?php echo $status_filter === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                <div class="admin-stat-details">
+                                    <h3>Published</h3>
+                                    <p>
+                                        <?php
+                                        $published = array_filter($articles_view_data, fn($a) => $a['status'] === 'published');
+                                        echo count($published);
+                                        ?>
+                                    </p>
+                                    <span>Live articles</span>
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <div class="table-container">
-                                    <div class="table-responsive">
-                                        <table class="styled-table articles-table">
-                                            <thead>
-                                                <tr>
-                                                    <th class="col-id sortable" data-sort="id">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-hashtag"></i> ID
-                                                            <i class="fas fa-sort sort-icon"></i>
-                                                        </span>
-                                                    </th>
-                                                    <th class="col-title sortable" data-sort="title">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-heading"></i> Title
-                                                            <i class="fas fa-sort sort-icon"></i>
-                                                        </span>
-                                                    </th>
-                                                    <?php if ($user_role === 'admin'): ?>
-                                                        <th class="col-author sortable" data-sort="author">
-                                                            <span class="th-content">
-                                                                <i class="fas fa-user"></i> Author
-                                                                <i class="fas fa-sort sort-icon"></i>
+                        </div>
+
+                        <div class="admin-stat-card admin-glow-warning">
+                            <div class="admin-stat-content">
+                                <div class="admin-stat-icon" style="background: var(--admin-warning-bg); color: var(--admin-warning);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="admin-stat-details">
+                                    <h3>Pending</h3>
+                                    <p>
+                                        <?php
+                                        $pending = array_filter($articles_view_data, fn($a) => $a['status'] === 'pending_review');
+                                        echo count($pending);
+                                        ?>
+                                    </p>
+                                    <span>Awaiting review</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card">
+                            <div class="admin-stat-content">
+                                <div class="admin-stat-icon" style="background: var(--admin-bg-secondary); color: var(--admin-text-secondary);">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="admin-stat-details">
+                                    <h3>Drafts</h3>
+                                    <p>
+                                        <?php
+                                        $drafts = array_filter($articles_view_data, fn($a) => $a['status'] === 'draft');
+                                        echo count($drafts);
+                                        ?>
+                                    </p>
+                                    <span>Work in progress</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="admin-stat-card admin-glow-primary">
+                            <div class="admin-stat-content">
+                                <div class="admin-stat-icon" style="background: var(--admin-primary-bg); color: var(--admin-primary);">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="admin-stat-details">
+                                    <h3>Total</h3>
+                                    <p><?= count($articles_view_data) ?></p>
+                                    <span>All articles</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Articles Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">
+                                <i class="fas fa-list"></i>Articles
+                                <span class="admin-badge admin-badge-primary">
+                                    <?= count($articles_view_data) ?> Total
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="admin-card-body" style="padding: 0;">
+                            <div class="admin-table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Title</th>
+                                            <?php if ($user_role === 'admin'): ?>
+                                            <th>Author</th>
+                                            <?php endif; ?>
+                                            <th>Categories</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th style="text-align: center;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="articlesTableBody">
+                                        <?php foreach ($articles_view_data as $article_item): ?>
+                                        <tr class="article-row"
+                                            data-title="<?= strtolower(htmlspecialchars($article_item['title'])) ?>"
+                                            data-status="<?= strtolower(htmlspecialchars($article_item['status'])) ?>">
+                                            <td>
+                                                <span class="admin-badge admin-badge-gray">
+                                                    #<?= htmlspecialchars((string)$article_item['id']) ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <div style="font-weight: 600; color: var(--admin-text-primary); margin-bottom: 0.25rem;">
+                                                        <a href="/index.php?page=news&id=<?= $article_item['id'] ?>"
+                                                           style="color: var(--admin-primary); text-decoration: none;">
+                                                            <?= htmlspecialchars(mb_strimwidth($article_item['title'], 0, 60, "...")) ?>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <?php if ($user_role === 'admin'): ?>
+                                            <td>
+                                                <div style="display: flex; align-items: center;">
+                                                    <div style="width: 32px; height: 32px; background: var(--admin-primary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                                                        <i class="fas fa-user" style="color: var(--admin-primary);"></i>
+                                                    </div>
+                                                    <div style="color: var(--admin-text-primary);">
+                                                        <?= htmlspecialchars($article_item['author_name']) ?>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <?php endif; ?>
+                                            <td>
+                                                <?php if (!empty($article_item['categories'])): ?>
+                                                    <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                                        <?php foreach (array_slice($article_item['categories'], 0, 2) as $category): ?>
+                                                            <span class="admin-badge admin-badge-primary" style="font-size: 0.625rem;">
+                                                                <i class="fas fa-tag"></i>
+                                                                <?= htmlspecialchars($category->name) ?>
                                                             </span>
-                                                        </th>
-                                                    <?php endif; ?>
-                                                    <th class="col-categories">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-tags"></i> Categories
-                                                        </span>
-                                                    </th>
-                                                    <th class="col-date sortable" data-sort="date">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-calendar"></i> Published
-                                                            <i class="fas fa-sort sort-icon"></i>
-                                                        </span>
-                                                    </th>
-                                                    <th class="col-status sortable" data-sort="status">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-check-circle"></i> Status
-                                                            <i class="fas fa-sort sort-icon"></i>
-                                                        </span>
-                                                    </th>
-                                                    <th class="col-actions">
-                                                        <span class="th-content">
-                                                            <i class="fas fa-cogs"></i> Actions
-                                                        </span>
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="articlesTableBody">
-                                                <?php foreach ($articles_view_data as $article_item): ?>
-                                                    <tr class="article-row"
-                                                        data-id="<?php echo $article_item['id']; ?>"
-                                                        data-title="<?php echo strtolower(htmlspecialchars($article_item['title'])); ?>"
-                                                        data-author="<?php echo strtolower(htmlspecialchars($article_item['author_name'])); ?>"
-                                                        data-date="<?php echo $article_item['date']; ?>"
-                                                        data-status="<?php echo strtolower(htmlspecialchars($article_item['status'])); ?>"
-                                                        data-categories="<?php echo strtolower(implode(',', array_map(fn($cat) => $cat->name, $article_item['categories']))); ?>">
-                                                        <td class="article-id">
-                                                            <span class="id-badge"><?php echo htmlspecialchars((string)$article_item['id']); ?></span>
-                                                        </td>
-                                                        <td class="article-title">
-                                                            <div class="title-container">
-                                                                <a href="/index.php?page=news&id=<?php echo $article_item['id']; ?>"
-                                                                   class="article-title-link"
-                                                                   title="View Article">
-                                                                    <?php echo htmlspecialchars(mb_strimwidth($article_item['title'], 0, 60, "...")); ?>
-                                                                </a>
-                                                            </div>
-                                                        </td>
-                                                        <?php if ($user_role === 'admin'): ?>
-                                                            <td class="article-author">
-                                                                <div class="author-info">
-                                                                    <i class="fas fa-user-circle"></i>
-                                                                    <span class="author-name"><?php echo htmlspecialchars($article_item['author_name']); ?></span>
-                                                                </div>
-                                                            </td>
+                                                        <?php endforeach; ?>
+                                                        <?php if (count($article_item['categories']) > 2): ?>
+                                                            <span class="admin-badge admin-badge-gray" style="font-size: 0.625rem;">
+                                                                +<?= count($article_item['categories']) - 2 ?>
+                                                            </span>
                                                         <?php endif; ?>
-                                                        <td class="article-categories">
-                                                            <?php if (!empty($article_item['categories'])): ?>
-                                                                <div class="categories-container">
-                                                                    <?php foreach (array_slice($article_item['categories'], 0, 2) as $category): ?>
-                                                                        <span class="category-tag">
-                                                                            <i class="fas fa-tag"></i>
-                                                                            <?php echo htmlspecialchars($category->name); ?>
-                                                                        </span>
-                                                                    <?php endforeach; ?>
-                                                                    <?php if (count($article_item['categories']) > 2): ?>
-                                                                        <span class="category-more">+<?php echo count($article_item['categories']) - 2; ?></span>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            <?php else: ?>
-                                                                <span class="no-categories">
-                                                                    <i class="fas fa-minus"></i> None
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                        <td class="article-date">
-                                                            <time datetime="<?php echo htmlspecialchars($article_item['date']); ?>">
-                                                                <?php echo htmlspecialchars(date('M j, Y', strtotime($article_item['date']))); ?>
-                                                            </time>
-                                                        </td>
-                                                        <td class="article-status">
-                                                            <span class="status-badge status-<?php echo strtolower(htmlspecialchars($article_item['status'])); ?>">
-                                                                <?php echo htmlspecialchars(ucfirst($article_item['status'])); ?>
-                                                            </span>
-                                                        </td>
-                                                        <td class="article-actions">
-                                                            <?php if ($user_role === 'admin' || $article_item['user_id'] == $current_user_id): ?>
-                                                                <div class="action-buttons-group">
-                                                                    <a href="/index.php?page=edit_article&id=<?php echo $article_item['id']; ?>"
-                                                                       class="btn-action btn-edit"
-                                                                       title="Edit Article">
-                                                                        <i class="fas fa-edit"></i>
-                                                                    </a>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span style="color: var(--admin-text-muted); font-size: 0.875rem;">No categories</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <div style="color: var(--admin-text-primary); font-size: 0.875rem;">
+                                                        <?= htmlspecialchars(date('M j, Y', strtotime($article_item['date']))) ?>
+                                                    </div>
+                                                    <div style="color: var(--admin-text-muted); font-size: 0.75rem;">
+                                                        <?= htmlspecialchars(date('g:i A', strtotime($article_item['date']))) ?>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                $status = $article_item['status'];
+                                                $statusConfig = [
+                                                    'published' => ['class' => 'success', 'icon' => 'check-circle'],
+                                                    'draft' => ['class' => 'gray', 'icon' => 'edit'],
+                                                    'pending_review' => ['class' => 'warning', 'icon' => 'clock'],
+                                                    'rejected' => ['class' => 'error', 'icon' => 'times-circle']
+                                                ];
+                                                $config = $statusConfig[$status] ?? $statusConfig['draft'];
+                                                ?>
+                                                <span class="admin-badge admin-badge-<?= $config['class'] ?>">
+                                                    <i class="fas fa-<?= $config['icon'] ?>"></i>
+                                                    <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $status))) ?>
+                                                </span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <?php if ($user_role === 'admin' || $article_item['user_id'] == $current_user_id): ?>
+                                                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                                    <a href="/index.php?page=edit_article&id=<?= $article_item['id'] ?>"
+                                                       class="admin-btn admin-btn-secondary admin-btn-sm" title="Edit Article">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
 
-                                                                    <!-- Moderation buttons for admins/editors -->
-                                                                    <?php if (in_array($user_role, ['admin', 'editor']) && $article_item['status'] === 'pending_review'): ?>
-                                                                        <button type="button"
-                                                                                class="btn-action btn-approve"
-                                                                                onclick="approveArticle(<?php echo $article_item['id']; ?>)"
-                                                                                title="Approve Article">
-                                                                            <i class="fas fa-check"></i>
-                                                                        </button>
-                                                                        <button type="button"
-                                                                                class="btn-action btn-reject"
-                                                                                onclick="showRejectModal(<?php echo $article_item['id']; ?>, '<?php echo htmlspecialchars($article_item['title']); ?>')"
-                                                                                title="Reject Article">
-                                                                            <i class="fas fa-times"></i>
-                                                                        </button>
-                                                                    <?php endif; ?>
+                                                    <!-- Moderation buttons for admins/editors -->
+                                                    <?php if (in_array($user_role, ['admin', 'editor']) && $article_item['status'] === 'pending_review'): ?>
+                                                        <button type="button" class="admin-btn admin-btn-success admin-btn-sm"
+                                                                onclick="approveArticle(<?= $article_item['id'] ?>)" title="Approve Article">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                        <button type="button" class="admin-btn admin-btn-danger admin-btn-sm"
+                                                                onclick="showRejectModal(<?= $article_item['id'] ?>, '<?= htmlspecialchars($article_item['title']) ?>')" title="Reject Article">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    <?php endif; ?>
 
-                                                                    <!-- Revoke the approval button for published articles -->
-                                                                    <?php if (in_array($user_role, ['admin', 'editor']) && $article_item['status'] === 'published'): ?>
-                                                                        <form action="/index.php?page=manage_articles" method="POST" class="revoke-approval-form" style="display: inline;">
-                                                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                                                            <input type="hidden" name="article_id" value="<?php echo $article_item['id']; ?>">
-                                                                            <input type="hidden" name="action" value="revoke_approval">
-                                                                            <input type="hidden" name="review_notes" value="Publication revoked by moderator">
-                                                                            <button type="submit"
-                                                                                    class="btn-action btn-revoke"
-                                                                                    title="Revoke Approval"
-                                                                                    onclick="return confirm('Are you sure you want to revoke approval for this article? It will be moved back to draft status.')">
-                                                                                <i class="fas fa-undo"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    <?php endif; ?>
+                                                    <!-- Submit for review button -->
+                                                    <?php if ($article_item['status'] === 'draft' || $article_item['status'] === 'rejected'): ?>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                                            <input type="hidden" name="article_id" value="<?= $article_item['id'] ?>">
+                                                            <input type="hidden" name="action" value="submit_for_review">
+                                                            <button type="submit" class="admin-btn admin-btn-warning admin-btn-sm" title="Submit for Review">
+                                                                <i class="fas fa-paper-plane"></i>
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
 
-                                                                    <!-- Submit for a review button for authors -->
-                                                                    <?php if ($article_item['status'] === 'draft' || $article_item['status'] === 'rejected'): ?>
-                                                                        <form action="/index.php?page=manage_articles" method="POST" class="submit-for-review-form" style="display: inline;">
-                                                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                                                            <input type="hidden" name="article_id" value="<?php echo $article_item['id']; ?>">
-                                                                            <input type="hidden" name="action" value="submit_for_review">
-                                                                            <button type="submit" class="btn-action btn-submit-review" title="Submit for Review">
-                                                                                <i class="fas fa-paper-plane"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    <?php endif; ?>
-
-                                                                    <form action="/index.php?page=delete_article"
-                                                                          method="POST"
-                                                                          class="delete-form"
-                                                                          style="display: inline;"
-                                                                          onsubmit="return confirm('Are you sure you want to delete this article?');">
-                                                                        <input type="hidden" name="article_id" value="<?php echo $article_item['id']; ?>">
-                                                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                                                        <button type="submit"
-                                                                                class="btn-action btn-delete"
-                                                                                title="Delete Article">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </form>
-                                                                </div>
-                                                            <?php else: ?>
-                                                                <span class="view-only-badge">
-                                                                    <i class="fas fa-eye"></i> View Only
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <!-- Table Footer -->
-                                <div class="table-footer">
-                                    <div class="results-info">
-                                        <span id="resultsInfo">Showing <?php echo count($articles_view_data); ?> articles</span>
-                                    </div>
-                                </div>
+                                                    <form method="POST" style="display: inline;"
+                                                          onsubmit="return confirm('Are you sure you want to delete this article?');">
+                                                        <input type="hidden" name="article_id" value="<?= $article_item['id'] ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm" title="Delete Article">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                <?php else: ?>
+                                                <span style="color: var(--admin-text-muted); font-size: 0.75rem;">View Only</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 <?php endif; ?>
-            </main>
+            </div>
 
-            <!-- Compact Sidebar -->
-            <aside class="sidebar-content" style="min-width: 280px; max-width: 320px;">
-                <!-- Quick Actions Card -->
-                <div class="card card-compact sidebar-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-bolt"></i> Quick Actions
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <!-- Article Statistics -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-chart-bar"></i>Content Analytics
                         </h3>
                     </div>
-                    <div class="card-body">
-                        <div class="quick-actions-grid">
-                            <a href="/index.php?page=create_article" class="quick-action-item">
-                                <div class="action-icon">
-                                    <i class="fas fa-plus"></i>
-                                </div>
-                                <div class="action-content">
-                                    <span class="action-title">New Article</span>
-                                    <span class="action-description">Create content</span>
-                                </div>
-                            </a>
+                    <div class="admin-card-body">
+                        <?php
+                        $recentArticles = array_filter($articles_view_data, fn($a) => strtotime($a['date']) > strtotime('-7 days'));
+                        $monthlyArticles = array_filter($articles_view_data, fn($a) => strtotime($a['date']) > strtotime('-30 days'));
+                        $totalWords = 0; // This would need actual content analysis
+                        $avgWordsPerArticle = count($articles_view_data) > 0 ? 500 : 0; // Placeholder
+                        ?>
 
-                            <?php if ($user_role === 'admin'): ?>
-                                <a href="/index.php?page=manage_categories" class="quick-action-item">
-                                    <div class="action-icon">
-                                        <i class="fas fa-tags"></i>
-                                    </div>
-                                    <div class="action-content">
-                                        <span class="action-title">Categories</span>
-                                        <span class="action-description">Organize content</span>
-                                    </div>
-                                </a>
-                            <?php endif; ?>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-calendar-week" style="margin-right: 0.5rem; color: var(--admin-success);"></i>
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">This Week</span>
+                            </div>
+                            <span style="font-size: 1.125rem; font-weight: 600; color: var(--admin-text-primary);"><?= count($recentArticles) ?></span>
+                        </div>
 
-                            <a href="/index.php?page=dashboard" class="quick-action-item">
-                                <div class="action-icon">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                </div>
-                                <div class="action-content">
-                                    <span class="action-title">Dashboard</span>
-                                    <span class="action-description">Overview</span>
-                                </div>
-                            </a>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: var(--admin-info);"></i>
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">This Month</span>
+                            </div>
+                            <span style="font-size: 1.125rem; font-weight: 600; color: var(--admin-text-primary);"><?= count($monthlyArticles) ?></span>
+                        </div>
+
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-file-word" style="margin-right: 0.5rem; color: var(--admin-warning);"></i>
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Avg. Words</span>
+                            </div>
+                            <span style="font-size: 1.125rem; font-weight: 600; color: var(--admin-text-primary);"><?= $avgWordsPerArticle ?></span>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid var(--admin-border); margin: 1rem 0;">
+
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-eye" style="margin-right: 0.5rem; color: var(--admin-primary);"></i>
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Public Articles</span>
+                            </div>
+                            <span style="font-size: 1.125rem; font-weight: 600; color: var(--admin-text-primary);"><?= count($published) ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Statistics Card -->
-                <div class="card card-compact sidebar-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-chart-line"></i> Stats
+                <!-- Quick Actions -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-bolt"></i>Quick Actions
                         </h3>
                     </div>
-                    <div class="card-body">
-                        <div class="stats-grid">
-                            <div class="stat-item-enhanced">
-                                <div class="stat-icon">
-                                    <i class="fas fa-file-alt"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number"><?php echo count($articles_view_data); ?></span>
-                                    <span class="stat-label">Total</span>
-                                </div>
-                            </div>
+                    <div class="admin-card-body">
+                        <a href="/index.php?page=create_article" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-plus"></i>
+                            Create Article
+                        </a>
+                        <a href="/index.php?page=manage_categories" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-tags"></i>
+                            Manage Categories
+                        </a>
+                        <a href="/page/admin/moderation/projects.php" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-gavel"></i>
+                            Moderation
+                        </a>
+                        <a href="/index.php?page=dashboard" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </a>
+                    </div>
+                </div>
 
-                            <div class="stat-item-enhanced">
-                                <div class="stat-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <span class="stat-number">
-                                        <?php
-                                        $recent_articles = array_filter($articles_view_data, function($article) {
-                                            return strtotime($article['date']) > strtotime('-7 days');
-                                        });
-                                        echo count($recent_articles);
-                                        ?>
-                                    </span>
-                                    <span class="stat-label">This Week</span>
-                                </div>
+                <!-- Content Status Guide -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-info-circle"></i>Status Guide
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-check-circle" style="color: var(--admin-success); margin-right: 0.5rem;"></i>Published
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Article is live and visible to the public.</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-clock" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>Pending Review
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Article awaiting admin approval before publication.</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-edit" style="color: var(--admin-text-muted); margin-right: 0.5rem;"></i>Draft
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Work in progress, not yet submitted for review.</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-times-circle" style="color: var(--admin-error); margin-right: 0.5rem;"></i>Rejected
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Article needs revisions before resubmission.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Writing Tips -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-lightbulb"></i>Writing Tips
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-bullseye" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>Clear Headlines
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Use descriptive titles that tell readers exactly what to expect.</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-search" style="color: var(--admin-success); margin-right: 0.5rem;"></i>SEO Optimization
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Include relevant keywords naturally in your content and excerpts.</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-users" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>Audience Focus
+                                </h4>
+                                <p style="font-size: 0.875rem; color: var(--admin-text-secondary); margin: 0;">Write with your target audience in mind and provide real value.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </aside>
         </div>
-    </div>
+    </main>
 
     <!-- Reject Modal -->
-    <div id="rejectModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Reject Article</h3>
-                <button type="button" class="modal-close" onclick="closeRejectModal()">&times;</button>
+    <div id="rejectModal" class="admin-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; padding: 2rem;">
+        <div style="background: var(--admin-bg-card); border-radius: var(--admin-border-radius); max-width: 500px; margin: auto; border: 1px solid var(--admin-border);">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">
+                    <i class="fas fa-times-circle"></i>Reject Article
+                </h3>
             </div>
-            <div class="modal-body">
-                <p>You are about to reject the article: <strong id="rejectArticleTitle"></strong></p>
-
-                <div class="form-group">
-                    <label for="rejectNotes">Reason for rejection (required):</label>
-                    <textarea id="rejectNotes" rows="4" class="form-control"
-                              placeholder="Please provide a clear explanation for why this article is being rejected..." required></textarea>
+            <div class="admin-card-body">
+                <p style="color: var(--admin-text-secondary); margin-bottom: 1rem;">
+                    You are about to reject the article: <strong id="rejectArticleTitle" style="color: var(--admin-text-primary);"></strong>
+                </p>
+                <div class="admin-form-group">
+                    <label for="rejectNotes" class="admin-label">Reason for rejection (required):</label>
+                    <textarea id="rejectNotes" class="admin-input admin-textarea" placeholder="Please provide a clear explanation for why this article is being rejected..." required></textarea>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="submitReject()">Reject Article</button>
+                <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="admin-btn admin-btn-secondary" onclick="closeRejectModal()">Cancel</button>
+                    <button type="button" class="admin-btn admin-btn-danger" onclick="submitReject()">Reject Article</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Load external JavaScript -->
-    <script src="/themes/default/js/pages/manage-articles.js"></script>
+    <!-- Admin Scripts -->
+    <script src="/public/assets/js/admin.js"></script>
 
     <script>
     // Global variables for moderation
     let currentArticleId = null;
-    const csrfToken = '<?php echo htmlspecialchars($csrf_token); ?>';
+    const csrfToken = '<?= htmlspecialchars($csrf_token) ?>';
 
     function approveArticle(articleId) {
         if (confirm('Are you sure you want to approve this article?')) {
@@ -658,11 +762,7 @@ try {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text())
-            .then(() => {
-                // Show success message and reload page
-                location.reload();
-            })
+            .then(() => location.reload())
             .catch(error => {
                 console.error('Error:', error);
                 alert('An error occurred while approving the article');
@@ -674,7 +774,7 @@ try {
         currentArticleId = articleId;
         document.getElementById('rejectArticleTitle').textContent = articleTitle;
         document.getElementById('rejectNotes').value = '';
-        document.getElementById('rejectModal').style.display = 'block';
+        document.getElementById('rejectModal').style.display = 'flex';
     }
 
     function closeRejectModal() {
@@ -690,11 +790,6 @@ try {
             return;
         }
 
-        if (!currentArticleId) {
-            alert('No article selected');
-            return;
-        }
-
         const formData = new FormData();
         formData.append('action', 'reject');
         formData.append('article_id', currentArticleId);
@@ -705,10 +800,8 @@ try {
             method: 'POST',
             body: formData
         })
-        .then(response => response.text())
         .then(() => {
             closeRejectModal();
-            // Show success message and reload page
             location.reload();
         })
         .catch(error => {
@@ -717,17 +810,31 @@ try {
         });
     }
 
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-        const rejectModal = document.getElementById('rejectModal');
-        if (event.target === rejectModal) {
-            closeRejectModal();
-        }
+    // Update status filter
+    function updateStatusFilter() {
+        const selectedStatus = document.getElementById('statusFilter').value;
+        window.location.href = '/index.php?page=manage_articles&filter=' + selectedStatus;
     }
 
-    // Update status filter on change
-    document.getElementById('statusFilter').addEventListener('change', function() {
-        const selectedStatus = this.value;
-        window.location.href = '/index.php?page=manage_articles&filter=' + selectedStatus;
+    // Search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const tableBody = document.getElementById('articlesTableBody');
+        const rows = tableBody.querySelectorAll('.article-row');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+
+            rows.forEach(row => {
+                const title = row.dataset.title;
+                const status = row.dataset.status;
+                
+                if (title.includes(searchTerm) || status.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
     });
     </script>

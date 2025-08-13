@@ -1,95 +1,173 @@
 <?php
-
 /**
- * Profile Edit Page
- *
- * This page allows users to edit their profile information, including
- * email, location, bio, and website URL.
- *
- * @author Dmytro Hovenko
+ * Profile Edit Page - PHASE 8
+ * Modern profile editing interface with client profile integration
  */
 
-// Enable output buffering for correct redirect handling
-ob_start();
+declare(strict_types=1);
 
-// Set headers to prevent caching
-header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Pragma: no-cache');
-header('Expires: 0');
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Ensure the session is started before working with $_SESSION/CSRF
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+global $serviceProvider, $flashMessageService, $database_handler;
 
-use App\Application\Controllers\ProfileController;
-use App\Application\Core\SessionManager;
-use App\Domain\Interfaces\TokenManagerInterface;
-
-// Use global services from the new DI architecture
-global $flashMessageService, $tokenManager, $database_handler, $container, $serviceProvider;
-
-// Get AuthenticationService
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    if (ob_get_level() > 0) { ob_end_clean(); }
-    die("A critical system error occurred. Please try again later.");
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
 }
 
-// Initialize SessionManager and get GLOBAL CSRF token for middleware
+// Check authentication
+if (!$authService->isAuthenticated()) {
+    $flashMessageService->addError('Please log in to access this area.');
+    header("Location: /index.php?page=login");
+    exit();
+}
+
+$currentUser = $authService->getCurrentUser();
+$userId = $authService->getCurrentUserId();
+$pageTitle = 'Edit Profile';
+
+// Get client profile data if exists
+$clientProfile = null;
 try {
-    $configManager = $serviceProvider->getConfigurationManager();
-    $logger = $serviceProvider->getLogger();
-    $sessionManager = SessionManager::getInstance($logger, [], $configManager);
-} catch (Throwable $e) {
-    // Fallback – at least create an instance with logger if config is unavailable
-    $sessionManager = SessionManager::getInstance($serviceProvider->getLogger());
-}
-$globalCsrfToken = $sessionManager->getCsrfToken();
-$current_user_id = $authService->getCurrentUserId();
-$current_user_role = $authService->getCurrentUserRole();
-$current_username = $authService->getCurrentUsername();
-$userData_from_auth = $authService->getCurrentUser();
-
-// Check required services
-if (!isset($flashMessageService) || !isset($tokenManager) || !isset($database_handler) || !isset($container)) {
-    error_log("Critical: Required services not available in profile_edit.php");
-    if (ob_get_level() > 0) { ob_end_clean(); }
-    die("A critical system error occurred. Please try again later.");
-}
-
-$userId = $current_user_id;
-
-// Create ProfileController
-try {
-    $profileController = new ProfileController(
-        $database_handler,
-        $userId,
-        $flashMessageService,
-        $container->make(TokenManagerInterface::class)
-    );
+    $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
+    $stmt = $database_handler->getConnection()->prepare($sql);
+    $stmt->execute([$userId]);
+    $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    error_log("Critical: Failed to create ProfileController: " . $e->getMessage());
-    $flashMessageService->addError("Failed to initialize profile system. Please try again later.");
-    if (ob_get_level() > 0) { ob_end_clean(); }
-    header('Location: /index.php?page=dashboard');
-    exit;
+    error_log("Error fetching client profile: " . $e->getMessage());
 }
 
-// Function to calculate account completeness progress
-function calculateAccountCompleteness($userData): array
-{
-    $fields = [
-        'email' => !empty($userData['email']) && $userData['email'] !== 'N/A' ? 1 : 0,
-        'location' => !empty($userData['location']) ? 1 : 0,
-        'bio' => !empty($userData['bio']) ? 1 : 0,
-        'user_status' => !empty($userData['user_status']) ? 1 : 0,
-        'website_url' => !empty($userData['website_url']) ? 1 : 0
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $errors = [];
+
+    // Basic user data
+    $email = trim($_POST['email'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+
+    // Client profile data
+    $company_name = trim($_POST['company_name'] ?? '');
+    $position = trim($_POST['position'] ?? '');
+    $bio = trim($_POST['bio'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $website = trim($_POST['website'] ?? '');
+    $portfolio_visibility = $_POST['portfolio_visibility'] ?? 'private';
+    $allow_contact = isset($_POST['allow_contact']) ? 1 : 0;
+    $skills = $_POST['skills'] ?? [];
+
+    // Social links
+    $social_links = [
+        'linkedin' => trim($_POST['linkedin'] ?? ''),
+        'github' => trim($_POST['github'] ?? ''),
+        'twitter' => trim($_POST['twitter'] ?? ''),
+        'website' => trim($_POST['website'] ?? ''),
+        'behance' => trim($_POST['behance'] ?? ''),
+        'dribbble' => trim($_POST['dribbble'] ?? '')
     ];
 
-    $completed = array_sum($fields);
+    // Remove empty social links
+    $social_links = array_filter($social_links);
+
+    // Validation
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Valid email is required.';
+    }
+
+    if (empty($username) || strlen($username) < 3) {
+        $errors[] = 'Username must be at least 3 characters long.';
+    }
+
+    if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
+        $errors[] = 'Please enter a valid website URL.';
+    }
+
+    // Validate social links
+    foreach ($social_links as $platform => $url) {
+        if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
+            $errors[] = "Please enter a valid {$platform} URL.";
+        }
+    }
+
+    if (empty($errors)) {
+        try {
+            $database_handler->getConnection()->beginTransaction();
+
+            // Update basic user data
+            $sql = "UPDATE users SET username = ?, email = ?, updated_at = NOW() WHERE id = ?";
+            $stmt = $database_handler->getConnection()->prepare($sql);
+            $stmt->execute([$username, $email, $userId]);
+
+            // Update or create client profile
+            if ($clientProfile) {
+                // Update existing profile
+                $sql = "UPDATE client_profiles SET 
+                        company_name = ?, position = ?, bio = ?, location = ?, 
+                        website = ?, portfolio_visibility = ?, allow_contact = ?,
+                        skills = ?, social_links = ?, updated_at = NOW()
+                        WHERE user_id = ?";
+                $stmt = $database_handler->getConnection()->prepare($sql);
+                $stmt->execute([
+                    $company_name, $position, $bio, $location, $website,
+                    $portfolio_visibility, $allow_contact,
+                    json_encode(array_values(array_filter($skills))),
+                    json_encode($social_links),
+                    $userId
+                ]);
+            } else {
+                // Create new profile
+                $sql = "INSERT INTO client_profiles 
+                        (user_id, company_name, position, bio, location, website, 
+                         portfolio_visibility, allow_contact, skills, social_links, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $stmt = $database_handler->getConnection()->prepare($sql);
+                $stmt->execute([
+                    $userId, $company_name, $position, $bio, $location, $website,
+                    $portfolio_visibility, $allow_contact,
+                    json_encode(array_values(array_filter($skills))),
+                    json_encode($social_links)
+                ]);
+            }
+
+            $database_handler->getConnection()->commit();
+            $flashMessageService->addSuccess('Profile updated successfully!');
+
+            // Refresh data
+            $currentUser = $authService->getCurrentUser();
+            $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
+            $stmt = $database_handler->getConnection()->prepare($sql);
+            $stmt->execute([$userId]);
+            $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        } catch (Exception $e) {
+            $database_handler->getConnection()->rollBack();
+            error_log("Error updating profile: " . $e->getMessage());
+            $flashMessageService->addError('Failed to update profile. Please try again.');
+        }
+    } else {
+        foreach ($errors as $error) {
+            $flashMessageService->addError($error);
+        }
+    }
+}
+
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
+
+// Calculate profile completion
+function calculateProfileCompletion($user, $profile): array {
+    $fields = [
+        'email' => !empty($user['email']),
+        'company' => !empty($profile['company_name'] ?? ''),
+        'position' => !empty($profile['position'] ?? ''),
+        'bio' => !empty($profile['bio'] ?? ''),
+        'location' => !empty($profile['location'] ?? ''),
+        'website' => !empty($profile['website'] ?? ''),
+        'skills' => !empty($profile['skills'] ?? ''),
+    ];
+
+    $completed = count(array_filter($fields));
     $total = count($fields);
     $percentage = round(($completed / $total) * 100);
 
@@ -97,749 +175,506 @@ function calculateAccountCompleteness($userData): array
         'percentage' => $percentage,
         'completed' => $completed,
         'total' => $total,
-        'missing_fields' => array_keys(array_filter($fields, function($v) { return $v === 0; }))
+        'missing' => array_keys(array_filter($fields, fn($v) => !$v))
     ];
 }
 
-// Function to get user statistics
-function getUserStats($database_handler, $userId): array
-{
-    $stats = [
-        'articles' => 0,
-        'comments' => 0,
-        'profile_views' => 0,
-        'last_login' => 'Active now',
-        'member_since' => 'This year'
-    ];
-
-    if ($database_handler && $pdo = $database_handler->getConnection()) {
-        try {
-            // Article statistics
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['articles'] = (int)$stmt->fetchColumn();
-
-            // Comment statistics
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM comments WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['comments'] = (int)$stmt->fetchColumn();
-
-        } catch (PDOException $e) {
-            error_log("User stats error: " . $e->getMessage());
-        }
-    }
-
-    return $stats;
-}
-
-// Handle POST requests
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST['update_profile_info']) || (isset($_POST['csrf_token_edit_profile_info']) && !isset($_POST['change_password_submit']))) {
-        // Validate CSRF token
-        if (!isset($_POST['csrf_token_edit_profile_info']) || $_POST['csrf_token_edit_profile_info'] !== $_SESSION['csrf_token_profile']) {
-            $flashMessageService->addError('Security error: Invalid CSRF token for profile info. Please refresh and try again.');
-        } else {
-            // Get current user data for comparison
-            $currentUserData = $profileController->getCurrentUserData();
-
-            // Separate email and other profile fields processing
-            $newEmail = trim($_POST['email'] ?? '');
-
-            // Check if email has changed
-            if (!empty($newEmail) && filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
-                if ($currentUserData && strtolower($newEmail) !== strtolower($currentUserData['email'])) {
-                    // Email changed – request confirmation
-                    try {
-                        $profileController->handleEmailChangeRequest();
-                    } catch (Exception $e) {
-                        error_log("Email change request failed: " . $e->getMessage());
-                        $flashMessageService->addError('Failed to initiate email change. Please try again later.');
-                    }
-                }
-            }
-
-            // Process other profile fields
-            $otherProfileData = [
-                'location' => $_POST['location'] ?? '',
-                'user_status' => $_POST['user_status'] ?? '',
-                'bio' => $_POST['bio'] ?? '',
-                'website_url' => $_POST['website_url'] ?? '',
-            ];
-
-            // Update profile fields
-            try {
-                $profileController->handleUpdateDetailsRequest($otherProfileData);
-            } catch (Exception $e) {
-                error_log("Profile update failed: " . $e->getMessage());
-                $flashMessageService->addError('Failed to update profile. Please try again.');
-            }
-        }
-
-        // Redirect to prevent form resubmission
-        if (ob_get_level() > 0) { ob_end_clean(); }
-        header('Location: /index.php?page=profile_edit');
-        exit;
-
-    } elseif (isset($_POST['change_password_submit'])) {
-        // Validate CSRF token for password change
-        if (!isset($_POST['csrf_token_change_password']) || $_POST['csrf_token_change_password'] !== $_SESSION['csrf_token_password']) {
-            $flashMessageService->addError('Security error: Invalid CSRF token for password change. Please refresh and try again.');
-        } else {
-            $currentPassword = $_POST['current_password'] ?? '';
-            $newPassword = $_POST['new_password'] ?? '';
-            $confirmPassword = $_POST['confirm_password'] ?? '';
-
-            try {
-                $profileController->handleChangePasswordRequest($currentPassword, $newPassword, $confirmPassword);
-            } catch (Exception $e) {
-                error_log("Password change request failed: " . $e->getMessage());
-                $flashMessageService->addError('Failed to process password change. Please try again later.');
-            }
-        }
-
-        // Redirect
-        if (ob_get_level() > 0) { ob_end_clean(); }
-        header('Location: /index.php?page=profile_edit');
-        exit;
-    }
-}
-
-// Load user data and generate tokens for GET requests
-$userData = $profileController->getCurrentUserData();
-
-// Generate CSRF tokens
-if (!isset($_SESSION['csrf_token_profile'])) {
-    $_SESSION['csrf_token_profile'] = bin2hex(random_bytes(32));
-}
-if (!isset($_SESSION['csrf_token_password'])) {
-    $_SESSION['csrf_token_password'] = bin2hex(random_bytes(32));
-}
-
-$csrf_token_profile = $_SESSION['csrf_token_profile'];
-$csrf_token_password = $_SESSION['csrf_token_password'];
-
-if (!$userData) {
-    $userData = [
-        'username' => 'N/A', 'email' => 'N/A',
-        'location' => '', 'user_status' => '', 'bio' => '', 'website_url' => ''
-    ];
-    $flashMessageService->addError('Failed to load user data.');
-    error_log("Edit Profile Page: Could not load user data for user ID: " . $userId);
-}
-
-// Calculate progress and statistics
-$accountProgress = calculateAccountCompleteness($userData);
-$userStats = getUserStats($database_handler, $userId);
-
-// End output buffering
-if (ob_get_level() > 0) { ob_end_clean(); }
+$completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
 ?>
-<div class="profile-edit-page-wrapper">
-<script>
-(function(){
-    try {
-        const emailInput = document.querySelector('.profile-edit-page-wrapper input[name="email"]') || document.querySelector('.profile-edit-page-wrapper #email');
-        const usernameDisplay = document.getElementById('username-display');
-        if (emailInput) {
-            // Make email non-editable
-            emailInput.setAttribute('readonly','readonly');
-            emailInput.setAttribute('aria-readonly','true');
-            emailInput.setAttribute('tabindex','-1');
-
-            // Reuse the same classes/styles as username-display (no new styles created)
-            if (usernameDisplay) {
-                emailInput.className = usernameDisplay.className;
-            }
-
-            // Add an info note near the email field if not present
-            const parent = emailInput.parentNode;
-            if (parent && !parent.querySelector('.email-locked-note')) {
-                const note = document.createElement('div');
-                note.className = 'email-locked-note';
-                note.textContent = 'Email change is disabled for security. Please contact support if you need to update it.';
-                parent.insertBefore(note, emailInput.nextSibling);
-            }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($pageTitle) ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
         }
-    } catch(e) {}
-})();
-</script>
-<div class="admin-layout">
-    <!-- Enhanced Main Header Section -->
-    <header class="page-header">
-        <div class="page-header-content">
-            <div class="page-header-main">
-                <h1 class="page-title">
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .form-section h5 {
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .skill-tag {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .skill-tag .remove-skill {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            color: #f44336;
+        }
+        .social-input-group {
+            position: relative;
+        }
+        .social-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 10;
+        }
+        .social-input {
+            padding-left: 40px;
+        }
+        .progress-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
                     <i class="fas fa-user-edit"></i>
-                    Edit Profile
+                    Edit Your Profile
                 </h1>
-                <div class="page-header-description">
-                    <p>Manage your account information, public profile, and security settings</p>
+                <p class="mb-0 opacity-75">Keep your information up to date to get the most out of our platform</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex align-items-center justify-content-md-end gap-3">
+                    <div>
+                        <div class="progress-circle" style="background: rgba(255,255,255,0.2);">
+                            <?= $completion['percentage'] ?>%
+                        </div>
+                        <small class="d-block text-center mt-1">Complete</small>
+                    </div>
+                    <div>
+                        <a href="/index.php?page=user_profile" class="btn btn-light btn-sm">
+                            <i class="fas fa-eye"></i> View Profile
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="page-header-actions">
-                <a href="/index.php?page=dashboard" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-                <a href="/index.php?page=profile&user=<?php echo htmlspecialchars($userData['username'] ?? ''); ?>" class="btn btn-outline">
-                    <i class="fas fa-eye"></i> View Profile
-                </a>
-            </div>
         </div>
-    </header>
+    </div>
 
     <!-- Flash Messages -->
-    <?php
-    if (isset($flashMessageService) && $flashMessageService->hasMessages()) {
-        $messages = $flashMessageService->getMessages();
-        if (!empty($messages)) {
-    ?>
-        <div class="flash-messages-container">
-            <?php foreach ($messages as $type => $messageList): ?>
-                <?php foreach ($messageList as $message): ?>
-                    <div class="message message--<?php echo htmlspecialchars($type); ?>">
-                        <p><?php echo $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']); ?></p>
-                    </div>
+    <?php if (!empty($flashMessages)): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <?php foreach ($flashMessages as $type => $messages): ?>
+                    <?php foreach ($messages as $message): ?>
+                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
+                            <?= htmlspecialchars($message['text']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
-            <?php endforeach; ?>
+            </div>
         </div>
-    <?php
-        }
-    }
-    ?>
+    <?php endif; ?>
 
-    <!-- Main Content Layout -->
-    <div class="content-layout">
-        <!-- Primary Content Area -->
-        <main class="main-content" style="max-width: 800px;">
-            <!-- Profile Edit Form -->
-            <div class="form-wrapper">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <div class="card-header-content">
-                            <h2 class="card-title">
-                                <i class="fas fa-user"></i> Profile Information
-                            </h2>
-                            <div class="card-header-meta">
-                                <div class="creation-info">
-                                    <small class="creation-date">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        Last updated: <?php echo date('M j, Y \a\t g:i A'); ?>
-                                    </small>
-                                    <small class="author-info">
-                                        <i class="fas fa-user"></i>
-                                        User: <?php echo htmlspecialchars($userData['username'] ?? 'Unknown'); ?>
-                                    </small>
-                                </div>
-                                <div class="article-status">
-                                    <span class="status-badge status-profile">
-                                        <i class="fas fa-globe"></i>
-                                        Public Profile
-                                    </span>
-                                </div>
+    <form method="POST" action="/index.php?page=profile_edit">
+        <div class="row">
+            <!-- Left Column -->
+            <div class="col-lg-8">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-user text-primary"></i>
+                        Basic Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="username" 
+                                       name="username" 
+                                       value="<?= htmlspecialchars($currentUser['username']) ?>"
+                                       required>
                             </div>
                         </div>
-                        <div class="card-header-actions">
-                            <button type="button" class="btn-icon btn-toggle-help" onclick="toggleHelp()" title="Toggle Help">
-                                <i class="fas fa-question-circle"></i>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="<?= htmlspecialchars($currentUser['email']) ?>"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Professional Information -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-briefcase text-primary"></i>
+                        Professional Information
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">Company Name</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="company_name" 
+                                       name="company_name" 
+                                       value="<?= htmlspecialchars($clientProfile['company_name'] ?? '') ?>"
+                                       placeholder="Your company or organization">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="position" class="form-label">Position/Title</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="position" 
+                                       name="position" 
+                                       value="<?= htmlspecialchars($clientProfile['position'] ?? '') ?>"
+                                       placeholder="Your job title or role">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="location" 
+                                       name="location" 
+                                       value="<?= htmlspecialchars($clientProfile['location'] ?? '') ?>"
+                                       placeholder="City, Country">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="website" class="form-label">Website</label>
+                                <input type="url" 
+                                       class="form-control" 
+                                       id="website" 
+                                       name="website" 
+                                       value="<?= htmlspecialchars($clientProfile['website'] ?? '') ?>"
+                                       placeholder="https://yourwebsite.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" 
+                                  id="bio" 
+                                  name="bio" 
+                                  rows="4" 
+                                  placeholder="Tell us about yourself, your experience, and what you do..."><?= htmlspecialchars($clientProfile['bio'] ?? '') ?></textarea>
+                        <div class="form-text">A good bio helps others understand your background and expertise.</div>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-code text-primary"></i>
+                        Skills & Technologies
+                    </h5>
+                    <div class="mb-3">
+                        <label for="skill-input" class="form-label">Add Skills</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="skill-input" 
+                                   placeholder="Type a skill and press Enter">
+                            <button type="button" class="btn btn-outline-primary" id="add-skill-btn">
+                                <i class="fas fa-plus"></i> Add
                             </button>
                         </div>
+                        <div class="form-text">Add technologies, programming languages, tools you work with</div>
                     </div>
-                    <div class="card-body">
-                        <form action="/index.php?page=profile_edit" method="post" class="article-creation-form" id="profileForm">
-                            <input type="hidden" name="csrf_token_edit_profile_info" value="<?php echo htmlspecialchars($csrf_token_profile); ?>">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($globalCsrfToken); ?>">
-
-                            <!-- Step 1: Account Information -->
-                            <div class="form-section" data-section="1">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-id-card"></i> Account Information
-                                    </h3>
-                                    <p class="section-description">Update your essential account details and contact information</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="username-display" class="form-label">
-                                            Username
-                                            <span class="field-info" title="Your unique identifier - contact support to change">
-                                                <i class="fas fa-info-circle"></i>
-                                            </span>
-                                        </label>
-                                        <input type="text" id="username-display" name="username_display"
-                                               class="form-control"
-                                               value="<?php echo htmlspecialchars($userData['username'] ?? ''); ?>"
-                                               disabled>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-lock"></i>
-                                            Your unique identifier. Contact support to change this.
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group form-group-half">
-                                        <label for="email" class="form-label">
-                                            Email Address <span class="required-indicator">*</span>
-                                        </label>
-                                        <input type="text" id="username-display" name="username-display"
-                                               class="form-control"
-                                               value="<?php echo htmlspecialchars($userData['email'] ?? ''); ?>"
-                                               disabled>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-lock"></i>
-                                            Your unique identifier. Contact support to change this.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 2: Public Profile -->
-                            <div class="form-section" data-section="2">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-globe"></i> Public Profile
-                                    </h3>
-                                    <p class="section-description">Information that will be visible to other users on your profile</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="location" class="form-label">
-                                            Location
-                                            <span class="optional-indicator">(Optional)</span>
-                                        </label>
-                                        <div class="input-wrapper">
-                                            <input type="text" id="location" name="location"
-                                                   class="form-control"
-                                                   value="<?php echo htmlspecialchars($userData['location'] ?? ''); ?>"
-                                                   placeholder="City, Country"
-                                                   maxlength="100">
-                                            <div class="character-counter">
-                                                <span id="locationCounter"><?php echo strlen($userData['location'] ?? ''); ?></span>/100
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group form-group-half">
-                                        <label for="website_url" class="form-label">
-                                            Website
-                                            <span class="optional-indicator">(Optional)</span>
-                                        </label>
-                                        <input type="url" id="website_url" name="website_url"
-                                               class="form-control"
-                                               value="<?php echo htmlspecialchars($userData['website_url'] ?? ''); ?>"
-                                               placeholder="https://example.com">
-                                    </div>
-
-                                    <div class="form-group form-group-full">
-                                        <label for="user_status" class="form-label">
-                                            Current Status
-                                            <span class="optional-indicator">(Optional)</span>
-                                        </label>
-                                        <div class="input-wrapper">
-                                            <input type="text" id="user_status" name="user_status"
-                                                   class="form-control"
-                                                   value="<?php echo htmlspecialchars($userData['user_status'] ?? ''); ?>"
-                                                   placeholder="What are you working on?"
-                                                   maxlength="150">
-                                            <div class="character-counter">
-                                                <span id="statusCounter"><?php echo strlen($userData['user_status'] ?? ''); ?></span>/150
-                                            </div>
-                                        </div>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-comment-dots"></i>
-                                            Share what you're currently working on or thinking about
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group form-group-full">
-                                        <label for="bio" class="form-label">
-                                            About Me
-                                            <span class="optional-indicator">(Optional)</span>
-                                        </label>
-                                        <div class="textarea-wrapper">
-                                            <textarea id="bio" name="bio"
-                                                      class="form-control" rows="4"
-                                                      placeholder="Tell us about yourself, your interests, and experience..."
-                                                      maxlength="1000"><?php echo htmlspecialchars($userData['bio'] ?? ''); ?></textarea>
-                                            <div class="character-counter">
-                                                <span id="bioCounter"><?php echo strlen($userData['bio'] ?? ''); ?></span>/1000
-                                            </div>
-                                        </div>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-user-circle"></i>
-                                            Describe yourself in a few sentences
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 3: Profile Preview -->
-                            <div class="form-section" data-section="3">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-eye"></i> Profile Preview
-                                    </h3>
-                                    <p class="section-description">See how your profile will appear to other users</p>
-                                </div>
-                                <div class="article-preview-card">
-                                    <div class="preview-header">
-                                        <h4>Your Public Profile</h4>
-                                        <span class="preview-badge">Live Preview</span>
-                                    </div>
-                                    <div class="preview-content">
-                                        <h5 id="previewUsername"><?php echo htmlspecialchars($userData['username'] ?? 'Username'); ?></h5>
-                                        <div class="preview-meta">
-                                            <span id="previewLocation"><?php echo htmlspecialchars($userData['location'] ?: 'No location'); ?></span>
-                                            <?php if (!empty($userData['website_url'])): ?>
-                                                <span class="separator">•</span>
-                                                <span id="previewWebsite">Has website</span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="preview-status" id="previewStatus">
-                                            <?php echo htmlspecialchars($userData['user_status'] ?: 'No current status'); ?>
-                                        </div>
-                                        <div class="preview-description" id="previewBio">
-                                            <?php echo htmlspecialchars($userData['bio'] ?: 'No bio available'); ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Enhanced Action Buttons -->
-                            <div class="form-actions-redesigned">
-                                <div class="form-actions-container">
-                                    <button type="submit" name="update_profile_info" class="btn btn-publish">
-                                        <i class="fas fa-save"></i>
-                                        <span>Save Profile</span>
-                                    </button>
-
-                                    <button type="button" class="btn btn-save-draft" onclick="resetForm()">
-                                        <i class="fas fa-undo"></i>
-                                        <span>Reset Changes</span>
-                                    </button>
-
-                                    <a href="/index.php?page=dashboard" class="btn btn-cancel">
-                                        <i class="fas fa-times"></i>
-                                        <span>Cancel</span>
-                                    </a>
-                                </div>
-
-                                <div class="form-actions-help">
-                                    <div class="keyboard-shortcuts">
-                                        <small>
-                                            <i class="fas fa-keyboard"></i>
-                                            <strong>Tips:</strong>
-                                            Complete all fields for a more engaging profile
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                    
+                    <div id="skills-container" class="mb-3">
+                        <?php 
+                        $skills = [];
+                        if (!empty($clientProfile['skills'])) {
+                            $skills = json_decode($clientProfile['skills'], true) ?: [];
+                        }
+                        foreach ($skills as $skill): ?>
+                            <span class="skill-tag">
+                                <?= htmlspecialchars($skill) ?>
+                                <span class="remove-skill">&times;</span>
+                                <input type="hidden" name="skills[]" value="<?= htmlspecialchars($skill) ?>">
+                            </span>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-            </div>
-        </main>
 
-        <!-- Enhanced Compact Sidebar -->
-        <aside class="sidebar-content" style="min-width: 280px; max-width: 320px;">
-            <!-- Security Settings Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-shield-alt"></i> Security
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <form action="/index.php?page=profile_edit" method="post" class="security-form" id="securityForm">
-                        <input type="hidden" name="csrf_token_change_password" value="<?php echo htmlspecialchars($csrf_token_password); ?>">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($globalCsrfToken); ?>">
-
-                        <div class="form-group">
-                            <label for="current_password" class="form-label">
-                                Current Password <span class="required-indicator">*</span>
-                            </label>
-                            <input type="password" id="current_password" name="current_password"
-                                   class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="new_password" class="form-label">
-                                New Password <span class="required-indicator">*</span>
-                            </label>
-                            <input type="password" id="new_password" name="new_password"
-                                   class="form-control" required minlength="8">
-                            <div class="password-strength" id="passwordStrength">
-                                <div class="strength-bar">
-                                    <div class="strength-fill"></div>
+                <!-- Social Links -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-share-alt text-primary"></i>
+                        Social Links
+                    </h5>
+                    <div class="row">
+                        <?php 
+                        $socialPlatforms = [
+                            'linkedin' => ['icon' => 'fab fa-linkedin', 'placeholder' => 'LinkedIn profile URL'],
+                            'github' => ['icon' => 'fab fa-github', 'placeholder' => 'GitHub profile URL'],
+                            'twitter' => ['icon' => 'fab fa-twitter', 'placeholder' => 'Twitter profile URL'],
+                            'behance' => ['icon' => 'fab fa-behance', 'placeholder' => 'Behance profile URL'],
+                            'dribbble' => ['icon' => 'fab fa-dribbble', 'placeholder' => 'Dribbble profile URL']
+                        ];
+                        
+                        $existingSocial = [];
+                        if (!empty($clientProfile['social_links'])) {
+                            $existingSocial = json_decode($clientProfile['social_links'], true) ?: [];
+                        }
+                        
+                        foreach ($socialPlatforms as $platform => $config): ?>
+                            <div class="col-md-6 mb-3">
+                                <label for="<?= $platform ?>" class="form-label"><?= ucfirst($platform) ?></label>
+                                <div class="social-input-group">
+                                    <i class="<?= $config['icon'] ?> social-icon"></i>
+                                    <input type="url" 
+                                           class="form-control social-input" 
+                                           id="<?= $platform ?>" 
+                                           name="<?= $platform ?>" 
+                                           value="<?= htmlspecialchars($existingSocial[$platform] ?? '') ?>"
+                                           placeholder="<?= $config['placeholder'] ?>">
                                 </div>
-                                <small class="strength-text">Password strength</small>
                             </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="confirm_password" class="form-label">
-                                Confirm Password <span class="required-indicator">*</span>
-                            </label>
-                            <input type="password" id="confirm_password" name="confirm_password"
-                                   class="form-control" required minlength="8">
-                            <small class="form-help" id="passwordMatch"></small>
-                        </div>
-
-                        <button type="submit" name="change_password_submit" class="btn btn-danger btn-full">
-                            <i class="fas fa-key"></i> Update Password
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Profile Progress Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-tasks"></i> Profile Progress
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="progress-overview">
-                        <div class="progress-bar-wrapper">
-                            <div class="progress-bar" id="profileProgress">
-                                <div class="progress-fill" style="width: <?php echo $accountProgress['percentage']; ?>%"></div>
-                            </div>
-                            <span class="progress-percentage"><?php echo $accountProgress['percentage']; ?>%</span>
-                        </div>
-                    </div>
-                    <div class="progress-checklist">
-                        <div class="progress-item <?php echo !empty($userData['email']) ? 'completed' : ''; ?>">
-                            <i class="fas fa-circle progress-icon"></i>
-                            <span class="progress-text">Email address</span>
-                        </div>
-                        <div class="progress-item <?php echo !empty($userData['location']) ? 'completed' : ''; ?>">
-                            <i class="fas fa-circle progress-icon"></i>
-                            <span class="progress-text">Location</span>
-                        </div>
-                        <div class="progress-item <?php echo !empty($userData['bio']) ? 'completed' : ''; ?>">
-                            <i class="fas fa-circle progress-icon"></i>
-                            <span class="progress-text">About me</span>
-                        </div>
-                        <div class="progress-item <?php echo !empty($userData['user_status']) ? 'completed' : ''; ?>">
-                            <i class="fas fa-circle progress-icon"></i>
-                            <span class="progress-text">Current status</span>
-                        </div>
-                        <div class="progress-item <?php echo !empty($userData['website_url']) ? 'completed' : ''; ?>">
-                            <i class="fas fa-circle progress-icon"></i>
-                            <span class="progress-text">Website</span>
-                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>
 
-            <!-- Activity Stats Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-line"></i> Your Activity
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="writing-stats">
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $userStats['articles']; ?></span>
-                                <span class="stat-label">Articles</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $userStats['comments']; ?></span>
-                                <span class="stat-label">Comments</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-percentage"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $accountProgress['percentage']; ?>%</span>
-                                <span class="stat-label">Complete</span>
-                            </div>
-                        </div>
+            <!-- Right Column -->
+            <div class="col-lg-4">
+                <!-- Profile Settings -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-cogs text-primary"></i>
+                        Privacy Settings
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label for="portfolio_visibility" class="form-label">Portfolio Visibility</label>
+                        <select class="form-select" id="portfolio_visibility" name="portfolio_visibility">
+                            <option value="private" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'private' ? 'selected' : '' ?>>
+                                Private - Only I can see
+                            </option>
+                            <option value="public" <?= ($clientProfile['portfolio_visibility'] ?? 'private') === 'public' ? 'selected' : '' ?>>
+                                Public - Visible to everyone
+                            </option>
+                        </select>
+                        <div class="form-text">Control who can see your portfolio projects</div>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="allow_contact" 
+                               name="allow_contact" 
+                               <?= !empty($clientProfile['allow_contact']) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="allow_contact">
+                            Allow others to contact me
+                        </label>
+                        <div class="form-text">Allow other users to send you messages</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Quick Navigation Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-compass"></i> Quick Links
-                    </h3>
+                <!-- Profile Completion -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-chart-pie text-primary"></i>
+                        Profile Completion
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Progress</span>
+                            <span class="badge bg-primary"><?= $completion['percentage'] ?>%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-gradient" 
+                                 role="progressbar" 
+                                 style="width: <?= $completion['percentage'] ?>%"></div>
+                        </div>
+                        <small class="text-muted"><?= $completion['completed'] ?> of <?= $completion['total'] ?> fields completed</small>
+                    </div>
+
+                    <?php if (!empty($completion['missing'])): ?>
+                        <div class="alert alert-info p-2">
+                            <small>
+                                <strong>To complete your profile, add:</strong><br>
+                                <?php foreach (array_slice($completion['missing'], 0, 3) as $field): ?>
+                                    • <?= ucfirst(str_replace('_', ' ', $field)) ?><br>
+                                <?php endforeach; ?>
+                            </small>
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <div class="card-body">
-                    <nav class="quick-nav">
-                        <a href="/index.php?page=dashboard" class="quick-nav-link">
-                            <i class="fas fa-tachometer-alt"></i>
-                            <span>Dashboard</span>
+
+                <!-- Quick Actions -->
+                <div class="form-section">
+                    <h5>
+                        <i class="fas fa-bolt text-primary"></i>
+                        Quick Actions
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <a href="/index.php?page=user_profile" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i> View Public Profile
                         </a>
-                        <a href="/index.php?page=profile&user=<?php echo htmlspecialchars($userData['username'] ?? ''); ?>" class="quick-nav-link">
-                            <i class="fas fa-eye"></i>
-                            <span>View Profile</span>
+                        <a href="/index.php?page=user_portfolio" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-briefcase"></i> Manage Portfolio
                         </a>
-                        <a href="/index.php?page=profile_settings" class="quick-nav-link">
-                            <i class="fas fa-cog"></i>
-                            <span>Settings</span>
+                        <a href="/index.php?page=user_profile_settings" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-shield-alt"></i> Security Settings
                         </a>
-                        <a href="/index.php?page=create_article" class="quick-nav-link">
-                            <i class="fas fa-plus"></i>
-                            <span>New Article</span>
-                        </a>
-                    </nav>
+                    </div>
                 </div>
             </div>
-        </aside>
-    </div>
-</div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Ready to save your changes?</h6>
+                    <small class="text-muted">Make sure all information is accurate before saving</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/index.php?page=user_profile" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-gradient">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Character counters for form fields
-function updateCounter(inputId, counterId, maxLength) {
-    const input = document.getElementById(inputId);
-    const counter = document.getElementById(counterId);
+// Skills management
+document.addEventListener('DOMContentLoaded', function() {
+    const skillInput = document.getElementById('skill-input');
+    const addSkillBtn = document.getElementById('add-skill-btn');
+    const skillsContainer = document.getElementById('skills-container');
 
-    if (input && counter) {
-        input.addEventListener('input', function() {
-            const count = this.value.length;
-            counter.textContent = count;
+    function addSkill(skillText) {
+        if (!skillText.trim()) return;
 
-            const wrapper = counter.closest('.character-counter');
-            if (count > maxLength * 0.8) {
-                wrapper.classList.add('text-warning');
-            } else {
-                wrapper.classList.remove('text-warning');
-            }
-        });
-    }
-}
+        // Check if skill already exists
+        const existingSkills = Array.from(skillsContainer.querySelectorAll('input[name="skills[]"]'))
+            .map(input => input.value.toLowerCase());
 
-// Initialize character counters
-updateCounter('location', 'locationCounter', 100);
-updateCounter('user_status', 'statusCounter', 150);
-updateCounter('bio', 'bioCounter', 1000);
-
-// Live preview updates
-function updatePreview() {
-    document.getElementById('previewUsername');
-    const previewLocation = document.getElementById('previewLocation');
-    const previewStatus = document.getElementById('previewStatus');
-    const previewBio = document.getElementById('previewBio');
-
-    const location = document.getElementById('location').value;
-    const status = document.getElementById('user_status').value;
-    const bio = document.getElementById('bio').value;
-
-    if (previewLocation) previewLocation.textContent = location || 'No location';
-    if (previewStatus) previewStatus.textContent = status || 'No current status';
-    if (previewBio) previewBio.textContent = bio || 'No bio available';
-}
-
-// Add event listeners for a live preview
-['location', 'user_status', 'bio'].forEach(fieldId => {
-    const field = document.getElementById(fieldId);
-    if (field) {
-        field.addEventListener('input', updatePreview);
-    }
-});
-
-// Password strength indicator
-document.getElementById('new_password').addEventListener('input', function() {
-    const password = this.value;
-    const strengthElement = document.getElementById('passwordStrength');
-    const strengthFill = strengthElement.querySelector('.strength-fill');
-    const strengthText = strengthElement.querySelector('.strength-text');
-
-    let strength = 0;
-    let strengthLabel;
-
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
-
-    const percentage = (strength / 5) * 100;
-    strengthFill.style.width = percentage + '%';
-
-    if (strength <= 2) {
-        strengthFill.className = 'strength-fill weak';
-        strengthLabel = 'Weak';
-    } else if (strength <= 3) {
-        strengthFill.className = 'strength-fill medium';
-        strengthLabel = 'Medium';
-    } else {
-        strengthFill.className = 'strength-fill strong';
-        strengthLabel = 'Strong';
-    }
-
-    strengthText.textContent = password.length > 0 ? strengthLabel : 'Password strength';
-});
-
-// Password confirmation check
-document.getElementById('confirm_password').addEventListener('input', function() {
-    const newPassword = document.getElementById('new_password').value;
-    const confirmPassword = this.value;
-    const matchElement = document.getElementById('passwordMatch');
-
-    if (confirmPassword.length > 0) {
-        if (newPassword === confirmPassword) {
-            matchElement.innerHTML = '<i class="fas fa-check text-success"></i> Password match';
-            matchElement.className = 'form-help text-success';
-        } else {
-            matchElement.innerHTML = '<i class="fas fa-times text-danger"></i> Passwords do not match';
-            matchElement.className = 'form-help text-danger';
+        if (existingSkills.includes(skillText.toLowerCase())) {
+            return;
         }
-    } else {
-        matchElement.innerHTML = '';
+
+        const skillTag = document.createElement('span');
+        skillTag.className = 'skill-tag';
+        skillTag.innerHTML = `
+            ${skillText}
+            <span class="remove-skill">&times;</span>
+            <input type="hidden" name="skills[]" value="${skillText}">
+        `;
+
+        skillTag.querySelector('.remove-skill').addEventListener('click', function() {
+            skillTag.remove();
+        });
+
+        skillsContainer.appendChild(skillTag);
+        skillInput.value = '';
     }
-});
 
-// Reset form function
-function resetForm() {
-    if (confirm('Are you sure you want to reset all changes?')) {
-        document.getElementById('profileForm').reset();
-        updatePreview();
-    }
-}
-
-// Tips carousel functionality
-let currentTip = 0;
-const tips = document.querySelectorAll('.tip-item');
-
-function showTip(index) {
-    tips.forEach((tip, i) => {
-        tip.classList.toggle('active', i === index);
+    addSkillBtn.addEventListener('click', function() {
+        addSkill(skillInput.value);
     });
-}
 
-function nextTip() {
-    currentTip = (currentTip + 1) % tips.length;
-    showTip(currentTip);
-}
+    skillInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSkill(this.value);
+        }
+    });
 
-function previousTip() {
-    currentTip = (currentTip - 1 + tips.length) % tips.length;
-    showTip(currentTip);
-}
+    // Handle existing skill removal
+    document.querySelectorAll('.remove-skill').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            this.parentElement.remove();
+        });
+    });
 
-// Auto-rotate tips every 5 seconds
-setInterval(nextTip, 5000);
+    // Auto-dismiss alerts
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
 
-// Helper functions for consistency
-function toggleHelp() {
-    // Implementation for help toggle
-    console.log('Help toggled');
-}
+    // Character counter for bio
+    const bioTextarea = document.getElementById('bio');
+    bioTextarea.addEventListener('input', function() {
+        const maxLength = 500;
+        const currentLength = this.value.length;
+        const remaining = maxLength - currentLength;
+
+        let counter = document.getElementById('bio-counter');
+        if (!counter) {
+            counter = document.createElement('small');
+            counter.id = 'bio-counter';
+            counter.className = 'text-muted float-end';
+            this.parentNode.appendChild(counter);
+        }
+
+        counter.textContent = `${currentLength} / ${maxLength} characters`;
+        counter.className = remaining < 50 ? 'text-warning float-end' : 'text-muted float-end';
+    });
+});
 </script>
+
+</body>
+</html>

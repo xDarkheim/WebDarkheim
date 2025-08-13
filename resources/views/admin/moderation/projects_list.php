@@ -1,7 +1,7 @@
 <?php
 /**
- * Projects List View for Moderation
- * Displays list of projects awaiting moderation
+ * Projects List View for Moderation - MODERN DARK ADMIN INTERFACE
+ * Modern dark administrative interface for project moderation
  */
 
 // Extract data from view context
@@ -14,328 +14,368 @@ $currentUser = $viewData['currentUser'] ?? null;
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="admin-panel">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($viewData['pageTitle'] ?? 'Projects Moderation') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .project-card {
-            transition: all 0.3s ease;
-            border: 1px solid #dee2e6;
-        }
-        .project-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .action-buttons .btn {
-            margin: 0 2px;
-        }
-    </style>
-</head>
-<body class="bg-light">
 
-<div class="container-fluid py-4">
+    <!-- Admin Dark Theme Styles -->
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-container">
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin Panel</span>
+            </a>
+
+            <div class="admin-nav-links">
+                <a href="/index.php?page=manage_articles" class="admin-nav-link">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Articles</span>
+                </a>
+                <a href="/index.php?page=manage_categories" class="admin-nav-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="/index.php?page=manage_users" class="admin-nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="/page/admin/moderation/projects.php" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
+                    <i class="fas fa-gavel"></i>
+                    <span>Moderation</span>
+                </a>
+                <a href="/index.php?page=site_settings" class="admin-nav-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h3 mb-0">
-                    <i class="fas fa-tasks text-primary"></i>
-                    Projects Moderation
-                </h1>
-                <div class="btn-group">
-                    <a href="/index.php?page=admin_moderation_dashboard" class="btn btn-outline-primary">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-gavel"></i>
+                    <div class="admin-header-text">
+                        <h1>Project Moderation</h1>
+                        <p>Review and moderate client portfolio projects</p>
+                    </div>
+                </div>
+
+                <div class="admin-header-actions">
+                    <a href="/page/admin/moderation/dashboard.php" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-tachometer-alt"></i>Moderation Dashboard
                     </a>
-                    <a href="/index.php?page=admin_moderation_comments" class="btn btn-outline-secondary">
-                        <i class="fas fa-comments"></i> Comments
+                    <a href="/page/admin/moderation/comments.php" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-comments"></i>Comments
                     </a>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
+    <div class="admin-flash-messages">
+        <?php foreach ($flashMessages as $type => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="admin-flash-message admin-flash-<?= $type ?>">
+                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
+                <div>
+                    <?= is_array($message) ? ($message['is_html'] ? $message['text'] : htmlspecialchars($message['text'])) : htmlspecialchars($message) ?>
+                </div>
             </div>
-        </div>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    </div>
     <?php endif; ?>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['pending_projects'] ?? 0 ?></h3>
-                    <p class="mb-0">Pending Projects</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['projects']['published'] ?? 0 ?></h3>
-                    <p class="mb-0">Published</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['projects']['rejected'] ?? 0 ?></h3>
-                    <p class="mb-0">Rejected</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['recent_projects_week'] ?? 0 ?></h3>
-                    <p class="mb-0">This Week</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Main Content -->
+    <main>
+        <div class="admin-layout-main">
+            <div class="admin-content">
 
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <input type="hidden" name="page" value="admin_moderation_projects">
+                <!-- Statistics Cards -->
+                <?php if (!empty($statistics)): ?>
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card admin-glow-primary">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-warning-bg); color: var(--admin-warning);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Pending Review</h3>
+                                <p><?= htmlspecialchars((string)($statistics['pending'] ?? 0)) ?></p>
+                                <span>Projects awaiting moderation</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="all" <?= ($filters['status'] ?? '') === 'all' ? 'selected' : '' ?>>All Statuses</option>
-                        <option value="pending" <?= ($filters['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
-                        <option value="published" <?= ($filters['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option>
-                        <option value="rejected" <?= ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' ?>>Rejected</option>
-                    </select>
-                </div>
+                    <div class="admin-stat-card admin-glow-success">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-success-bg); color: var(--admin-success);">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Approved</h3>
+                                <p><?= htmlspecialchars((string)($statistics['approved'] ?? 0)) ?></p>
+                                <span>Projects approved this month</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="col-md-3">
-                    <label class="form-label">Sort By</label>
-                    <select name="sort" class="form-select">
-                        <option value="created_desc" <?= ($filters['sort'] ?? '') === 'created_desc' ? 'selected' : '' ?>>Newest First</option>
-                        <option value="created_asc" <?= ($filters['sort'] ?? '') === 'created_asc' ? 'selected' : '' ?>>Oldest First</option>
-                        <option value="title_asc" <?= ($filters['sort'] ?? '') === 'title_asc' ? 'selected' : '' ?>>Title A-Z</option>
-                        <option value="title_desc" <?= ($filters['sort'] ?? '') === 'title_desc' ? 'selected' : '' ?>>Title Z-A</option>
-                    </select>
-                </div>
+                    <div class="admin-stat-card admin-glow-error">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-error-bg); color: var(--admin-error);">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Rejected</h3>
+                                <p><?= htmlspecialchars((string)($statistics['rejected'] ?? 0)) ?></p>
+                                <span>Projects rejected this month</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control" placeholder="Search projects..."
-                           value="<?= htmlspecialchars($filters['search'] ?? '') ?>">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary d-block w-100">
-                        <i class="fas fa-search"></i> Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Projects List -->
-    <div class="row">
-        <?php if (empty($projects)): ?>
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">No Projects Found</h4>
-                        <p class="text-muted">No projects match your current filters.</p>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-info-bg); color: var(--admin-info);">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Total Projects</h3>
+                                <p><?= htmlspecialchars((string)($statistics['total'] ?? 0)) ?></p>
+                                <span>All time submissions</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        <?php else: ?>
-            <?php foreach ($projects as $project): ?>
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <div class="card project-card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <strong class="text-truncate" style="max-width: 200px;">
-                                <?= htmlspecialchars($project['title']) ?>
-                            </strong>
-                            <span class="badge status-badge bg-<?=
-                                match($project['status']) {
-                                    'pending' => 'warning',
-                                    'published' => 'success',
-                                    'rejected' => 'danger',
-                                    default => 'secondary'
-                                }
-                            ?>">
-                                <?= ucfirst($project['status']) ?>
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-2">
-                                <i class="fas fa-user"></i>
-                                <?= htmlspecialchars($project['client_username'] ?? 'Unknown') ?>
-                                <?php if (!empty($project['company_name'])): ?>
-                                    <br><i class="fas fa-building"></i>
-                                    <?= htmlspecialchars($project['company_name']) ?>
-                                <?php endif; ?>
-                            </p>
+                <?php endif; ?>
 
-                            <p class="card-text text-truncate" style="max-height: 60px; overflow: hidden;">
-                                <?= htmlspecialchars(substr($project['description'] ?? '', 0, 120)) ?>
-                                <?= strlen($project['description'] ?? '') > 120 ? '...' : '' ?>
-                            </p>
-
-                            <div class="text-muted small mb-3">
-                                <i class="fas fa-calendar"></i>
-                                <?= date('M j, Y', strtotime($project['created_at'])) ?>
+                <!-- Projects List -->
+                <?php if (empty($projects)): ?>
+                    <!-- Empty State -->
+                    <div class="admin-card admin-glow-primary">
+                        <div class="admin-card-body" style="text-align: center; padding: 3rem;">
+                            <div style="font-size: 4rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                                <i class="fas fa-clipboard-check"></i>
                             </div>
+                            <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem;">No Projects to Moderate</h3>
+                            <p style="color: var(--admin-text-muted); margin-bottom: 2rem;">
+                                All submitted projects have been reviewed. Check back later for new submissions.
+                            </p>
+                            <a href="/page/admin/moderation/dashboard.php" class="admin-btn admin-btn-primary admin-btn-lg">
+                                <i class="fas fa-tachometer-alt"></i>View Dashboard
+                            </a>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- Projects Table -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">
+                                <i class="fas fa-clipboard-list"></i>Projects for Review
+                                <span class="admin-badge admin-badge-warning">
+                                    <?= count($projects) ?> Pending
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="admin-card-body" style="padding: 0;">
+                            <div class="admin-table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project</th>
+                                            <th>Author</th>
+                                            <th>Category</th>
+                                            <th>Status</th>
+                                            <th>Submitted</th>
+                                            <th style="text-align: center;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($projects as $project): ?>
+                                            <tr>
+                                                <td>
+                                                    <div style="display: flex; align-items: center;">
+                                                        <?php if (!empty($project['image_url'])): ?>
+                                                            <img src="<?= htmlspecialchars($project['image_url']) ?>"
+                                                                 alt="Project thumbnail"
+                                                                 style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px; margin-right: 0.75rem;">
+                                                        <?php else: ?>
+                                                            <div style="width: 48px; height: 48px; background: var(--admin-bg-secondary); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                                                                <i class="fas fa-image" style="color: var(--admin-text-muted);"></i>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <div>
+                                                            <div style="font-weight: 600; color: var(--admin-text-primary);">
+                                                                <?= htmlspecialchars($project['title'] ?? 'Untitled') ?>
+                                                            </div>
+                                                            <div style="color: var(--admin-text-secondary); font-size: 0.875rem;">
+                                                                <?= htmlspecialchars(substr($project['description'] ?? '', 0, 50)) ?><?= strlen($project['description'] ?? '') > 50 ? '...' : '' ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div style="display: flex; align-items: center;">
+                                                        <div style="width: 32px; height: 32px; background: var(--admin-primary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                                                            <i class="fas fa-user" style="color: var(--admin-primary);"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-weight: 500; color: var(--admin-text-primary);">
+                                                                <?= htmlspecialchars($project['author_name'] ?? 'Unknown') ?>
+                                                            </div>
+                                                            <div style="color: var(--admin-text-secondary); font-size: 0.75rem;">
+                                                                ID: <?= htmlspecialchars((string)($project['user_id'] ?? 'N/A')) ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="admin-badge admin-badge-gray">
+                                                        <i class="fas fa-tag"></i>
+                                                        <?= htmlspecialchars($project['category'] ?? 'Uncategorized') ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                    $status = $project['status'] ?? 'pending_review';
+                                                    $statusConfig = [
+                                                        'pending_review' => ['class' => 'warning', 'icon' => 'clock'],
+                                                        'approved' => ['class' => 'success', 'icon' => 'check'],
+                                                        'rejected' => ['class' => 'error', 'icon' => 'times'],
+                                                        'draft' => ['class' => 'gray', 'icon' => 'edit']
+                                                    ];
+                                                    $config = $statusConfig[$status] ?? $statusConfig['pending_review'];
+                                                    ?>
+                                                    <span class="admin-badge admin-badge-<?= $config['class'] ?>">
+                                                        <i class="fas fa-<?= $config['icon'] ?>"></i>
+                                                        <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $status))) ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div>
+                                                        <div style="color: var(--admin-text-primary); font-size: 0.875rem;">
+                                                            <?= htmlspecialchars(date("M j, Y", strtotime($project['created_at'] ?? 'now'))) ?>
+                                                        </div>
+                                                        <div style="color: var(--admin-text-muted); font-size: 0.75rem;">
+                                                            <?= htmlspecialchars(date("g:i A", strtotime($project['created_at'] ?? 'now'))) ?>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: center;">
+                                                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                                        <a href="/page/admin/moderation/project_details.php?id=<?= $project['id'] ?>"
+                                                           class="admin-btn admin-btn-secondary admin-btn-sm">
+                                                            <i class="fas fa-eye"></i>View
+                                                        </a>
 
-                            <?php if (!empty($project['technologies'])): ?>
-                                <?php $techs = json_decode($project['technologies'], true) ?? []; ?>
-                                <div class="mb-3">
-                                    <?php foreach (array_slice($techs, 0, 3) as $tech): ?>
-                                        <span class="badge bg-light text-dark me-1"><?= htmlspecialchars($tech) ?></span>
-                                    <?php endforeach; ?>
-                                    <?php if (count($techs) > 3): ?>
-                                        <span class="badge bg-secondary">+<?= count($techs) - 3 ?> more</span>
+                                                        <?php if ($status === 'pending_review'): ?>
+                                                        <form method="POST" style="display: inline;"
+                                                              action="/page/api/moderation/projects.php">
+                                                            <input type="hidden" name="action" value="approve">
+                                                            <input type="hidden" name="project_id" value="<?= $project['id'] ?>">
+                                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                            <button type="submit" class="admin-btn admin-btn-success admin-btn-sm">
+                                                                <i class="fas fa-check"></i>Approve
+                                                            </button>
+                                                        </form>
+
+                                                        <form method="POST" style="display: inline;"
+                                                              action="/page/api/moderation/projects.php"
+                                                              onsubmit="return confirm('Are you sure you want to reject this project?');">
+                                                            <input type="hidden" name="action" value="reject">
+                                                            <input type="hidden" name="project_id" value="<?= $project['id'] ?>">
+                                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">
+                                                                <i class="fas fa-times"></i>Reject
+                                                            </button>
+                                                        </form>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <?php if (!empty($pagination) && $pagination['total_pages'] > 1): ?>
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            <div style="display: flex; justify-content: between; align-items: center;">
+                                <div style="color: var(--admin-text-secondary);">
+                                    Showing <?= $pagination['offset'] + 1 ?> to <?= min($pagination['offset'] + $pagination['limit'], $pagination['total']) ?>
+                                    of <?= $pagination['total'] ?> projects
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <?php if ($pagination['current_page'] > 1): ?>
+                                        <a href="?page=<?= $pagination['current_page'] - 1 ?>" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                            <i class="fas fa-chevron-left"></i>Previous
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = max(1, $pagination['current_page'] - 2); $i <= min($pagination['total_pages'], $pagination['current_page'] + 2); $i++): ?>
+                                        <a href="?page=<?= $i ?>"
+                                           class="admin-btn <?= $i === $pagination['current_page'] ? 'admin-btn-primary' : 'admin-btn-secondary' ?> admin-btn-sm">
+                                            <?= $i ?>
+                                        </a>
+                                    <?php endfor; ?>
+
+                                    <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
+                                        <a href="?page=<?= $pagination['current_page'] + 1 ?>" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                            Next<i class="fas fa-chevron-right"></i>
+                                        </a>
                                     <?php endif; ?>
                                 </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="card-footer">
-                            <div class="action-buttons d-flex justify-content-between">
-                                <a href="/index.php?page=admin_moderation_project_details&id=<?= $project['id'] ?>"
-                                   class="btn btn-primary btn-sm">
-                                    <i class="fas fa-eye"></i> View Details
-                                </a>
-
-                                <?php if ($project['status'] === 'pending'): ?>
-                                    <div>
-                                        <button class="btn btn-success btn-sm"
-                                                onclick="moderateProject(<?= $project['id'] ?>, 'published')">
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn btn-danger btn-sm"
-                                                onclick="moderateProject(<?= $project['id'] ?>, 'rejected')">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
-                                    </div>
-                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
-
-    <!-- Pagination -->
-    <?php if ($pagination['total_pages'] > 1): ?>
-        <div class="row">
-            <div class="col-12">
-                <nav aria-label="Projects pagination">
-                    <ul class="pagination justify-content-center">
-                        <?php
-                        $currentPage = $pagination['current_page'];
-                        $totalPages = $pagination['total_pages'];
-                        $baseUrl = '/index.php?page=admin_moderation_projects';
-                        $queryParams = array_filter([
-                            'status' => $filters['status'] ?? null,
-                            'search' => $filters['search'] ?? null,
-                            'sort' => $filters['sort'] ?? null
-                        ]);
-                        ?>
-
-                        <!-- Previous Page -->
-                        <?php if ($currentPage > 1): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $currentPage - 1])) ?>">
-                                    <i class="fas fa-chevron-left"></i> Previous
-                                </a>
-                            </li>
-                        <?php endif; ?>
-
-                        <!-- Page Numbers -->
-                        <?php for ($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++): ?>
-                            <li class="page-item <?= $i === $currentPage ? 'active' : '' ?>">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $i])) ?>">
-                                    <?= $i ?>
-                                </a>
-                            </li>
-                        <?php endfor; ?>
-
-                        <!-- Next Page -->
-                        <?php if ($currentPage < $totalPages): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $currentPage + 1])) ?>">
-                                    Next <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
-
-                <div class="text-center text-muted">
-                    Showing projects <?= ($currentPage - 1) * 20 + 1 ?> to <?= min($currentPage * 20, $pagination['total']) ?>
-                    of <?= $pagination['total'] ?> total
-                </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
         </div>
-    <?php endif; ?>
-</div>
+    </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function moderateProject(projectId, action) {
-    if (confirm(`Are you sure you want to ${action === 'published' ? 'approve' : 'reject'} this project?`)) {
-        fetch('/page/api/moderation/moderate_project.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                project_id: projectId,
-                action: action,
-                notes: action === 'rejected' ? prompt('Reason for rejection (optional):') : ''
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + (data.message || 'Unknown error'));
+    <!-- Admin Scripts -->
+    <script src="/public/assets/js/admin.js"></script>
+
+    <script>
+        // Auto-refresh for real-time updates
+        setTimeout(() => {
+            location.reload();
+        }, 300000); // Refresh every 5 minutes
+
+        // Confirmation for bulk actions
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('[data-action="bulk-approve"]')) {
+                if (!confirm('Are you sure you want to approve all selected projects?')) {
+                    e.preventDefault();
+                }
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Network error occurred');
+            if (e.target.closest('[data-action="bulk-reject"]')) {
+                if (!confirm('Are you sure you want to reject all selected projects?')) {
+                    e.preventDefault();
+                }
+            }
         });
-    }
-}
-</script>
-
+    </script>
 </body>
 </html>

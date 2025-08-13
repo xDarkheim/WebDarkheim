@@ -1,496 +1,593 @@
 <?php
-
 /**
- * Create Article Page
+ * Create Article Page - MODERN DARK ADMIN INTERFACE
  *
- * This page allows users to create a new article.
- * It includes a form for article details, categories, and content.
- * The form is validated and saved to the database.
- *
- * @author Dmytro Hovenko
+ * Modern dark administrative interface for creating articles
+ * with improved UX and consistent styling
  */
 
 declare(strict_types=1);
 
-use App\Domain\Models\Article;
-use App\Domain\Models\Category;
-use App\Domain\Models\SiteSettings;
-use App\Application\Middleware\CSRFMiddleware;
-use App\Domain\Repositories\ArticleRepository;
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Use global services from the new DI architecture
-global $flashMessageService, $database_handler, $container, $serviceProvider;
+global $serviceProvider, $flashMessageService;
 
-// Get AuthenticationService instead of direct SessionManager access
 try {
     $authService = $serviceProvider->getAuth();
-    $textEditorComponent = $serviceProvider->getTextEditorComponent();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get services from ServiceProvider: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
 }
 
-// Set page title
-$page_title = 'Create Article';
-
-// Check for required services
-if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in create_article.php");
-    die("A critical system error occurred. Please try again later.");
-}
-if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in create_article.php");
-    die("A critical system error occurred. Please try again later.");
-}
-if (!isset($container)) {
-    error_log("Critical: Container not available in create_article.php");
-    die("A critical system error occurred. Please try again later.");
-}
-
-// Check authorization via new AuthenticationService
+// Check authentication
 if (!$authService->isAuthenticated()) {
-    $flashMessageService->addError('Please log in to create articles.');
+    $flashMessageService->addError('Please log in to access this area.');
     header("Location: /index.php?page=login");
     exit();
 }
 
-// Get CSRF token via global system
-$csrf_token = CSRFMiddleware::getToken();
-
-// Get user data via AuthenticationService
-$current_user_id = $authService->getCurrentUserId();
-$user_role = $authService->getCurrentUserRole();
-$currentUser = $authService->getCurrentUser();
-
-// Get moderation settings
-$moderation_settings = SiteSettings::getAll($database_handler);
-
-// Function to check if moderation is required
-
-$all_categories = Category::findAll($database_handler);
-
-// Variables to restore form on errors
-$form_data = [
-    'title' => '',
-    'short_description' => '',
-    'full_text' => '',
-    'date' => date('Y-m-d'),
-    'categories' => []
-];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token via global system
-    if (!CSRFMiddleware::validateQuick()) {
-        $flashMessageService->addError('Invalid CSRF token. Please try again.');
-        header('Location: /index.php?page=create_article');
-        exit;
-    }
-
-    $title = trim($_POST['title'] ?? '');
-
-    // Use TextEditorComponent for safe HTML content processing
-    $short_description = $textEditorComponent->sanitizeContent($_POST['short_description'] ?? '');
-    $full_text = $textEditorComponent->sanitizeContent($_POST['full_text'] ?? '');
-
-    $date_input = trim(filter_input(INPUT_POST, 'date', FILTER_SANITIZE_FULL_SPECIAL_CHARS) ?? '');
-    $selected_category_ids = filter_input(INPUT_POST, 'categories', FILTER_VALIDATE_INT, FILTER_REQUIRE_ARRAY) ?? [];
-
-    // Determine user action - save as draft or publish
-    $action = $_POST['action'] ?? 'publish';
-    $is_draft = ($action === 'save_draft');
-
-    // Determine article status based on user action and moderation settings
-    if ($is_draft) {
-        $status = 'draft';
-    } else {
-        // Check if moderation is required for this user
-        $requires_moderation = true; // Moderation required by default
-
-        // Admins and editors do not require moderation
-        if (in_array($user_role, ['admin', 'editor'])) {
-            $requires_moderation = false;
-        }
-
-        // Check moderation settings from database
-        $moderation_enabled = $moderation_settings['content_moderation_enabled'] ?? true;
-        $auto_publish_roles = $moderation_settings['auto_publish_roles'] ?? ['admin', 'editor'];
-
-        // If moderation is disabled, publish automatically
-        if (!$moderation_enabled) {
-            $requires_moderation = false;
-        }
-
-        // If a user role is in auto-publish list, no moderation needed
-        if (in_array($user_role, $auto_publish_roles)) {
-            $requires_moderation = false;
-        }
-
-        if ($requires_moderation) {
-            $status = 'pending_review';
-        } else {
-            $status = 'published';
-        }
-    }
-
-    // Save form data for restoring on errors
-    $form_data = [
-        'title' => $title,
-        'short_description' => $short_description,
-        'full_text' => $full_text,
-        'date' => $date_input,
-        'categories' => $selected_category_ids
-    ];
-
-    // Validation via FlashMessageService
-    $validation_passed = true;
-
-    // Softer requirements for drafts
-    if ($is_draft) {
-        // Draft requires only a title
-        if (empty($title)) {
-            $flashMessageService->addError('Title is required even for drafts.');
-            $validation_passed = false;
-        }
-        // For drafts, set today's date automatically if not specified
-        if (empty($date_input)) {
-            $date_input = date('Y-m-d');
-            $form_data['date'] = $date_input;
-        }
-    } else {
-        // Stricter requirements for publishing
-        if (empty($title)) {
-            $flashMessageService->addError('Title is required.');
-            $validation_passed = false;
-        }
-        if (empty($full_text)) {
-            $flashMessageService->addError('Full text is required.');
-            $validation_passed = false;
-        }
-        if (empty($date_input)) {
-            $flashMessageService->addError('Publication date is required.');
-            $validation_passed = false;
-        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_input) || !strtotime($date_input)) {
-            $flashMessageService->addError('Invalid date format. Please use YYYY-MM-DD.');
-            $validation_passed = false;
-        }
-    }
-
-    if ($validation_passed) {
-        $articleData = [
-            'title' => $title,
-            'short_description' => $short_description,
-            'full_text' => $full_text,
-            'date' => $date_input,
-            'user_id' => $current_user_id,
-            'status' => $status
-        ];
-
-        try {
-            // Create an ArticleRepository instance
-            $articleRepository = new ArticleRepository($database_handler);
-
-            // Create a new Article
-            $newArticle = Article::fromArray($articleData);
-
-            // Save article via repository
-            if ($newArticle->save($articleRepository)) {
-                $newArticleId = $newArticle->id;
-
-                // Set categories if selected
-                if (!empty($selected_category_ids)) {
-                    $articleRepository->setCategories($newArticle, $selected_category_ids);
-                }
-
-                if ($is_draft) {
-                    $flashMessageService->addSuccess('Article saved as draft successfully! You can continue editing it later.');
-                    header('Location: /index.php?page=edit_article&id=' . $newArticle->id);
-                } elseif ($status === 'pending_review') {
-                    $flashMessageService->addSuccess('Article submitted for review! It will be published after approval by a moderator.');
-                    header('Location: /index.php?page=manage_articles');
-                } else {
-                    $flashMessageService->addSuccess('Article published successfully!');
-                    header('Location: /index.php?page=news&id=' . $newArticle->id);
-                }
-                exit;
-            } else {
-                $flashMessageService->addError('Failed to create article. An internal error occurred or database issue.');
-            }
-        } catch (Exception $e) {
-            $flashMessageService->addError('Database error while creating article: ' . $e->getMessage());
-            error_log("Create Article - Exception: " . $e->getMessage());
-        }
-    }
+// Check role permissions - only admin and employee can create articles
+$userRole = $authService->getCurrentUserRole();
+if (!in_array($userRole, ['admin', 'employee'])) {
+    $flashMessageService->addError('Access denied. Insufficient permissions.');
+    header("Location: /index.php?page=dashboard");
+    exit();
 }
+
+$pageTitle = 'Create New Article';
+
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-    <div class="admin-layout page-create-article">
-        <!-- Enhanced Main Header Section -->
-        <header class="page-header">
-            <div class="page-header-content">
-                <div class="page-header-main">
-                    <h1 class="page-title">
-                        <i class="fas fa-plus-circle"></i>
-                        <?php echo htmlspecialchars($page_title); ?>
-                    </h1>
-                    <div class="page-header-description">
-                        <p>Create a new article and share your content with readers</p>
+    <!-- Admin Dark Theme Styles -->
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin Panel</span>
+            </a>
+
+            <div class="admin-nav-links">
+                <a href="/index.php?page=manage_articles" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Articles</span>
+                </a>
+                <a href="/index.php?page=manage_categories" class="admin-nav-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="/index.php?page=manage_users" class="admin-nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="/index.php?page=site_settings" class="admin-nav-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-plus-circle"></i>
+                    <div class="admin-header-text">
+                        <h1>Create New Article</h1>
+                        <p>Write and publish engaging content for your audience</p>
                     </div>
                 </div>
-                <div class="page-header-actions">
-                    <a href="/index.php?page=manage_articles" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Articles
+
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=manage_articles" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i>Back to Articles
                     </a>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Flash Messages -->
-        <?php
-        $flashMessages = $flashMessageService->getMessages();
-        if (!empty($flashMessages)):
-        ?>
-            <div class="flash-messages-container">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="message message--<?php echo htmlspecialchars($type); ?>">
-                            <p><?php echo $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']); ?></p>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+    <div class="admin-flash-messages">
+        <?php foreach ($flashMessages as $type => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="admin-flash-message admin-flash-<?= $type ?>">
+                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
+                <div>
+                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
+                </div>
             </div>
-        <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
-        <!-- Main Content Layout - Reorganized -->
-        <div class="ca-content-layout">
-            <!-- Primary Content Area - More focused -->
-            <main class="main-content" style="max-width: 800px;">
-                <div class="form-wrapper">
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <i class="fas fa-edit"></i> Article Details
-                            </h2>
-                            <div class="card-header-meta">
-                                <small class="creation-date">
-                                    <i class="fas fa-calendar-plus"></i>
-                                    Started: <?php echo date('M j, Y \a\t g:i A'); ?>
-                                </small>
-                                <small class="author-info">
-                                    <i class="fas fa-user"></i>
-                                    Author: <?php echo htmlspecialchars($currentUser['username'] ?? 'Unknown'); ?>
-                                </small>
-                                <span class="status-badge status-draft">
-                                    <i class="fas fa-file-alt"></i> Draft
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <form action="/index.php?page=create_article" method="POST" enctype="multipart/form-data" class="article-creation-form">
-                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                <div class="form-section">
-                                    <label for="title" class="form-label">
-                                        Article Title <span class="required-indicator">*</span>
-                                    </label>
-                                    <input type="text" id="title" name="title" class="form-control" value="<?php echo htmlspecialchars($form_data['title']); ?>" maxlength="200" required>
-                                    <div class="character-counter"><span id="titleCounter">0</span>/200</div>
-                                </div>
-                                <div class="form-section">
-                                    <label for="date" class="form-label">
-                                        Publication Date <span class="required-indicator">*</span>
-                                    </label>
-                                    <input type="date" id="date" name="date" class="form-control" value="<?php echo htmlspecialchars($form_data['date']); ?>" min="<?php echo date('Y-m-d'); ?>" required>
-                                </div>
-                                <div class="form-section">
-                                    <label for="short_description" class="form-label">
-                                        Article Preview <span class="optional-indicator">(Optional)</span>
-                                    </label>
-                                    <?php echo $textEditorComponent->renderBasicEditor('short_description', $form_data['short_description']); ?>
-                                    <small class="form-text">A short preview with basic formatting that will be displayed in article listings</small>
-                                </div>
-                                <div class="form-section">
-                                    <label for="full_text" class="form-label">
-                                        Article Content <span class="required-indicator">*</span>
-                                    </label>
-                                    <?php echo $textEditorComponent->renderNewsEditor('full_text', $form_data['full_text']); ?>
-                                    <small class="form-text">Use the toolbar above to format your text</small>
-                                </div>
-                                <div class="form-section">
-                                    <label class="form-label">Categories</label>
-                                    <?php if (!empty($all_categories)): ?>
-                                        <div class="ca-category-selection">
-                                            <label for="categorySearch"></label><input type="text" id="categorySearch" class="form-control ca-category-search" placeholder="Search categories...">
-                                            <div class="ca-category-grid" id="categoryGrid">
-                                                <?php foreach ($all_categories as $category): ?>
-                                                    <div class="ca-category-option" data-category="<?php echo strtolower($category->name); ?>">
-                                                        <input type="checkbox" id="category_<?php echo htmlspecialchars((string)$category->id); ?>" name="categories[]" value="<?php echo htmlspecialchars((string)$category->id); ?>" class="ca-category-checkbox" <?php echo in_array($category->id, $form_data['categories']) ? 'checked' : ''; ?>>
-                                                        <label for="category_<?php echo htmlspecialchars((string)$category->id); ?>" class="ca-category-label">
-                                                            <span class="category-name"><?php echo htmlspecialchars($category->name); ?></span>
-                                                            <i class="fas fa-check ca-category-check"></i>
-                                                        </label>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                            <div class="ca-selected-categories" id="selectedCategories">
-                                                <strong>Selected:</strong> <span id="selectedCategoriesText">None</span>
-                                            </div>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="no-categories-state">
-                                            <i class="fas fa-folder-open"></i>
-                                            <h4>No Categories Available</h4>
-                                            <p>Categories help organize content and make it easier for readers to find.</p>
-                                            <?php if ($user_role === 'admin'): ?>
-                                                <a href="/index.php?page=manage_categories" class="btn btn-primary btn-small">
-                                                    <i class="fas fa-plus"></i> Create Categories
-                                                </a>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="ca-form-actions-redesigned">
-                                    <button type="submit" name="action" value="publish" class="btn ca-btn-publish">
-                                        <i class="fas fa-rocket"></i> Publish Article
-                                    </button>
-                                    <button type="submit" name="action" value="save_draft" class="btn ca-btn-save-draft">
-                                        <i class="fas fa-save"></i> Save as Draft
-                                    </button>
-                                    <a href="/index.php?page=manage_articles" class="btn ca-btn-cancel">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </a>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </main>
+    <!-- Main Content -->
+    <main>
+        <div class="admin-layout-main">
+            <div class="admin-content">
 
-            <!-- Enhanced Compact Sidebar -->
-            <aside class="ca-sidebar-content" style="min-width: 280px; max-width: 320px;">
-                <!-- Writing Progress Card -->
-                <div class="card card-compact sidebar-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-tasks"></i> Progress
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="ca-progress-overview">
-                            <div class="ca-progress-bar-wrapper">
-                                <div class="ca-progress-bar" id="overallProgress">
-                                    <div class="ca-progress-fill"></div>
-                                </div>
-                                <span class="ca-progress-percentage" id="progressPercentage">0%</span>
+                <!-- Permissions Notice -->
+                <div class="admin-card admin-glow-primary">
+                    <div class="admin-card-body">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="color: var(--admin-primary); font-size: 2rem;">
+                                <i class="fas fa-shield-alt"></i>
                             </div>
-                        </div>
-                        <div class="ca-progress-checklist">
-                            <div class="ca-progress-item" data-target="title">
-                                <i class="fas fa-circle ca-progress-icon"></i>
-                                <span class="progress-text">Add title</span>
-                            </div>
-                            <div class="ca-progress-item" data-target="full_text">
-                                <i class="fas fa-circle ca-progress-icon"></i>
-                                <span class="progress-text">Write content</span>
-                            </div>
-                            <div class="ca-progress-item" data-target="short_description">
-                                <i class="fas fa-circle ca-progress-icon"></i>
-                                <span class="progress-text">Add preview</span>
-                            </div>
-                            <div class="ca-progress-item" data-target="categories">
-                                <i class="fas fa-circle ca-progress-icon"></i>
-                                <span class="progress-text">Select categories</span>
+                            <div>
+                                <h3 style="margin: 0; color: var(--admin-text-primary);">Administrative Content Creation</h3>
+                                <p style="margin: 0.5rem 0 0 0; color: var(--admin-text-secondary);">
+                                    This feature is restricted to administrative users only.
+                                    Regular users cannot create articles as per the new content policy.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Writing Stats Card -->
-                <div class="card card-compact sidebar-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-chart-line"></i> Writing Stats
+                <!-- Article Creation Form -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-edit"></i>Article Details
                         </h3>
                     </div>
-                    <div class="card-body">
-                        <div class="ca-writing-stats">
-                            <div class="ca-stat-item">
-                                <div class="ca-stat-icon">
-                                    <i class="fas fa-font"></i>
+                    <div class="admin-card-body">
+                        <form method="POST" action="/index.php?page=api_create_article">
+                            <div class="admin-grid admin-grid-cols-1">
+                                <!-- Title Field -->
+                                <div class="admin-form-group">
+                                    <label for="title" class="admin-label admin-label-required">
+                                        <i class="fas fa-heading"></i>Article Title
+                                    </label>
+                                    <input type="text"
+                                           id="title"
+                                           name="title"
+                                           class="admin-input"
+                                           required
+                                           placeholder="Enter an engaging title for your article"
+                                           data-slug-source="#title"
+                                           data-slug-target="#slug">
+                                    <div class="admin-help-text">
+                                        Choose a compelling title that captures your reader's attention
+                                    </div>
                                 </div>
-                                <div class="ca-stat-info">
-                                    <span class="ca-stat-number" id="sidebarWordCount">0</span>
-                                    <span class="ca-stat-label">Words</span>
+
+                                <!-- Slug Field -->
+                                <div class="admin-form-group">
+                                    <label for="slug" class="admin-label">
+                                        <i class="fas fa-link"></i>URL Slug
+                                    </label>
+                                    <input type="text"
+                                           id="slug"
+                                           name="slug"
+                                           class="admin-input"
+                                           placeholder="article-url-slug">
+                                    <div class="admin-help-text">
+                                        SEO-friendly URL (auto-generated from title, or customize manually)
+                                    </div>
+                                </div>
+
+                                <!-- Content Field -->
+                                <div class="admin-form-group">
+                                    <label for="content" class="admin-label admin-label-required">
+                                        <i class="fas fa-align-left"></i>Article Content
+                                    </label>
+                                    <textarea id="content"
+                                              name="content"
+                                              class="admin-input admin-textarea"
+                                              rows="15"
+                                              required
+                                              placeholder="Write your article content here..."></textarea>
+                                    <div class="admin-help-text">
+                                        Write engaging, informative content that provides value to your readers
+                                    </div>
+                                </div>
+
+                                <!-- Excerpt Field -->
+                                <div class="admin-form-group">
+                                    <label for="excerpt" class="admin-label">
+                                        <i class="fas fa-quote-left"></i>Article Excerpt
+                                    </label>
+                                    <textarea id="excerpt"
+                                              name="excerpt"
+                                              class="admin-input"
+                                              rows="3"
+                                              placeholder="Brief summary of the article (optional)"></textarea>
+                                    <div class="admin-help-text">
+                                        Short description that appears in article previews and search results
+                                    </div>
+                                </div>
+
+                                <!-- Categories Field -->
+                                <div class="admin-form-group">
+                                    <label for="categories" class="admin-label">
+                                        <i class="fas fa-tags"></i>Categories
+                                    </label>
+                                    <select id="categories"
+                                            name="categories[]"
+                                            class="admin-input admin-select"
+                                            multiple>
+                                        <option value="1">Technology</option>
+                                        <option value="2">Design</option>
+                                        <option value="3">Development</option>
+                                        <option value="4">Business</option>
+                                    </select>
+                                    <div class="admin-help-text">
+                                        Select relevant categories to help organize your content
+                                    </div>
+                                </div>
+
+                                <!-- Publication Options -->
+                                <div class="admin-form-group">
+                                    <label class="admin-label">
+                                        <i class="fas fa-cog"></i>Publication Options
+                                    </label>
+                                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary);">
+                                            <input type="checkbox" name="featured" value="1" style="margin: 0;">
+                                            <span>Feature this article</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary);">
+                                            <input type="checkbox" name="allow_comments" value="1" checked style="margin: 0;">
+                                            <span>Allow comments</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary);">
+                                            <input type="checkbox" name="send_newsletter" value="1" style="margin: 0;">
+                                            <span>Include in newsletter</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Status Field -->
+                                <div class="admin-form-group">
+                                    <label for="status" class="admin-label">
+                                        <i class="fas fa-flag"></i>Publication Status
+                                    </label>
+                                    <select id="status" name="status" class="admin-input admin-select">
+                                        <option value="draft">Save as Draft</option>
+                                        <option value="pending_review">Submit for Review</option>
+                                        <?php if ($userRole === 'admin'): ?>
+                                        <option value="published">Publish Immediately</option>
+                                        <?php endif; ?>
+                                    </select>
+                                    <div class="admin-help-text">
+                                        Choose how you want to handle this article's publication
+                                    </div>
                                 </div>
                             </div>
-                            <div class="ca-stat-item">
-                                <div class="ca-stat-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="ca-stat-info">
-                                    <span class="ca-stat-number" id="sidebarReadTime">0</span>
-                                    <span class="ca-stat-label">Min read</span>
+
+                            <!-- Form Actions -->
+                            <div class="admin-card-footer">
+                                <div style="display: flex; gap: 1rem; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; gap: 1rem;">
+                                        <button type="button" class="admin-btn admin-btn-secondary" onclick="saveDraft()">
+                                            <i class="fas fa-save"></i>Save Draft
+                                        </button>
+                                        <button type="button" class="admin-btn admin-btn-warning" onclick="previewArticle()">
+                                            <i class="fas fa-eye"></i>Preview
+                                        </button>
+                                    </div>
+                                    <div style="display: flex; gap: 1rem;">
+                                        <a href="/index.php?page=manage_articles" class="admin-btn admin-btn-secondary">
+                                            <i class="fas fa-times"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="admin-btn admin-btn-primary">
+                                            <i class="fas fa-paper-plane"></i>Create Article
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="ca-stat-item">
-                                <div class="ca-stat-icon">
-                                    <i class="fas fa-calendar"></i>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Writing Tips -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-lightbulb"></i>Writing Tips
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="admin-grid admin-grid-cols-2">
+                            <div>
+                                <h4 style="color: var(--admin-text-primary); margin-bottom: 0.5rem;">Content Guidelines</h4>
+                                <ul style="color: var(--admin-text-secondary); margin: 0; padding-left: 1.5rem;">
+                                    <li>Write clear, engaging headlines</li>
+                                    <li>Use short paragraphs for readability</li>
+                                    <li>Include relevant keywords naturally</li>
+                                    <li>Add value for your readers</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 style="color: var(--admin-text-primary); margin-bottom: 0.5rem;">SEO Best Practices</h4>
+                                <ul style="color: var(--admin-text-secondary); margin: 0; padding-left: 1.5rem;">
+                                    <li>Optimize your title and excerpt</li>
+                                    <li>Use descriptive URL slugs</li>
+                                    <li>Choose relevant categories</li>
+                                    <li>Write meta-friendly descriptions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <!-- Writing Progress -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-chart-line"></i>Writing Progress
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Title</span>
+                                    <span id="titleStatus" class="admin-badge admin-badge-gray" style="font-size: 0.625rem;">
+                                        <i class="fas fa-circle"></i>Empty
+                                    </span>
                                 </div>
-                                <div class="ca-stat-info">
-                                    <span class="ca-stat-number" id="writingTime">0</span>
-                                    <span class="ca-stat-label">Min writing</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Content</span>
+                                    <span id="contentWords" style="font-size: 0.875rem; color: var(--admin-text-primary); font-weight: 600;">0 words</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Reading Time</span>
+                                    <span id="readingTime" style="font-size: 0.875rem; color: var(--admin-text-primary); font-weight: 600;">0 min</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Character Count</span>
+                                    <span id="charCount" style="font-size: 0.875rem; color: var(--admin-text-primary); font-weight: 600;">0</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Quick Navigation Card -->
-                <div class="card card-compact sidebar-card">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-compass"></i> Quick Links
+                <!-- SEO Analysis -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-search"></i>SEO Analysis
                         </h3>
                     </div>
-                    <div class="card-body">
-                        <nav class="ca-quick-nav">
-                            <a href="/index.php?page=manage_articles" class="ca-quick-nav-link">
-                                <i class="fas fa-list"></i>
-                                <span>All Articles</span>
-                            </a>
-                            <a href="/index.php?page=dashboard" class="ca-quick-nav-link">
-                                <i class="fas fa-tachometer-alt"></i>
-                                <span>Dashboard</span>
-                            </a>
-                            <?php if ($user_role === 'admin'): ?>
-                                <a href="/index.php?page=manage_categories" class="ca-quick-nav-link">
-                                    <i class="fas fa-tags"></i>
-                                    <span>Categories</span>
-                                </a>
-                            <?php endif; ?>
-                        </nav>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-heading" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>Title Length
+                                </h4>
+                                <div id="titleLengthBar" style="background: var(--admin-bg-secondary); height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div id="titleLengthFill" style="background: var(--admin-success); height: 100%; width: 0%; transition: all 0.3s;"></div>
+                                </div>
+                                <p id="titleLengthText" style="font-size: 0.75rem; color: var(--admin-text-secondary); margin: 0.25rem 0 0 0;">0/60 characters (optimal: 30-60)</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-quote-left" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>Excerpt Length
+                                </h4>
+                                <div id="excerptLengthBar" style="background: var(--admin-bg-secondary); height: 8px; border-radius: 4px; overflow: hidden;">
+                                    <div id="excerptLengthFill" style="background: var(--admin-warning); height: 100%; width: 0%; transition: all 0.3s;"></div>
+                                </div>
+                                <p id="excerptLengthText" style="font-size: 0.75rem; color: var(--admin-text-secondary); margin: 0.25rem 0 0 0;">0/160 characters (optimal: 120-160)</p>
+                            </div>
+                            <div>
+                                <h4 style="display: flex; align-items: center; margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-link" style="color: var(--admin-info); margin-right: 0.5rem;"></i>URL Slug
+                                </h4>
+                                <p id="slugPreview" style="font-size: 0.75rem; color: var(--admin-text-secondary); margin: 0; font-family: monospace; background: var(--admin-bg-secondary); padding: 0.5rem; border-radius: 4px;">example.com/news/your-article-slug</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Publishing Checklist -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-tasks"></i>Publishing Checklist
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkTitle" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">Compelling title written</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkContent" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">Content is complete (500+ words)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkExcerpt" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">Excerpt summarizes article</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkCategories" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">Categories selected</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkSlug" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">SEO-friendly URL slug</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--admin-text-primary); cursor: pointer;">
+                                <input type="checkbox" id="checkProofread" style="margin: 0;">
+                                <span style="font-size: 0.875rem;">Proofread for errors</span>
+                            </label>
+                        </div>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--admin-border);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Ready to publish</span>
+                                <span id="checklistProgress" style="font-size: 0.875rem; color: var(--admin-text-primary); font-weight: 600;">0/6</span>
+                            </div>
+                            <div style="background: var(--admin-bg-secondary); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 0.5rem;">
+                                <div id="checklistBar" style="background: var(--admin-success); height: 100%; width: 0%; transition: all 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-bolt"></i>Quick Actions
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <a href="/index.php?page=manage_articles" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-list"></i>
+                            All Articles
+                        </a>
+                        <a href="/index.php?page=manage_categories" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-tags"></i>
+                            Manage Categories
+                        </a>
+                        <button type="button" class="admin-btn admin-btn-warning" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;" onclick="autoSave()">
+                            <i class="fas fa-save"></i>
+                            Auto-Save Draft
+                        </button>
+                        <a href="/index.php?page=dashboard" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </a>
                     </div>
                 </div>
             </aside>
         </div>
+    </main>
 
-        <!-- Focus Mode Overlay -->
-        <div id="focusOverlay" class="ca-focus-overlay">
-            <div class="ca-focus-header">
-                <h3>Focus Mode</h3>
-                <button class="ca-focus-exit" onclick="exitFocusMode()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <label for="focusEditor"></label><textarea id="focusEditor" class="ca-focus-editor" placeholder="Focus on your writing..."></textarea>
-            <div class="ca-focus-stats">
-                <span id="focusWordCount">0 words</span>
-                <span>•</span>
-                <span id="focusTime">0 min</span>
-            </div>
-        </div>
-    </div>
+    <!-- Admin Scripts -->
+    <script src="/public/assets/js/admin.js"></script>
 
-    <!-- Connect text editor scripts -->
-    <?php include ROOT_PATH . '/resources/views/_editor_scripts.php'; ?>
+    <script>
+        // Auto-generate slug from title
+        document.getElementById('title').addEventListener('input', function() {
+            const slug = this.value
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
 
-    <!-- Connect simplified JavaScript -->
-    <script src="/themes/default/js/create-article.js"></script>
+            document.getElementById('slug').value = slug;
+        });
+
+        // Save draft function
+        function saveDraft() {
+            document.getElementById('status').value = 'draft';
+            document.querySelector('form').submit();
+        }
+
+        // Preview function
+        function previewArticle() {
+            // Implementation for article preview
+            alert('Preview functionality would open the article in a new window/modal');
+        }
+
+        // Character counter for excerpt
+        const excerptField = document.getElementById('excerpt');
+        const maxLength = 300;
+
+        excerptField.addEventListener('input', function() {
+            const remaining = maxLength - this.value.length;
+            const helpText = this.nextElementSibling;
+
+            if (remaining < 0) {
+                helpText.style.color = 'var(--admin-error)';
+                helpText.textContent = `Excerpt is ${Math.abs(remaining)} characters too long`;
+            } else {
+                helpText.style.color = 'var(--admin-text-muted)';
+                helpText.textContent = `Short description that appears in article previews (${remaining} characters remaining)`;
+            }
+        });
+
+        // Update writing progress
+        function updateWritingProgress() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const excerpt = document.getElementById('excerpt').value.trim();
+
+            // Title progress
+            const titleStatus = document.getElementById('titleStatus');
+            if (title.length === 0) {
+                titleStatus.innerHTML = '<i class="fas fa-circle"></i>Empty';
+                titleStatus.className = 'admin-badge admin-badge-gray';
+            } else {
+                titleStatus.innerHTML = '<i class="fas fa-check-circle"></i>Set';
+                titleStatus.className = 'admin-badge admin-badge-success';
+            }
+
+            // Content words
+            const contentWords = document.getElementById('contentWords');
+            const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+            contentWords.textContent = `${wordCount} words`;
+
+            // Reading time
+            const readingTime = document.getElementById('readingTime');
+            const estimatedTime = Math.ceil(wordCount / 200);
+            readingTime.textContent = `${estimatedTime} min`;
+
+            // Character count
+            const charCount = document.getElementById('charCount');
+            charCount.textContent = content.length;
+
+            // Title length bar
+            const titleLengthFill = document.getElementById('titleLengthFill');
+            const titleLengthText = document.getElementById('titleLengthText');
+            const titleLengthRatio = Math.min(1, title.length / 60);
+            titleLengthFill.style.width = `${titleLengthRatio * 100}%`;
+            titleLengthText.textContent = `${title.length}/60 characters (optimal: 30-60)`;
+
+            // Excerpt length bar
+            const excerptLengthFill = document.getElementById('excerptLengthFill');
+            const excerptLengthText = document.getElementById('excerptLengthText');
+            const excerptLengthRatio = Math.min(1, excerpt.length / 160);
+            excerptLengthFill.style.width = `${excerptLengthRatio * 100}%`;
+            excerptLengthText.textContent = `${excerpt.length}/160 characters (optimal: 120-160)`;
+
+            // Checklist progress
+            const checklistItems = [
+                'checkTitle',
+                'checkContent',
+                'checkExcerpt',
+                'checkCategories',
+                'checkSlug',
+                'checkProofread'
+            ];
+            const checklistProgress = document.getElementById('checklistProgress');
+            const checklistBar = document.getElementById('checklistBar');
+            const completedItems = checklistItems.filter(id => document.getElementById(id).checked).length;
+            checklistProgress.textContent = `${completedItems}/6`;
+            checklistBar.style.width = `${(completedItems / 6) * 100}%`;
+        }
+
+        // Event listeners for updating progress
+        document.getElementById('title').addEventListener('input', updateWritingProgress);
+        document.getElementById('content').addEventListener('input', updateWritingProgress);
+        document.getElementById('excerpt').addEventListener('input', updateWritingProgress);
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateWritingProgress);
+        });
+
+        // Initial update
+        updateWritingProgress();
+    </script>
+

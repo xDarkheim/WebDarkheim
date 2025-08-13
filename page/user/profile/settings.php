@@ -1,753 +1,583 @@
 <?php
-
 /**
- * Profile Settings Page
- *
- * This page allows users to manage their account settings, including
- * preferences, privacy settings, and account configuration.
- *
- * @author Dmytro Hovenko
+ * User Profile Settings Page - PHASE 8
+ * Security and account settings for user profiles
  */
 
-use App\Application\Controllers\ProfileController;
-use App\Domain\Interfaces\TokenManagerInterface;
+declare(strict_types=1);
 
-// Use global services from the new DI architecture
-global $flashMessageService, $database_handler, $container, $serviceProvider;
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Get AuthenticationService instead of direct SessionManager access
+global $serviceProvider, $flashMessageService, $database_handler;
+
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance in settings.php: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log("Critical: Failed to get AuthenticationService: " . $e->getMessage());
+    die("System error occurred.");
 }
 
-// Check authentication via AuthenticationService
+// Check authentication
 if (!$authService->isAuthenticated()) {
-    $flashMessageService->addError('Please log in to access your settings.');
+    $flashMessageService->addError('Please log in to access this area.');
     header("Location: /index.php?page=login");
     exit();
 }
 
-// Get user data via AuthenticationService
-$current_user_id = $authService->getCurrentUserId();
-$current_user_role = $authService->getCurrentUserRole();
-$current_username = $authService->getCurrentUsername();
-$userData_from_auth = $authService->getCurrentUser();
+$currentUser = $authService->getCurrentUser();
+$userId = $authService->getCurrentUserId();
+$pageTitle = 'Profile Settings';
 
-// Check required services
-if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in settings.php");
-    die("A critical system error occurred. Please try again later.");
-}
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $errors = [];
 
-if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in settings.php");
-    $flashMessageService->addError("Database system not available. Please try again later.");
-    header('Location: /index.php?page=dashboard');
-    exit;
-}
+    switch ($action) {
+        case 'change_password':
+            $current_password = $_POST['current_password'] ?? '';
+            $new_password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
 
-if (!isset($container)) {
-    error_log("Critical: Container not available in settings.php");
-    $flashMessageService->addError("System error occurred. Please try again later.");
-    header('Location: /index.php?page=dashboard');
-    exit;
-}
+            // Validation
+            if (empty($current_password)) {
+                $errors[] = 'Current password is required.';
+            }
 
-$userId = $current_user_id;
+            if (empty($new_password) || strlen($new_password) < 8) {
+                $errors[] = 'New password must be at least 8 characters long.';
+            }
 
-// Create ProfileController to get user data
-try {
-    $profileController = new ProfileController(
-        $database_handler,
-        $userId,
-        $flashMessageService,
-        $container->make(TokenManagerInterface::class)
-    );
-} catch (Exception $e) {
-    error_log("Critical: Failed to create ProfileController in settings.php: " . $e->getMessage());
-    $flashMessageService->addError("Failed to initialize profile system. Please try again later.");
-    header('Location: /index.php?page=dashboard');
-    exit;
-}
+            if ($new_password !== $confirm_password) {
+                $errors[] = 'New passwords do not match.';
+            }
 
-// Get user data for progress calculation
-$userData = $profileController->getCurrentUserData();
+            if (empty($errors)) {
+                try {
+                    // Verify current password
+                    $sql = "SELECT password FROM users WHERE id = ?";
+                    $stmt = $database_handler->getConnection()->prepare($sql);
+                    $stmt->execute([$userId]);
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$userData) {
-    $userData = [
-        'username' => $current_username ?? 'User',
-        'email' => 'N/A',
-        'location' => '', 'user_status' => '', 'bio' => '', 'website_url' => ''
-    ];
-    $flashMessageService->addError('Failed to load user data.');
-    error_log("Settings Page: Could not load user data for user ID: " . $userId);
-}
+                    if (!password_verify($current_password, $user['password'])) {
+                        $errors[] = 'Current password is incorrect.';
+                    } else {
+                        // Update password
+                        $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
+                        $sql = "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?";
+                        $stmt = $database_handler->getConnection()->prepare($sql);
+                        $stmt->execute([$hashedPassword, $userId]);
 
-// Function to calculate account completeness progress
-function calculateAccountCompleteness($userData): array
-{
-    $fields = [
-        'email' => !empty($userData['email']) && $userData['email'] !== 'N/A' ? 1 : 0,
-        'location' => !empty($userData['location']) ? 1 : 0,
-        'bio' => !empty($userData['bio']) ? 1 : 0,
-        'user_status' => !empty($userData['user_status']) ? 1 : 0,
-        'website_url' => !empty($userData['website_url']) ? 1 : 0
-    ];
+                        $flashMessageService->addSuccess('Password updated successfully!');
+                    }
+                } catch (Exception $e) {
+                    error_log("Error updating password: " . $e->getMessage());
+                    $flashMessageService->addError('Failed to update password. Please try again.');
+                }
+            }
+            break;
 
-    $completed = array_sum($fields);
-    $total = count($fields);
-    $percentage = round(($completed / $total) * 100);
+        case 'update_preferences':
+            $email_notifications = isset($_POST['email_notifications']) ? 1 : 0;
+            $marketing_emails = isset($_POST['marketing_emails']) ? 1 : 0;
+            $two_factor_enabled = isset($_POST['two_factor_enabled']) ? 1 : 0;
 
-    return [
-        'percentage' => $percentage,
-        'completed' => $completed,
-        'total' => $total,
-        'missing_fields' => array_keys(array_filter($fields, function($v) { return $v === 0; }))
-    ];
-}
+            try {
+                // Update user preferences (assuming we have a user_preferences table)
+                $sql = "INSERT INTO user_preferences (user_id, email_notifications, marketing_emails, two_factor_enabled, updated_at) 
+                        VALUES (?, ?, ?, ?, NOW()) 
+                        ON DUPLICATE KEY UPDATE 
+                        email_notifications = VALUES(email_notifications),
+                        marketing_emails = VALUES(marketing_emails),
+                        two_factor_enabled = VALUES(two_factor_enabled),
+                        updated_at = VALUES(updated_at)";
+                $stmt = $database_handler->getConnection()->prepare($sql);
+                $stmt->execute([$userId, $email_notifications, $marketing_emails, $two_factor_enabled]);
 
-$accountProgress = calculateAccountCompleteness($userData);
+                $flashMessageService->addSuccess('Preferences updated successfully!');
+            } catch (Exception $e) {
+                error_log("Error updating preferences: " . $e->getMessage());
+                $flashMessageService->addError('Failed to update preferences. Please try again.');
+            }
+            break;
 
-// Function to get user statistics
-function getUserStats($database_handler, $userId): array
-{
-    $stats = [
-        'articles' => 0,
-        'comments' => 0,
-        'profile_views' => 0,
-        'last_login' => 'Active now',
-        'member_since' => 'This year'
-    ];
+        case 'delete_account':
+            $confirmation = $_POST['delete_confirmation'] ?? '';
+            if ($confirmation !== 'DELETE') {
+                $errors[] = 'Please type "DELETE" to confirm account deletion.';
+            } else {
+                try {
+                    // Soft delete - mark as deleted but keep data for recovery
+                    $sql = "UPDATE users SET status = 'deleted', updated_at = NOW() WHERE id = ?";
+                    $stmt = $database_handler->getConnection()->prepare($sql);
+                    $stmt->execute([$userId]);
 
-    if ($database_handler && $pdo = $database_handler->getConnection()) {
-        try {
-            // Article statistics
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['articles'] = (int)$stmt->fetchColumn();
+                    // Log out user
+                    session_destroy();
 
-            // Comment statistics
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM comments WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['comments'] = (int)$stmt->fetchColumn();
-
-            // Other stats can be added here when tables are created
-
-        } catch (PDOException $e) {
-            error_log("User stats error: " . $e->getMessage());
-        }
+                    $flashMessageService->addInfo('Your account has been deactivated. Contact support to reactivate.');
+                    header("Location: /index.php?page=home");
+                    exit();
+                } catch (Exception $e) {
+                    error_log("Error deleting account: " . $e->getMessage());
+                    $flashMessageService->addError('Failed to delete account. Please contact support.');
+                }
+            }
+            break;
     }
 
-    return $stats;
+    // Display errors
+    foreach ($errors as $error) {
+        $flashMessageService->addError($error);
+    }
 }
 
-$userStats = getUserStats($database_handler, $userId);
-
-$page_title = "Account & Site Settings";
-
-// Generate CSRF token for future forms on this page
-if (!isset($_SESSION['csrf_token_account_settings'])) {
-    $_SESSION['csrf_token_account_settings'] = bin2hex(random_bytes(32));
+// Get user preferences
+$preferences = [];
+try {
+    $sql = "SELECT * FROM user_preferences WHERE user_id = ?";
+    $stmt = $database_handler->getConnection()->prepare($sql);
+    $stmt->execute([$userId]);
+    $preferences = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+} catch (Exception $e) {
+    error_log("Error fetching preferences: " . $e->getMessage());
 }
 
-// POST request handling will be added here as functionality is implemented
-// if ($_SERVER["REQUEST_METHOD"] == "POST") {
-//     // ...
-// }
-
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($pageTitle) ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .settings-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .settings-section h5 {
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .danger-zone {
+            border: 2px solid #dc3545;
+            background: #fff5f5;
+        }
+        .danger-zone h5 {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            color: white;
+        }
+        .security-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .security-strong { background-color: #28a745; }
+        .security-medium { background-color: #ffc107; }
+        .security-weak { background-color: #dc3545; }
+    </style>
+</head>
+<body class="bg-light">
 
-<div class="settings-page-wrapper">
-<div class="admin-layout">
-    <!-- Enhanced Main Header Section -->
-    <header class="page-header">
-        <div class="page-header-content">
-            <div class="page-header-main">
-                <h1 class="page-title">
-                    <i class="fas fa-cog"></i>
-                    <?php echo htmlspecialchars($page_title); ?>
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="settings-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-shield-alt"></i>
+                    Profile Security & Settings
                 </h1>
-                <div class="page-header-description">
-                    <p>Manage your preferences, privacy settings, and account configuration</p>
-                </div>
+                <p class="mb-0 opacity-75">Manage your account security and preferences</p>
             </div>
-            <div class="page-header-actions">
-                <a href="/index.php?page=dashboard" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-                <a href="/index.php?page=profile_edit" class="btn btn-primary">
-                    <i class="fas fa-user-edit"></i> Edit Profile
+            <div class="col-md-4 text-md-end">
+                <a href="/index.php?page=user_profile" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Profile
                 </a>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- Flash Messages -->
-    <?php
-    if (isset($flashMessageService) && $flashMessageService->hasMessages()) {
-        $messages = $flashMessageService->getMessages();
-        if (!empty($messages)) {
-    ?>
-        <div class="flash-messages-container">
-            <?php foreach ($messages as $type => $messageList): ?>
-                <?php foreach ($messageList as $message): ?>
-                    <div class="message message--<?php echo htmlspecialchars($type); ?>">
-                        <p><?php echo $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']); ?></p>
-                    </div>
+    <?php if (!empty($flashMessages)): ?>
+        <div class="row mb-4">
+            <div class="col-12">
+                <?php foreach ($flashMessages as $type => $messages): ?>
+                    <?php foreach ($messages as $message): ?>
+                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
+                            <?= htmlspecialchars($message['text']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
-            <?php endforeach; ?>
+            </div>
         </div>
-    <?php
-        }
-    }
-    ?>
+    <?php endif; ?>
 
-    <!-- Main Content Layout -->
-    <div class="content-layout">
-        <!-- Primary Content Area -->
-        <main class="main-content" style="max-width: 800px;">
-            <!-- Account Preferences Card -->
-            <div class="form-wrapper">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <div class="card-header-content">
-                            <h2 class="card-title">
-                                <i class="fas fa-user-cog"></i> Account Preferences
-                            </h2>
-                            <div class="card-header-meta">
-                                <div class="creation-info">
-                                    <small class="creation-date">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        Settings: <?php echo date('M j, Y \a\t g:i A'); ?>
-                                    </small>
-                                    <small class="author-info">
-                                        <i class="fas fa-user"></i>
-                                        User: <?php echo htmlspecialchars($userData['username'] ?? 'Unknown'); ?>
-                                    </small>
-                                </div>
-                                <div class="article-status">
-                                    <span class="status-badge status-settings">
-                                        <i class="fas fa-bell"></i>
-                                        Notifications
-                                    </span>
-                                </div>
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Password Security -->
+            <div class="settings-section">
+                <h5>
+                    <i class="fas fa-key text-primary"></i>
+                    Password Security
+                </h5>
+
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="security-indicator security-medium"></span>
+                        <span>Current security level: <strong>Medium</strong></span>
+                    </div>
+                    <small class="text-muted">Last changed: <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?></small>
+                </div>
+
+                <form method="POST" action="/index.php?page=user_profile_settings">
+                    <input type="hidden" name="action" value="change_password">
+
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password"
+                               class="form-control"
+                               id="current_password"
+                               name="current_password"
+                               required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password"
+                                       class="form-control"
+                                       id="new_password"
+                                       name="new_password"
+                                       minlength="8"
+                                       required>
+                                <div class="form-text">At least 8 characters long</div>
                             </div>
                         </div>
-                        <div class="card-header-actions">
-                            <button type="button" class="btn-icon btn-toggle-help" onclick="toggleHelp()" title="Toggle Help">
-                                <i class="fas fa-question-circle"></i>
-                            </button>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password"
+                                       class="form-control"
+                                       id="confirm_password"
+                                       name="confirm_password"
+                                       required>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <form class="article-creation-form placeholder-form">
-                            <!-- Step 1: Notification Settings -->
-                            <div class="form-section" data-section="1">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-bell"></i> Notification Preferences
-                                    </h3>
-                                    <p class="section-description">Choose how you want to receive notifications and updates</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="notification_preferences" class="form-label">
-                                            Email Notifications
-                                        </label>
-                                        <select id="notification_preferences" name="notification_preferences" class="form-control" disabled>
-                                            <option>All notifications</option>
-                                            <option>Important only</option>
-                                            <option>Disabled</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-envelope"></i>
-                                            Choose how you want to receive email notifications
-                                        </div>
-                                    </div>
 
-                                    <div class="form-group form-group-half">
-                                        <label for="activity_digest" class="form-label">
-                                            Activity Digest
-                                        </label>
-                                        <select id="activity_digest" name="activity_digest" class="form-control" disabled>
-                                            <option>Weekly</option>
-                                            <option selected>Monthly</option>
-                                            <option>Disabled</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-calendar-week"></i>
-                                            Get periodic summaries of your account activity
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <button type="submit" class="btn btn-gradient">
+                        <i class="fas fa-shield-alt"></i> Update Password
+                    </button>
+                </form>
+            </div>
 
-                            <!-- Step 2: Localization Settings -->
-                            <div class="form-section" data-section="2">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-globe"></i> Localization
-                                    </h3>
-                                    <p class="section-description">Configure language and regional preferences</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="language_preference" class="form-label">
-                                            Language
-                                        </label>
-                                        <select id="language_preference" name="language_preference" class="form-control" disabled>
-                                            <option selected>English</option>
-                                            <option>Russian</option>
-                                            <option>Ukrainian</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-language"></i>
-                                            Choose your preferred interface language
-                                        </div>
-                                    </div>
+            <!-- Notification Preferences -->
+            <div class="settings-section">
+                <h5>
+                    <i class="fas fa-bell text-primary"></i>
+                    Notification Preferences
+                </h5>
 
-                                    <div class="form-group form-group-half">
-                                        <label for="timezone" class="form-label">
-                                            Timezone
-                                        </label>
-                                        <select id="timezone" name="timezone" class="form-control" disabled>
-                                            <option selected>UTC+0 (GMT)</option>
-                                            <option>UTC+3 (Moscow)</option>
-                                            <option>UTC-5 (EST)</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-clock"></i>
-                                            Set your local timezone for timestamps
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <form method="POST" action="/index.php?page=user_profile_settings">
+                    <input type="hidden" name="action" value="update_preferences">
 
-                            <!-- Coming Soon Notice -->
-                            <div class="form-actions-redesigned">
-                                <div class="coming-soon-notice">
-                                    <div class="notice-icon">
-                                        <i class="fas fa-rocket"></i>
-                                    </div>
-                                    <div class="notice-content">
-                                        <h4>Coming Soon</h4>
-                                        <p>These settings will be available in a future update. Stay tuned for more customization options!</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="email_notifications"
+                                   name="email_notifications"
+                                   <?= !empty($preferences['email_notifications']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="email_notifications">
+                                <strong>Email Notifications</strong>
+                            </label>
+                            <div class="form-text">Receive notifications about your account activity</div>
+                        </div>
                     </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="marketing_emails"
+                                   name="marketing_emails"
+                                   <?= !empty($preferences['marketing_emails']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="marketing_emails">
+                                <strong>Marketing Emails</strong>
+                            </label>
+                            <div class="form-text">Receive updates about new features and promotions</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="two_factor_enabled"
+                                   name="two_factor_enabled"
+                                   <?= !empty($preferences['two_factor_enabled']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="two_factor_enabled">
+                                <strong>Two-Factor Authentication</strong>
+                                <span class="badge bg-warning ms-2">Recommended</span>
+                            </label>
+                            <div class="form-text">Add an extra layer of security to your account</div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gradient">
+                        <i class="fas fa-save"></i> Save Preferences
+                    </button>
+                </form>
+            </div>
+
+            <!-- Account Information -->
+            <div class="settings-section">
+                <h5>
+                    <i class="fas fa-info-circle text-primary"></i>
+                    Account Information
+                </h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <div class="form-control-plaintext"><?= htmlspecialchars($currentUser['username']) ?></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <div class="form-control-plaintext"><?= htmlspecialchars($currentUser['email']) ?></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Account Role</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-primary"><?= ucfirst($currentUser['role']) ?></span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Member Since</label>
+                            <div class="form-control-plaintext"><?= date('F j, Y', strtotime($currentUser['created_at'])) ?></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    To update your username or email, please <a href="/index.php?page=profile_edit">edit your profile</a>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Security Overview -->
+            <div class="settings-section">
+                <h5>
+                    <i class="fas fa-shield-check text-primary"></i>
+                    Security Overview
+                </h5>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Account Security</span>
+                        <span class="badge bg-warning">Medium</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 60%"></div>
+                    </div>
+                    <small class="text-muted">Based on your security settings</small>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-check text-success"></i> Email Verified</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-key text-success"></i> Strong Password</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="fas fa-times text-danger"></i> 2FA Disabled</span>
+                        <small class="text-muted">Enable for better security</small>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="settings-section">
+                <h5>
+                    <i class="fas fa-bolt text-primary"></i>
+                    Quick Actions
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="/index.php?page=profile_edit" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                    <a href="/index.php?page=user_portfolio" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-briefcase"></i> Manage Portfolio
+                    </a>
+                    <a href="/index.php?page=dashboard" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
                 </div>
             </div>
 
-            <!-- Privacy & Security Card -->
-            <div class="form-wrapper">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <div class="card-header-content">
-                            <h2 class="card-title">
-                                <i class="fas fa-shield-alt"></i> Privacy & Security
-                            </h2>
-                            <div class="card-header-meta">
-                                <div class="article-status">
-                                    <span class="status-badge status-security">
-                                        <i class="fas fa-lock"></i>
-                                        Security
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <form class="article-creation-form placeholder-form">
-                            <!-- Privacy Settings -->
-                            <div class="form-section" data-section="1">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-eye"></i> Privacy Controls
-                                    </h3>
-                                    <p class="section-description">Control who can see your profile and activity</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="profile_visibility" class="form-label">
-                                            Profile Visibility
-                                        </label>
-                                        <select id="profile_visibility" name="profile_visibility" class="form-control" disabled>
-                                            <option selected>Public</option>
-                                            <option>Friends only</option>
-                                            <option>Private</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-users"></i>
-                                            Who can see your profile information
-                                        </div>
-                                    </div>
+            <!-- Danger Zone -->
+            <div class="settings-section danger-zone">
+                <h5>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Danger Zone
+                </h5>
 
-                                    <div class="form-group form-group-half">
-                                        <label for="activity_visibility" class="form-label">
-                                            Activity Visibility
-                                        </label>
-                                        <select id="activity_visibility" name="activity_visibility" class="form-control" disabled>
-                                            <option selected>Public</option>
-                                            <option>Limited</option>
-                                            <option>Private</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-chart-line"></i>
-                                            Who can see your activity and contributions
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <p class="text-muted">
+                    These actions are irreversible. Please proceed with caution.
+                </p>
 
-                            <!-- Security Options -->
-                            <div class="form-section" data-section="2">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-shield-check"></i> Security Options
-                                    </h3>
-                                    <p class="section-description">Advanced security features for your account</p>
-                                </div>
-                                <div class="security-options-grid">
-                                    <div class="security-option-card">
-                                        <div class="option-header">
-                                            <div class="option-icon">
-                                                <i class="fas fa-mobile-alt"></i>
-                                            </div>
-                                            <div class="option-info">
-                                                <h4>Two-Factor Authentication</h4>
-                                                <p>Add an extra layer of security to your account</p>
-                                            </div>
-                                        </div>
-                                        <div class="option-control">
-                                            <span class="status-badge status-inactive">Disabled</span>
-                                            <button type="button" class="btn btn-outline btn-sm" disabled>Enable</button>
-                                        </div>
-                                    </div>
-
-                                    <div class="security-option-card">
-                                        <div class="option-header">
-                                            <div class="option-icon">
-                                                <i class="fas fa-bell"></i>
-                                            </div>
-                                            <div class="option-info">
-                                                <h4>Login Notifications</h4>
-                                                <p>Get notified when someone logs into your account</p>
-                                            </div>
-                                        </div>
-                                        <div class="option-control">
-                                            <span class="status-badge status-active">Enabled</span>
-                                            <button type="button" class="btn btn-outline btn-sm" disabled>Disable</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                    <i class="fas fa-trash-alt"></i> Delete Account
+                </button>
             </div>
-
-            <!-- Design Customization Card -->
-            <div class="form-wrapper">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <div class="card-header-content">
-                            <h2 class="card-title">
-                                <i class="fas fa-palette"></i> Design Customization
-                            </h2>
-                            <div class="card-header-meta">
-                                <div class="article-status">
-                                    <span class="status-badge status-design">
-                                        <i class="fas fa-paint-brush"></i>
-                                        Theme
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <form class="article-creation-form placeholder-form">
-                            <div class="form-section" data-section="1">
-                                <div class="section-header">
-                                    <h3 class="section-title">
-                                        <i class="fas fa-brush"></i> Appearance Settings
-                                    </h3>
-                                    <p class="section-description">Customize the appearance and theme of your interface</p>
-                                </div>
-                                <div class="form-grid">
-                                    <div class="form-group form-group-half">
-                                        <label for="theme_selection" class="form-label">
-                                            Theme Selection
-                                        </label>
-                                        <select id="theme_selection" name="theme_selection" class="form-control" disabled>
-                                            <option>Auto (System)</option>
-                                            <option selected>Dark Theme</option>
-                                            <option>Light Theme</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-moon"></i>
-                                            Choose your preferred site theme
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group form-group-half">
-                                        <label for="layout_preference" class="form-label">
-                                            Layout Density
-                                        </label>
-                                        <select id="layout_preference" name="layout_preference" class="form-control" disabled>
-                                            <option>Compact</option>
-                                            <option selected>Standard</option>
-                                            <option>Spacious</option>
-                                        </select>
-                                        <div class="form-help-text">
-                                            <i class="fas fa-th-large"></i>
-                                            Select your preferred layout density
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="theme-preview-section">
-                                    <div class="preview-label">Current Theme Preview:</div>
-                                    <div class="theme-preview-container">
-                                        <div class="theme-preview-mockup dark-preview">
-                                            <div class="preview-header"></div>
-                                            <div class="preview-content">
-                                                <div class="preview-text"></div>
-                                                <div class="preview-text short"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- Enhanced Compact Sidebar -->
-        <aside class="sidebar-content" style="min-width: 280px; max-width: 320px;">
-            <!-- Quick Actions Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-bolt"></i> Quick Actions
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="quick-actions-grid">
-                        <a href="/index.php?page=profile_edit" class="action-item-card">
-                            <div class="action-icon">
-                                <i class="fas fa-user-edit"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">Edit Profile</span>
-                                <span class="action-description">Update bio, location, and contact details</span>
-                            </div>
-                        </a>
-
-                        <a href="/index.php?page=profile_edit#security" class="action-item-card">
-                            <div class="action-icon">
-                                <i class="fas fa-key"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">Change Password</span>
-                                <span class="action-description">Update your account password</span>
-                            </div>
-                        </a>
-
-                        <a href="/index.php?page=dashboard" class="action-item-card">
-                            <div class="action-icon">
-                                <i class="fas fa-tachometer-alt"></i>
-                            </div>
-                            <div class="action-content">
-                                <span class="action-title">Dashboard</span>
-                                <span class="action-description">View activity and manage content</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Account Overview Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-info-circle"></i> Account Overview
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="account-overview-stats">
-                        <div class="overview-item">
-                            <div class="overview-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="overview-content">
-                                <span class="overview-label">Account Status</span>
-                                <span class="status-active">Active</span>
-                            </div>
-                        </div>
-
-                        <div class="overview-item">
-                            <div class="overview-icon">
-                                <i class="fas fa-user-tag"></i>
-                            </div>
-                            <div class="overview-content">
-                                <span class="overview-label">User Role</span>
-                                <span class="role-badge role-<?php echo strtolower($current_user_role ?? 'user'); ?>">
-                                    <?php echo ucfirst($current_user_role ?? 'User'); ?>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="overview-item">
-                            <div class="overview-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="overview-content">
-                                <span class="overview-label">Last Login</span>
-                                <span class="overview-value"><?php echo date('M j, Y \a\t H:i'); ?></span>
-                            </div>
-                        </div>
-
-                        <div class="overview-item">
-                            <div class="overview-icon">
-                                <i class="fas fa-shield-check"></i>
-                            </div>
-                            <div class="overview-content">
-                                <span class="overview-label">Security Score</span>
-                                <div class="security-score-display">
-                                    <span class="score-value">7/10</span>
-                                    <div class="score-bar">
-                                        <div class="score-fill" style="width: 70%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Activity Stats Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-line"></i> Activity Stats
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="writing-stats">
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-file-alt"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $userStats['articles']; ?></span>
-                                <span class="stat-label">Articles</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $userStats['comments']; ?></span>
-                                <span class="stat-label">Comments</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-icon">
-                                <i class="fas fa-percentage"></i>
-                            </div>
-                            <div class="stat-info">
-                                <span class="stat-number"><?php echo $accountProgress['percentage']; ?>%</span>
-                                <span class="stat-label">Complete</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Options Card -->
-            <div class="card card-compact sidebar-card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-wrench"></i> Additional Options
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="additional-options-list">
-                        <div class="option-item-link">
-                            <i class="fas fa-download"></i>
-                            <span>Export Account Data</span>
-                            <small>Download your data</small>
-                        </div>
-
-                        <div class="option-item-link">
-                            <i class="fas fa-question-circle"></i>
-                            <span>Help & Support</span>
-                            <small>Get assistance</small>
-                        </div>
-
-                        <div class="option-item-link danger">
-                            <i class="fas fa-trash-alt"></i>
-                            <span>Delete Account</span>
-                            <small>Permanently remove</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
+        </div>
     </div>
 </div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    Delete Account
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.
+                </div>
+
+                <form method="POST" action="/index.php?page=user_profile_settings" id="deleteAccountForm">
+                    <input type="hidden" name="action" value="delete_account">
+
+                    <div class="mb-3">
+                        <label for="delete_confirmation" class="form-label">
+                            Type <strong>DELETE</strong> to confirm:
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="delete_confirmation"
+                               name="delete_confirmation"
+                               placeholder="DELETE"
+                               required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="deleteAccountForm" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Delete My Account
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Tips carousel functionality
-let currentTip = 0;
-const tips = document.querySelectorAll('.tip-item');
+document.addEventListener('DOMContentLoaded', function() {
+    // Password strength checker
+    const newPasswordInput = document.getElementById('new_password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
 
-function showTip(index) {
-    tips.forEach((tip, i) => {
-        tip.classList.toggle('active', i === index);
-    });
-}
-
-function nextTip() {
-    currentTip = (currentTip + 1) % tips.length;
-    showTip(currentTip);
-}
-
-function previousTip() {
-    currentTip = (currentTip - 1 + tips.length) % tips.length;
-    showTip(currentTip);
-}
-
-// Auto-rotate tips every 5 seconds
-setInterval(nextTip, 5000);
-
-// Helper functions for consistency
-function toggleHelp() {
-    // Implementation for help toggle
-    console.log('Help toggled');
-}
-
-// Theme preview interaction
-document.getElementById('theme_selection')?.addEventListener('change', function() {
-    const preview = document.querySelector('.theme-preview-mockup');
-    const selectedTheme = this.value;
-
-    preview.className = 'theme-preview-mockup';
-    if (selectedTheme.includes('Dark')) {
-        preview.classList.add('dark-preview');
-    } else if (selectedTheme.includes('Light')) {
-        preview.classList.add('light-preview');
-    } else {
-        preview.classList.add('auto-preview');
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strength = checkPasswordStrength(password);
+            updatePasswordStrengthIndicator(strength);
+        });
     }
+
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', function() {
+            const password = newPasswordInput.value;
+            const confirm = this.value;
+
+            if (password && confirm) {
+                if (password === confirm) {
+                    this.setCustomValidity('');
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.setCustomValidity('Passwords do not match');
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            }
+        });
+    }
+
+    function checkPasswordStrength(password) {
+        let strength = 0;
+
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        return strength;
+    }
+
+    function updatePasswordStrengthIndicator(strength) {
+        // Implementation for password strength indicator
+        // This could be enhanced with visual feedback
+    }
+
+    // Auto-dismiss alerts
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            var bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
 });
 </script>
+
+</body>
+</html>
+

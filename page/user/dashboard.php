@@ -1,20 +1,15 @@
 <?php
 
 /**
- * Dashboard Page
+ * Client Portal Dashboard - PHASE 8 - DARK ADMIN THEME
  *
- * This page displays the user's dashboard with a variety of features and statistics.
- * It includes a personalized welcome message, a list of recent activities, and a
- * dashboard overview with key metrics.
+ * Comprehensive dashboard for client portal with support tickets,
+ * portfolio management, projects overview and studio services
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
-use App\Application\Controllers\ProfileController;
-use App\Application\Helpers\NavigationHelper;
-use App\Domain\Interfaces\LoggerInterface;
-use App\Domain\Interfaces\TokenManagerInterface;
-use App\Infrastructure\Components\DashboardBackupStatus;
+declare(strict_types=1);
 
 // Use global services from the new DI architecture
 global $flashMessageService, $database_handler, $container, $serviceProvider;
@@ -38,806 +33,807 @@ if (!$authService->isAuthenticated()) {
 $current_user_id = $authService->getCurrentUserId();
 $current_user_role = $authService->getCurrentUserRole();
 $current_username = $authService->getCurrentUsername();
-$userData_from_auth = $authService->getCurrentUser();
+$currentUser = $authService->getCurrentUser();
 
-// Check for required services
-if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in dashboard.php");
-    die("A critical system error occurred. Please try again later.");
+// Check if user can access client area
+if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
+    header('Location: /index.php?page=home');
+    exit;
 }
 
-if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in dashboard.php");
-    die("A critical system error occurred. Please try again later.");
-}
-
-if (!isset($container)) {
-    error_log("Critical: Container not available in dashboard.php");
-    die("A critical system error occurred. Please try again later.");
-}
-
-$userId = $current_user_id;
-
-// Create ProfileController
+// Get dashboard data with error handling
 try {
-    $profileController = new ProfileController(
-        $database_handler,
-        $userId,
-        $flashMessageService,
-        $container->make(TokenManagerInterface::class)
-    );
+    // Support tickets stats
+    $ticketStats = getSupportTicketStats($database_handler, $current_user_id, $current_user_role);
+
+    // Portfolio stats
+    $portfolioStats = getPortfolioStatsData($database_handler, $current_user_id);
+
+    // Studio projects stats
+    $studioProjectsStats = getStudioProjectsStats($database_handler, $current_user_id);
+
+    // Recent activity
+    $recentActivity = getRecentActivity($database_handler, $current_user_id);
+
+    // Profile completion
+    $profileCompletion = calculateProfileCompletion($database_handler, $current_user_id);
+
+    // Get recent tickets (simplified)
+    $recentTickets = getRecentTicketsSimple($database_handler, $current_user_id, 3);
+
 } catch (Exception $e) {
-    error_log("Critical: Failed to create ProfileController in dashboard.php: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log("Dashboard data error: " . $e->getMessage());
+
+    // Fallback empty data
+    $ticketStats = ['total' => 0, 'open' => 0, 'in_progress' => 0];
+    $portfolioStats = ['total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0];
+    $studioProjectsStats = ['total_projects' => 0, 'in_development' => 0, 'planning' => 0, 'completed' => 0];
+    $recentActivity = [];
+    $profileCompletion = ['percentage' => 0, 'missing' => []];
+    $recentTickets = [];
 }
 
-$userData = $profileController->getCurrentUserData();
+// Get flash messages
+$flashMessages = $flashMessageService->getAllMessages();
 
-// Common functions for all profile pages
-// Function to calculate account completeness progress
-function calculateAccountCompleteness($userData): array
+// Set page title
+$pageTitle = 'Client Portal Dashboard';
+
+/**
+ * Get support tickets statistics
+ */
+function getSupportTicketStats($database, $userId, $userRole): array
 {
-    $fields = [
-        'email' => !empty($userData['email']) && $userData['email'] !== 'N/A' ? 1 : 0,
-        'location' => !empty($userData['location']) ? 1 : 0,
-        'bio' => !empty($userData['bio']) ? 1 : 0,
-        'user_status' => !empty($userData['user_status']) ? 1 : 0,
-        'website_url' => !empty($userData['website_url']) ? 1 : 0
-    ];
-
-    $completed = array_sum($fields);
-    $total = count($fields);
-    $percentage = round(($completed / $total) * 100);
-
-    return [
-        'percentage' => $percentage,
-        'completed' => $completed,
-        'total' => $total,
-        'missing_fields' => array_keys(array_filter($fields, function ($v) {
-            return $v === 0;
-        }))
-    ];
-}
-
-// Function to get extended user statistics (for dashboard)
-function getUserStatsExtended($database_handler, $userId): array
-{
-    $stats = [
-        'articles' => ['count' => 0, 'recent' => 0],
-        'comments' => ['count' => 0, 'recent' => 0],
-        'notifications' => ['count' => 0, 'unread' => 0],
-        'drafts' => 0,
-        'profile_views' => 0,
-        'last_login' => 'Active now',
-        'member_since' => 'This year'
-    ];
-
-    if ($database_handler && $pdo = $database_handler->getConnection()) {
-        try {
-            // Article statistics
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['articles']['count'] = (int)$stmt->fetchColumn();
-
-            // Articles in the last 7 days
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-            $stmt->execute([$userId]);
-            $stats['articles']['recent'] = (int)$stmt->fetchColumn();
-
-            // Drafts
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM articles WHERE user_id = ? AND status = 'draft'");
-            $stmt->execute([$userId]);
-            $stats['drafts'] = (int)$stmt->fetchColumn();
-
-            // Comments
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM comments WHERE user_id = ?");
-            $stmt->execute([$userId]);
-            $stats['comments']['count'] = (int)$stmt->fetchColumn();
-
-            // Comments in the last 7 days
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM comments WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-            $stmt->execute([$userId]);
-            $stats['comments']['recent'] = (int)$stmt->fetchColumn();
-
-            // Notifications
-            $table_exists_stmt = $pdo->query("SHOW TABLES LIKE 'notifications'");
-            if ($table_exists_stmt && $table_exists_stmt->rowCount() > 0) {
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ?");
-                $stmt->execute([$userId]);
-                $stats['notifications']['count'] = (int)$stmt->fetchColumn();
-
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
-                $stmt->execute([$userId]);
-                $stats['notifications']['unread'] = (int)$stmt->fetchColumn();
-            }
-        } catch (PDOException $e) {
-            error_log("Dashboard Stats Error for user ID $userId: " . $e->getMessage());
-        }
-    }
-
-    return $stats;
-}
-
-// Use new common functions
-$accountProgress = calculateAccountCompleteness($userData);
-$user_stats = getUserStatsExtended($database_handler, $userId);
-
-$recent_activities = [];
-
-if ($database_handler && $pdo = $database_handler->getConnection()) {
     try {
-        // Recent activities
-        $stmt = $pdo->prepare("
-            SELECT 'article' as type, title as name, created_at, id 
-            FROM articles WHERE user_id = ? 
-            UNION ALL
-            SELECT 'comment' as type, CONCAT('Comment on: ', a.title) as name, c.created_at, c.article_id as id
-            FROM comments c 
-            JOIN articles a ON c.article_id = a.id 
-            WHERE c.user_id = ?
-            ORDER BY created_at DESC 
-            LIMIT 5
-        ");
-        $stmt->execute([$userId, $userId]);
-        $recent_activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Dashboard Activities Error for user ID $userId: " . $e->getMessage());
-    }
-}
-
-if (!$userData) {
-    $userData = [
-        'username' => $current_username ?? 'User',
-        'email' => 'N/A',
-        'location' => 'Not set',
-        'user_status' => 'Not set',
-        'bio' => '',
-        'website_url' => ''
-    ];
-}
-
-// Smart quick actions based on user state and role
-$smart_suggestions = [];
-
-// Role-based dashboard sections
-$roleDashboardData = [];
-
-// Get role-specific data and suggestions based on user role
-switch ($current_user_role) {
-    case 'admin':
-    case 'employee':
-        // Administrative features
-        try {
-            // Get moderation statistics
-            $moderationService = new \App\Application\Services\ModerationService($database_handler, $serviceProvider->getLogger());
-            $moderationStats = $moderationService->getDashboardStatistics();
-            $recentProjects = $moderationService->getRecentProjectsForModeration(3);
-
-            // Get recent comments for moderation
-            $commentsModel = new \App\Domain\Models\Comments($database_handler);
-            $recentComments = $commentsModel->getPendingComments(3);
-
-            $roleDashboardData = [
-                'moderation_stats' => $moderationStats,
-                'recent_projects' => $recentProjects,
-                'recent_comments' => $recentComments,
-                'is_moderator' => true
-            ];
-
-            // Add admin-specific suggestions
-            if ($moderationStats['pending_projects'] > 0) {
-                $smart_suggestions[] = [
-                    'type' => 'moderation',
-                    'title' => 'Projects Awaiting Moderation',
-                    'description' => $moderationStats['pending_projects'] . ' project(s) need your review',
-                    'action' => 'Review Projects',
-                    'url' => '/index.php?page=admin_moderation_projects&status=pending',
-                    'icon' => 'fas fa-tasks',
-                    'priority' => 'high'
-                ];
-            }
-
-            if ($moderationStats['pending_comments'] > 0) {
-                $smart_suggestions[] = [
-                    'type' => 'moderation',
-                    'title' => 'Comments Awaiting Moderation',
-                    'description' => $moderationStats['pending_comments'] . ' comment(s) need your review',
-                    'action' => 'Review Comments',
-                    'url' => '/index.php?page=admin_moderation_comments&status=pending',
-                    'icon' => 'fas fa-comments',
-                    'priority' => 'medium'
-                ];
-            }
-        } catch (Exception $e) {
-            error_log("Dashboard moderation data error: " . $e->getMessage());
-            $roleDashboardData = ['is_moderator' => true, 'error' => 'Failed to load moderation data'];
+        if (in_array($userRole, ['admin', 'employee'])) {
+            // Admin/employee see all tickets
+            $sql = "SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+                        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+                        COUNT(CASE WHEN status = 'waiting_client' THEN 1 END) as waiting_client,
+                        COUNT(CASE WHEN priority = 'critical' THEN 1 END) as critical,
+                        COUNT(CASE WHEN created_at >= CURDATE() THEN 1 END) as today
+                    FROM support_tickets";
+            $stmt = $database->getConnection()->prepare($sql);
+            $stmt->execute();
+        } else {
+            // Clients see only their tickets
+            $sql = "SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+                        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+                        COUNT(CASE WHEN status = 'waiting_client' THEN 1 END) as waiting_client,
+                        COUNT(CASE WHEN priority = 'critical' THEN 1 END) as critical,
+                        COUNT(CASE WHEN created_at >= CURDATE() THEN 1 END) as today
+                    FROM support_tickets WHERE client_id = ?";
+            $stmt = $database->getConnection()->prepare($sql);
+            $stmt->execute([$userId]);
         }
-        break;
 
-    case 'client':
-        // Client-specific features
-        try {
-            // Get client portfolio data
-            $clientPortfolioController = new \App\Application\Controllers\ClientPortfolioController(
-                $database_handler, $serviceProvider->getAuth(), $serviceProvider->getFlashMessage(), $serviceProvider->getLogger()
-            );
-
-            $portfolioStats = $clientPortfolioController->getDashboardStats();
-
-            $roleDashboardData = [
-                'portfolio_stats' => $portfolioStats,
-                'is_client' => true
-            ];
-
-            // Add client-specific suggestions
-            if (($portfolioStats['total_projects'] ?? 0) === 0) {
-                $smart_suggestions[] = [
-                    'type' => 'portfolio',
-                    'title' => 'Create Your First Project',
-                    'description' => 'Start building your portfolio by adding your first project',
-                    'action' => 'Add Project',
-                    'url' => '/index.php?page=portfolio_create',
-                    'icon' => 'fas fa-plus-circle',
-                    'priority' => 'high'
-                ];
-            }
-
-            if (($portfolioStats['pending_projects'] ?? 0) > 0) {
-                $smart_suggestions[] = [
-                    'type' => 'portfolio',
-                    'title' => 'Projects Under Review',
-                    'description' => $portfolioStats['pending_projects'] . ' project(s) are being reviewed',
-                    'action' => 'View Projects',
-                    'url' => '/index.php?page=portfolio_manage',
-                    'icon' => 'fas fa-clock',
-                    'priority' => 'medium'
-                ];
-            }
-        } catch (Exception $e) {
-            error_log("Dashboard client data error: " . $e->getMessage());
-            $roleDashboardData = ['is_client' => true, 'error' => 'Failed to load portfolio data'];
-        }
-        break;
-
-    default:
-        // Guest or other roles
-        $roleDashboardData = ['is_guest' => true];
-        break;
-}
-
-// Primary actions - reorganized
-$primary_actions = [
-    [
-        'url' => '/index.php?page=create_article',
-        'text' => 'Create Article',
-        'description' => 'Write and publish new content',
-        'icon' => 'fas fa-pen-fancy',
-        'roles' => ['user', 'editor', 'admin'],
-        'type' => 'create'
-    ],
-    [
-        'url' => '/index.php?page=manage_articles',
-        'text' => 'My Content',
-        'description' => 'Manage your articles and drafts',
-        'icon' => 'fas fa-folder-open',
-        'roles' => ['user', 'editor', 'admin'],
-        'type' => 'manage'
-    ]
-];
-
-// Quick links
-$quick_links = [
-    [
-        'url' => '/index.php?page=news',
-        'text' => 'Browse Articles',
-        'icon' => 'fas fa-newspaper'
-    ],
-    [
-        'url' => '/index.php?page=profile_settings',
-        'text' => 'Settings',
-        'icon' => 'fas fa-cog'
-    ]
-];
-
-$profile_actions = [
-    [
-        'url' => '/index.php?page=profile_edit',
-        'text' => 'Edit Profile',
-        'description' => 'Update information and bio',
-        'icon' => 'fas fa-user-edit',
-        'roles' => ['user', 'editor', 'admin']
-    ],
-    [
-        'url' => '/index.php?page=profile_settings',
-        'text' => 'Account Settings',
-        'description' => 'Security and preferences',
-        'icon' => 'fas fa-shield-alt',
-        'roles' => ['user', 'editor', 'admin']
-    ]
-];
-
-$site_management_config = [];
-
-// Use the new NavigationHelper to get admin functions
-if ($current_user_role === 'admin' || $current_user_role === 'editor') {
-    $adminNavigation = NavigationHelper::getAdminNavigation();
-
-    $site_management_config = [
-        'title' => 'Site Management',
-        'links' => []
-    ];
-
-    // Convert navigation to the format expected by the dashboard
-    foreach ($adminNavigation as $item) {
-        // By default, only for administrators
-
-        // Determine roles for different functions
-        $roles = match ($item['key']) {
-            'manage_categories', 'admin_dashboard' => ['admin', 'editor'],
-            default => ['admin'],
-        };
-
-        $site_management_config['links'][] = [
-            'url' => $item['url'],
-            'text' => $item['text'],
-            'description' => 'Manage ' . strtolower($item['text']),
-            'roles' => $roles
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+            'total' => 0, 'open' => 0, 'in_progress' => 0, 'waiting_client' => 0, 'critical' => 0, 'today' => 0
         ];
+    } catch (Exception $e) {
+        error_log("Error getting ticket stats: " . $e->getMessage());
+        return ['total' => 0, 'open' => 0, 'in_progress' => 0, 'waiting_client' => 0, 'critical' => 0, 'today' => 0];
     }
 }
 
-function can_user_access_action(array $action_roles, string $current_user_role): bool
+/**
+ * Get portfolio statistics
+ */
+function getPortfolioStatsData($database, $userId): array
 {
-    if (empty($action_roles)) {
-        return true;
+    try {
+        $sql = "SELECT 
+                    COUNT(p.id) as total_projects,
+                    COUNT(CASE WHEN p.status = 'published' THEN 1 END) as published,
+                    COUNT(CASE WHEN p.status = 'pending' THEN 1 END) as pending,
+                    COUNT(CASE WHEN p.status = 'draft' THEN 1 END) as drafts,
+                    COALESCE(SUM(pv.view_count), 0) as total_views
+                FROM client_profiles cp
+                LEFT JOIN client_portfolio p ON cp.id = p.client_profile_id
+                LEFT JOIN (
+                    SELECT project_id, COUNT(*) as view_count 
+                    FROM project_views 
+                    GROUP BY project_id
+                ) pv ON p.id = pv.project_id
+                WHERE cp.user_id = ?
+                GROUP BY cp.id";
+
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+            'total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0
+        ];
+    } catch (Exception $e) {
+        error_log("Error getting portfolio stats: " . $e->getMessage());
+        return ['total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0];
     }
-    return in_array($current_user_role, $action_roles);
 }
 
-function time_ago($datetime): string
+/**
+ * Get studio projects statistics
+ */
+function getStudioProjectsStats($database, $userId): array
 {
-    $time = time() - strtotime($datetime);
-    if ($time < 60) {
-        return 'just now';
+    try {
+        $sql = "SELECT 
+                    COUNT(*) as total_projects,
+                    COUNT(CASE WHEN status = 'development' THEN 1 END) as in_development,
+                    COUNT(CASE WHEN status = 'planning' THEN 1 END) as planning,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
+                    AVG(progress_percentage) as avg_progress
+                FROM studio_projects 
+                WHERE client_id = ?";
+
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+            'total_projects' => 0, 'in_development' => 0, 'planning' => 0, 'completed' => 0, 'avg_progress' => 0
+        ];
+    } catch (Exception $e) {
+        error_log("Error getting studio projects stats: " . $e->getMessage());
+        return ['total_projects' => 0, 'in_development' => 0, 'planning' => 0, 'completed' => 0, 'avg_progress' => 0];
     }
-    if ($time < 3600) {
-        return floor($time / 60) . 'm ago';
-    }
-    if ($time < 86400) {
-        return floor($time / 3600) . 'h ago';
-    }
-    if ($time < 2592000) {
-        return floor($time / 86400) . 'd ago';
-    }
-    return date('M j', strtotime($datetime));
 }
 
+/**
+ * Get recent tickets (simplified version)
+ */
+function getRecentTicketsSimple($database, $userId, $limit = 3): array
+{
+    try {
+        $sql = "SELECT st.*, 
+                       CASE st.priority 
+                           WHEN 'critical' THEN 'bg-danger'
+                           WHEN 'high' THEN 'bg-warning' 
+                           WHEN 'medium' THEN 'bg-primary'
+                           WHEN 'low' THEN 'bg-secondary'
+                           ELSE 'bg-secondary'
+                       END as priority_badge_class,
+                       CASE st.status
+                           WHEN 'open' THEN 'bg-info'
+                           WHEN 'in_progress' THEN 'bg-warning'
+                           WHEN 'waiting_client' THEN 'bg-secondary'
+                           WHEN 'resolved' THEN 'bg-success'
+                           WHEN 'closed' THEN 'bg-dark'
+                           ELSE 'bg-secondary'
+                       END as status_badge_class
+                FROM support_tickets st
+                WHERE st.client_id = ?
+                ORDER BY st.updated_at DESC 
+                LIMIT ?";
+
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId, $limit]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error getting recent tickets: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get recent activity
+ */
+function getRecentActivity($database, $userId): array
+{
+    try {
+        $activities = [];
+
+        // Recent ticket activities
+        $sql = "SELECT 'ticket' as type, subject as title, created_at, status, id
+                FROM support_tickets 
+                WHERE client_id = ? 
+                ORDER BY created_at DESC LIMIT 5";
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+        $ticketActivities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($ticketActivities as $activity) {
+            $activities[] = [
+                'type' => 'ticket',
+                'title' => $activity['title'],
+                'status' => $activity['status'],
+                'date' => $activity['created_at'],
+                'url' => "/index.php?page=user_tickets_view&id=" . $activity['id'],
+                'icon' => 'fas fa-ticket-alt',
+                'color' => 'primary'
+            ];
+        }
+
+        // Recent portfolio activities
+        $sql = "SELECT 'portfolio' as type, p.title, p.status, p.created_at, p.id
+                FROM client_portfolio p
+                LEFT JOIN client_profiles cp ON p.client_profile_id = cp.user_id
+                WHERE cp.user_id = ? 
+                ORDER BY p.updated_at DESC LIMIT 5";
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+        $portfolioActivities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($portfolioActivities as $activity) {
+            $color = match($activity['status']) {
+                'published', 'completed' => 'success',
+                'pending', 'in_progress' => 'warning',
+                'draft', 'planning' => 'secondary',
+                'rejected' => 'danger',
+                default => 'primary'
+            };
+
+            $activities[] = [
+                'type' => 'portfolio',
+                'title' => $activity['title'],
+                'status' => $activity['status'],
+                'date' => $activity['created_at'],
+                'url' => "/index.php?page=user_portfolio_edit&id=" . $activity['id'],
+                'icon' => 'fas fa-folder-open',
+                'color' => $color
+            ];
+        }
+
+        // Recent article activities
+        $sql = "SELECT 'article' as type, title, status, date as created_at, id
+                FROM articles 
+                WHERE user_id = ? 
+                ORDER BY date DESC LIMIT 5";
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+        $articleActivities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($articleActivities as $activity) {
+            $color = match($activity['status']) {
+                'published' => 'success',
+                'pending_review' => 'warning',
+                'draft' => 'secondary',
+                'rejected' => 'danger',
+                default => 'primary'
+            };
+
+            $activities[] = [
+                'type' => 'article',
+                'title' => $activity['title'],
+                'status' => $activity['status'],
+                'date' => $activity['created_at'],
+                'url' => "/index.php?page=edit_article&id=" . $activity['id'],
+                'icon' => 'fas fa-newspaper',
+                'color' => $color
+            ];
+        }
+
+        // Sort by date
+        usort($activities, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+
+        return array_slice($activities, 0, 8);
+    } catch (Exception $e) {
+        error_log("Error getting recent activity: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Calculate profile completion
+ */
+function calculateProfileCompletion($database, $userId): array
+{
+    try {
+        $sql = "SELECT 
+                    CASE WHEN company_name IS NOT NULL AND company_name != '' THEN 1 ELSE 0 END as has_company,
+                    CASE WHEN bio IS NOT NULL AND bio != '' THEN 1 ELSE 0 END as has_bio,
+                    CASE WHEN location IS NOT NULL AND location != '' THEN 1 ELSE 0 END as has_location,
+                    CASE WHEN website IS NOT NULL AND website != '' THEN 1 ELSE 0 END as has_website,
+                    CASE WHEN skills IS NOT NULL AND JSON_LENGTH(skills) > 0 THEN 1 ELSE 0 END as has_skills
+                FROM client_profiles WHERE user_id = ?";
+
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId]);
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$profile) {
+            return ['percentage' => 0, 'missing' => ['profile']];
+        }
+
+        $completed = array_sum($profile);
+        $total = count($profile);
+        $percentage = round(($completed / $total) * 100);
+
+        return [
+            'percentage' => $percentage,
+            'completed' => $completed,
+            'total' => $total,
+            'missing' => array_keys(array_filter($profile, fn($v) => $v === 0))
+        ];
+    } catch (Exception $e) {
+        error_log("Error calculating profile completion: " . $e->getMessage());
+        return ['percentage' => 0, 'missing' => []];
+    }
+}
 ?>
 
-<div class="page-dashboard">
-    <!-- Enhanced Header with Smart Actions -->
-    <header class="page-header">
-        <div class="dashboard-header-content">
-            <div class="dashboard-header-main">
-                <h1 class="page-title dashboard-header">
-                    <?php
-                    $greeting = date('H') < 12 ? 'Good morning' : (date('H') < 18 ? 'Good afternoon' : 'Good evening');
-                    echo $greeting . ', ' . htmlspecialchars($userData['username'] ?? 'User') . '!';
-                    ?>
-                </h1>
-                <?php if (!empty($userData['user_status'])) : ?>
-                    <p class="dashboard-user-status"><?php echo htmlspecialchars($userData['user_status']); ?></p>
-                <?php endif; ?>
-            </div>
-            <div class="dashboard-header-quick">
-                <?php if ($user_stats['drafts'] > 0) : ?>
-                    <a href="/index.php?page=manage_articles&filter=drafts" class="button button-secondary">
-                        <i class="fas fa-edit"></i> <?php echo $user_stats['drafts']; ?> Draft<?php echo $user_stats['drafts'] > 1 ? 's' : ''; ?>
-                    </a>
-                <?php endif; ?>
-                <a href="/index.php?page=create_article" class="button button-primary">
-                    <i class="fas fa-plus"></i> New Article
+    <!-- Admin Dark Theme Styles -->
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Client Portal</span>
+            </a>
+
+            <div class="admin-nav-links">
+                <a href="/index.php?page=user_tickets" class="admin-nav-link">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Support</span>
+                    <?php if (($ticketStats['open'] ?? 0) > 0): ?>
+                        <span class="admin-badge admin-badge-error" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem;">
+                            <?= $ticketStats['open'] ?>
+                        </span>
+                    <?php endif; ?>
+                </a>
+                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Portfolio</span>
+                </a>
+                <a href="/index.php?page=user_projects" class="admin-nav-link">
+                    <i class="fas fa-code"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="/index.php?page=user_profile" class="admin-nav-link">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+                <a href="/index.php?page=dashboard" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
                 </a>
             </div>
         </div>
-        <p class="dashboard-intro">
-            <?php if ($user_stats['articles']['count'] === 0) : ?>
-                Welcome to your dashboard! Ready to share your first article with the world?
-            <?php else : ?>
-                Manage your content, track your progress, and explore new features.
-            <?php endif; ?>
-        </p>
+    </nav>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-tachometer-alt"></i>
+                    <div class="admin-header-text">
+                        <h1>
+                            <?php
+                            $greeting = date('H') < 12 ? 'Good morning' : (date('H') < 18 ? 'Good afternoon' : 'Good evening');
+                            echo $greeting . ', ' . htmlspecialchars($currentUser['username']) . '!';
+                            ?>
+                        </h1>
+                        <p>Welcome to your client portal dashboard</p>
+                    </div>
+                </div>
+
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-primary">
+                        <i class="fas fa-plus"></i>New Ticket
+                    </a>
+                    <a href="/index.php?page=portfolio_create" class="admin-btn admin-btn-success">
+                        <i class="fas fa-briefcase"></i>Add Project
+                    </a>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <!-- Enhanced Stats Overview -->
-    <section class="dashboard-overview-section">
-        <div class="dashboard-overview">
-            <div class="overview-card overview-card-articles">
-                <div class="overview-card-header">
-                    <span class="overview-card-value"><?php echo $user_stats['articles']['count']; ?></span>
-                    <span class="overview-card-label">Articles Published</span>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+    <div class="admin-flash-messages">
+        <?php foreach ($flashMessages as $type => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
+                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
+                <div>
+                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
                 </div>
-                <div class="overview-card-footer">
-                    <?php if ($user_stats['articles']['recent'] > 0) : ?>
-                        <span class="overview-card-trend positive">+<?php echo $user_stats['articles']['recent']; ?> this week</span>
-                    <?php endif; ?>
-                    <a href="/index.php?page=manage_articles" class="overview-card-action">Manage</a>
-                </div>
-            </div>
-
-            <div class="overview-card overview-card-drafts">
-                <div class="overview-card-header">
-                    <span class="overview-card-value"><?php echo $user_stats['drafts']; ?></span>
-                    <span class="overview-card-label">Drafts</span>
-                </div>
-                <div class="overview-card-footer">
-                    <?php if ($user_stats['drafts'] > 0) : ?>
-                        <a href="/index.php?page=manage_articles&filter=drafts" class="overview-card-action">Finish</a>
-                    <?php else : ?>
-                        <span class="overview-card-trend neutral">All published!</span>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="overview-card overview-card-comments">
-                <div class="overview-card-header">
-                    <span class="overview-card-value"><?php echo $user_stats['comments']['count']; ?></span>
-                    <span class="overview-card-label">Comments Made</span>
-                </div>
-                <div class="overview-card-footer">
-                    <?php if ($user_stats['comments']['recent'] > 0) : ?>
-                        <span class="overview-card-trend positive">+<?php echo $user_stats['comments']['recent']; ?> this week</span>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="overview-card overview-card-notifications">
-                <div class="overview-card-header">
-                    <span class="overview-card-value"><?php echo $user_stats['notifications']['unread']; ?></span>
-                    <span class="overview-card-label">Notifications</span>
-                </div>
-                <div class="overview-card-footer">
-                    <?php if ($user_stats['notifications']['unread'] > 0) : ?>
-                        <span class="overview-card-badge">New</span>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Smart Suggestions -->
-    <?php if (!empty($smart_suggestions)) : ?>
-    <section class="dashboard-suggestions-section">
-        <h2 class="dashboard-section-title">
-            <i class="fas fa-lightbulb"></i> Suggestions for You
-        </h2>
-        <div class="dashboard-suggestions">
-            <?php foreach (array_slice($smart_suggestions, 0, 2) as $suggestion) : ?>
-            <div class="suggestion-card suggestion-<?php echo $suggestion['priority']; ?>">
-                <a href="<?php echo htmlspecialchars($suggestion['url']); ?>">
-                    <div class="suggestion-content">
-                        <div class="suggestion-icon">
-                            <i class="<?php echo $suggestion['icon']; ?>"></i>
-                        </div>
-                        <div class="suggestion-text-content">
-                            <span class="suggestion-title"><?php echo htmlspecialchars($suggestion['title']); ?></span>
-                            <span class="suggestion-description"><?php echo htmlspecialchars($suggestion['description']); ?></span>
-                        </div>
-                    </div>
-                    <div class="suggestion-action">
-                        <span class="suggestion-action-text"><?php echo htmlspecialchars($suggestion['action']); ?></span>
-                        <i class="fas fa-arrow-right suggestion-arrow"></i>
-                    </div>
-                </a>
             </div>
             <?php endforeach; ?>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- Role-specific Dashboard Sections -->
-    <?php if (!empty($roleDashboardData['is_moderator']) && !isset($roleDashboardData['error'])) : ?>
-    <section class="dashboard-moderation-section">
-        <h2 class="dashboard-section-title">
-            <i class="fas fa-gavel"></i> Moderation Dashboard
-            <a href="/index.php?page=admin_moderation_dashboard" class="section-link">View Full Dashboard</a>
-        </h2>
-
-        <div class="moderation-stats-grid">
-            <div class="moderation-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['pending_projects'] ?? 0; ?></div>
-                <div class="stat-label">Pending Projects</div>
-                <a href="/index.php?page=admin_moderation_projects&status=pending" class="stat-action">Review</a>
-            </div>
-            <div class="moderation-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['pending_comments'] ?? 0; ?></div>
-                <div class="stat-label">Pending Comments</div>
-                <a href="/index.php?page=admin_moderation_comments&status=pending" class="stat-action">Review</a>
-            </div>
-            <div class="moderation-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['moderated_today'] ?? 0; ?></div>
-                <div class="stat-label">Moderated Today</div>
-            </div>
-            <div class="moderation-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['moderation_stats']['total_published'] ?? 0; ?></div>
-                <div class="stat-label">Total Published</div>
-            </div>
-        </div>
-
-        <?php if (!empty($roleDashboardData['recent_projects'])) : ?>
-        <div class="recent-moderation-items">
-            <h4>Recent Projects for Review</h4>
-            <div class="moderation-items-list">
-                <?php foreach ($roleDashboardData['recent_projects'] as $project) : ?>
-                <div class="moderation-item">
-                    <div class="moderation-item-content">
-                        <span class="moderation-item-title"><?php echo htmlspecialchars($project['title']); ?></span>
-                        <span class="moderation-item-meta">
-                            by <?php echo htmlspecialchars($project['client_username'] ?? 'Unknown'); ?> •
-                            <?php echo time_ago($project['created_at']); ?>
-                        </span>
-                    </div>
-                    <a href="/index.php?page=admin_moderation_project_details&id=<?php echo $project['id']; ?>"
-                       class="moderation-item-action">Review</a>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </section>
-    <?php elseif (!empty($roleDashboardData['is_client']) && !isset($roleDashboardData['error'])) : ?>
-    <section class="dashboard-portfolio-section">
-        <h2 class="dashboard-section-title">
-            <i class="fas fa-briefcase"></i> My Portfolio
-            <a href="/index.php?page=client_portfolio" class="section-link">Manage Portfolio</a>
-        </h2>
-
-        <div class="portfolio-stats-grid">
-            <div class="portfolio-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['total_projects'] ?? 0; ?></div>
-                <div class="stat-label">Total Projects</div>
-                <a href="/index.php?page=portfolio_manage" class="stat-action">Manage</a>
-            </div>
-            <div class="portfolio-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['pending_projects'] ?? 0; ?></div>
-                <div class="stat-label">Under Review</div>
-            </div>
-            <div class="portfolio-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['published_projects'] ?? 0; ?></div>
-                <div class="stat-label">Published</div>
-            </div>
-            <div class="portfolio-stat-card">
-                <div class="stat-value"><?php echo $roleDashboardData['portfolio_stats']['total_views'] ?? 0; ?></div>
-                <div class="stat-label">Total Views</div>
-            </div>
-        </div>
-
-        <div class="portfolio-quick-actions">
-            <a href="/index.php?page=portfolio_create" class="portfolio-action-primary">
-                <i class="fas fa-plus"></i> Add New Project
-            </a>
-            <a href="/index.php?page=portfolio_manage" class="portfolio-action-secondary">
-                <i class="fas fa-edit"></i> Manage Projects
-            </a>
-            <a href="/index.php?page=project_stats" class="portfolio-action-secondary">
-                <i class="fas fa-chart-line"></i> View Statistics
-            </a>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- Enhanced Main Dashboard Grid -->
-    <div class="dashboard-main-grid">
-        <!-- Left Column: Primary Actions & Activity -->
-        <div class="dashboard-primary-column">
-            <!-- Quick Actions -->
-            <section class="dashboard-content-section">
-                <h2 class="dashboard-section-title">Quick Actions</h2>
-                <div class="dashboard-actions dashboard-actions-compact">
-                    <?php foreach ($primary_actions as $action) : ?>
-                        <?php if (can_user_access_action($action['roles'], $current_user_role)) : ?>
-                        <div class="dashboard-action-card dashboard-action-primary action-<?php echo $action['type']; ?>">
-                            <a href="<?php echo htmlspecialchars($action['url']); ?>">
-                                <div class="action-icon">
-                                    <i class="<?php echo $action['icon']; ?>"></i>
-                                </div>
-                                <div class="action-content">
-                                    <span class="action-text"><?php echo htmlspecialchars($action['text']); ?></span>
-                                    <span class="action-description"><?php echo htmlspecialchars($action['description']); ?></span>
-                                </div>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-
-            <!-- Recent Activity -->
-            <?php if (!empty($recent_activities)) : ?>
-            <section class="dashboard-activity-section">
-                <h2 class="dashboard-section-title">Recent Activity</h2>
-                <div class="activity-list">
-                    <?php foreach ($recent_activities as $activity) : ?>
-                    <div class="activity-item activity-<?php echo $activity['type']; ?>">
-                        <div class="activity-icon">
-                            <i class="fas fa-<?php echo $activity['type'] === 'article' ? 'file-alt' : 'comment'; ?>"></i>
-                        </div>
-                        <div class="activity-content">
-                            <span class="activity-name"><?php echo htmlspecialchars($activity['name']); ?></span>
-                            <span class="activity-time"><?php echo time_ago($activity['created_at']); ?></span>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-            <?php endif; ?>
-
-            <!-- Site Management for Admins -->
-            <?php
-            if (!empty($site_management_config['links'])) :
-                $has_accessible_admin_links = false;
-                foreach ($site_management_config['links'] as $link) {
-                    if (can_user_access_action($link['roles'], $current_user_role)) {
-                        $has_accessible_admin_links = true;
-                        break;
-                    }
-                }
-
-                if ($has_accessible_admin_links) :
-                    ?>
-            <section class="dashboard-admin-section">
-                <h2 class="dashboard-section-title">
-                    <i class="fas fa-cogs"></i> <?php echo htmlspecialchars($site_management_config['title']); ?>
-                </h2>
-                <div class="dashboard-actions dashboard-actions-compact">
-                    <?php foreach (array_slice($site_management_config['links'], 0, 6) as $action) : ?>
-                        <?php if (can_user_access_action($action['roles'], $current_user_role)) : ?>
-                        <div class="dashboard-action-card dashboard-action-admin">
-                            <a href="<?php echo htmlspecialchars($action['url']); ?>">
-                                <div class="action-content">
-                                    <span class="action-text"><?php echo htmlspecialchars($action['text']); ?></span>
-                                    <span class="action-description"><?php echo htmlspecialchars($action['description'] ?? ''); ?></span>
-                                </div>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-                <?php endif;
-            endif; ?>
-        </div>
-
-        <!-- Right Column: Profile & Quick Links -->
-        <div class="dashboard-secondary-column">
-            <!-- Enhanced Profile Snapshot -->
-            <section class="dashboard-profile-snapshot dashboard-profile-compact">
-                <div class="profile-header">
-                    <h3 class="dashboard-section-title">Profile</h3>
-                    <div class="profile-completion">
-                        <!-- Используем данные из общей функции calculateAccountCompleteness -->
-                        <div class="completion-bar">
-                            <div class="completion-fill" style="width: <?php echo $accountProgress['percentage']; ?>%"></div>
-                        </div>
-                        <span class="completion-text"><?php echo $accountProgress['percentage']; ?>% complete</span>
-                    </div>
-                </div>
-
-                <div class="profile-summary-grid">
-                    <div class="profile-summary-item">
-                        <span class="profile-summary-label">Email</span>
-                        <span class="profile-summary-value"><?php echo htmlspecialchars($userData['email'] ?? 'N/A'); ?></span>
-                    </div>
-                    <?php if (!empty($userData['location'])) : ?>
-                    <div class="profile-summary-item">
-                        <span class="profile-summary-label">Location</span>
-                        <span class="profile-summary-value"><?php echo htmlspecialchars($userData['location']); ?></span>
-                    </div>
-                    <?php endif; ?>
-                    <?php if (!empty($userData['website_url'])) : ?>
-                    <div class="profile-summary-item">
-                        <span class="profile-summary-label">Website</span>
-                        <span class="profile-summary-value">
-                            <a href="<?php echo htmlspecialchars($userData['website_url']); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php echo htmlspecialchars(parse_url($userData['website_url'], PHP_URL_HOST) ?: $userData['website_url']); ?>
-                            </a>
-                        </span>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
-                <?php if (!empty($userData['bio'])) : ?>
-                <div class="profile-bio-summary">
-                    <span class="profile-summary-label">About</span>
-                    <p class="profile-bio-text"><?php echo nl2br(htmlspecialchars(mb_substr($userData['bio'], 0, 120) . (mb_strlen($userData['bio']) > 120 ? '...' : ''))); ?></p>
-                </div>
-                <?php endif; ?>
-
-                <!-- Обновленные действия для завершения профиля -->
-                <?php if ($accountProgress['percentage'] < 100) : ?>
-                <div class="profile-completion-actions">
-                    <a href="/index.php?page=profile_edit" class="completion-link">
-                        <i class="fas fa-user-edit"></i>
-                        Complete Profile
-                        <small>Missing: <?php echo implode(', ', array_map('ucfirst', $accountProgress['missing_fields'])); ?></small>
-                    </a>
-                </div>
-                <?php endif; ?>
-            </section>
-
-            <!-- Quick Links -->
-            <section class="dashboard-quick-links">
-                <h3 class="dashboard-section-title">Quick Links</h3>
-                <div class="quick-links-grid">
-                    <?php foreach ($quick_links as $link) : ?>
-                    <a href="<?php echo htmlspecialchars($link['url']); ?>" class="quick-link">
-                        <i class="<?php echo $link['icon']; ?>"></i>
-                        <span><?php echo htmlspecialchars($link['text']); ?></span>
-                    </a>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-
-            <!-- Account Actions -->
-            <section class="dashboard-account-section">
-                <h3 class="dashboard-section-title">Account</h3>
-                <div class="dashboard-actions dashboard-actions-vertical">
-                    <?php foreach ($profile_actions as $action) : ?>
-                        <?php if (can_user_access_action($action['roles'], $current_user_role)) : ?>
-                        <div class="dashboard-action-card dashboard-action-account">
-                            <a href="<?php echo htmlspecialchars($action['url']); ?>">
-                                <div class="action-content">
-                                    <span class="action-text"><?php echo htmlspecialchars($action['text']); ?></span>
-                                    <span class="action-description"><?php echo htmlspecialchars($action['description']); ?></span>
-                                </div>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-
-            <!-- Backup System Status for Admins -->
-            <?php if ($current_user_role === 'admin') : ?>
-            <section class="dashboard-backup-section">
-                <?php
-                try {
-                    // Создаем экземпляр DashboardBackupStatus
-                    $backupStatus = new DashboardBackupStatus($authService, $database_handler, $container->make(LoggerInterface::class));
-                    echo $backupStatus->renderBackupStatusWidget();
-                } catch (Exception $e) {
-                    error_log("Failed to load backup status widget: " . $e->getMessage());
-                    // Показываем простой виджет с ошибкой для администраторов
-                    ?>
-                    <div class="dashboard-backup-widget dashboard-profile-compact">
-                        <div class="profile-header">
-                            <h3 class="dashboard-section-title">
-                                <i class="fas fa-shield-alt"></i> Backup System
-                            </h3>
-                            <a href="/index.php?page=backup_monitor" class="overview-card-action">
-                                <i class="fas fa-cog"></i> Manage
-                            </a>
-                        </div>
-                        <div class="backup-status-indicator backup-status-danger">
-                            <div class="backup-status-icon">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <div class="backup-status-text">
-                                <strong>Unable to load backup status</strong>
-                            </div>
-                        </div>
-                        <div class="profile-summary-grid">
-                            <div class="profile-summary-item">
-                                <span class="profile-summary-label">Status</span>
-                                <span class="profile-summary-value">Error</span>
-                            </div>
-                        </div>
-                    </div>
-                    <?php
-                }
-                ?>
-            </section>
-            <?php endif; ?>
-        </div>
+        <?php endforeach; ?>
     </div>
-</div>
+    <?php endif; ?>
+
+    <!-- Main Content -->
+    <main>
+        <div class="admin-layout-main">
+            <div class="admin-content">
+                <!-- Statistics Cards -->
+                <div class="admin-stats-grid">
+                    <!-- Support Tickets -->
+                    <div class="admin-stat-card admin-glow-primary">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-primary">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Support Tickets</h3>
+                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $ticketStats['total'] ?? 0 ?></p>
+                                <?php if (($ticketStats['open'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-warning" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-exclamation-circle"></i><?= $ticketStats['open'] ?> Open
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-primary admin-btn-sm">
+                                <i class="fas fa-eye"></i>View All
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Projects -->
+                    <div class="admin-stat-card admin-glow-success">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-success">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Portfolio Projects</h3>
+                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $portfolioStats['total_projects'] ?? 0 ?></p>
+                                <?php if (($portfolioStats['published'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-success" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-check-circle"></i><?= $portfolioStats['published'] ?> Published
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-success admin-btn-sm">
+                                <i class="fas fa-folder-open"></i>Manage
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Studio Projects -->
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background-color: var(--admin-info-bg); color: var(--admin-info);">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Studio Projects</h3>
+                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $studioProjectsStats['total_projects'] ?? 0 ?></p>
+                                <?php if (($studioProjectsStats['in_development'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-warning" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-code"></i><?= $studioProjectsStats['in_development'] ?> In Development
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                <i class="fas fa-external-link-alt"></i>View Projects
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Profile Completion -->
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-warning">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Profile Complete</h3>
+                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $profileCompletion['percentage'] ?? 0 ?>%</p>
+                                <?php if (($profileCompletion['percentage'] ?? 0) < 100): ?>
+                                    <span style="font-size: 0.75rem; color: var(--admin-text-muted); margin-top: 0.5rem; display: block;">
+                                        Missing: <?= implode(', ', array_slice($profileCompletion['missing'] ?? [], 0, 2)) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <a href="/index.php?page=user_profile" class="admin-btn admin-btn-warning admin-btn-sm">
+                                <i class="fas fa-edit"></i>Complete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Support Tickets -->
+                <?php if (!empty($recentTickets)): ?>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-ticket-alt"></i>Recent Support Tickets
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <?php foreach ($recentTickets as $ticket): ?>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--admin-border);">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <span class="admin-badge admin-badge-<?= $ticket['priority'] === 'critical' ? 'error' : ($ticket['priority'] === 'high' ? 'warning' : 'gray') ?>">
+                                        <?= ucfirst($ticket['priority'] ?? 'medium') ?>
+                                    </span>
+                                    <div>
+                                        <h6 style="margin: 0 0 0.25rem 0; font-weight: 600;">
+                                            <a href="/index.php?page=user_tickets_view&id=<?= $ticket['id'] ?>" style="color: var(--admin-text-primary); text-decoration: none;">
+                                                <?= htmlspecialchars($ticket['subject']) ?>
+                                            </a>
+                                        </h6>
+                                        <div style="font-size: 0.75rem; color: var(--admin-text-muted);">
+                                            <?= date('M j, Y', strtotime($ticket['created_at'])) ?> •
+                                            <span class="admin-badge admin-badge-<?= $ticket['status'] === 'resolved' ? 'success' : ($ticket['status'] === 'in_progress' ? 'warning' : 'gray') ?>" style="margin-left: 0.5rem;">
+                                                <?= ucfirst(str_replace('_', ' ', $ticket['status'])) ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="/index.php?page=user_tickets_view&id=<?= $ticket['id'] ?>" class="admin-btn admin-btn-primary admin-btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="admin-card-footer">
+                        <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary">
+                            <i class="fas fa-list"></i>View All Tickets
+                        </a>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Recent Activity -->
+                <?php if (!empty($recentActivity)): ?>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-clock"></i>Recent Activity
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <?php foreach (array_slice($recentActivity, 0, 6) as $activity): ?>
+                            <div style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--admin-border);">
+                                <div style="margin-right: 1rem; color: var(--admin-<?= $activity['color'] ?>);">
+                                    <i class="<?= $activity['icon'] ?>"></i>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h6 style="margin: 0 0 0.25rem 0; font-weight: 500;">
+                                        <a href="<?= $activity['url'] ?>" style="color: var(--admin-text-primary); text-decoration: none;">
+                                            <?= htmlspecialchars($activity['title']) ?>
+                                        </a>
+                                    </h6>
+                                    <div style="font-size: 0.75rem; color: var(--admin-text-muted);">
+                                        <?= ucfirst($activity['type']) ?> • <?= date('M j, Y', strtotime($activity['date'])) ?>
+                                        <?php if (!empty($activity['status'])): ?>
+                                            • <span class="admin-badge admin-badge-<?= $activity['color'] ?>"><?= ucfirst($activity['status']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Administrative Actions for Admin/Employee -->
+                <?php if (in_array($currentUser['role'], ['admin', 'employee'])): ?>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-tools"></i>Administrative Actions
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <!-- Content Management Section -->
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
+                                <i class="fas fa-newspaper" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>
+                                Content Management
+                            </h4>
+                            <div class="admin-grid admin-grid-cols-3">
+                                <a href="/index.php?page=manage_articles" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-newspaper"></i>Manage Articles
+                                </a>
+                                <a href="/index.php?page=manage_categories" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-tags"></i>Manage Categories
+                                </a>
+                                <a href="/index.php?page=create_article" class="admin-btn admin-btn-success">
+                                    <i class="fas fa-plus"></i>Create Article
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Moderation Section -->
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
+                                <i class="fas fa-gavel" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>
+                                Moderation & Review
+                            </h4>
+                            <div class="admin-grid admin-grid-cols-3">
+                                <a href="/index.php?page=admin_moderation_dashboard" class="admin-btn admin-btn-primary">
+                                    <i class="fas fa-gavel"></i>Moderation Dashboard
+                                </a>
+                                <a href="/index.php?page=moderate_projects" class="admin-btn admin-btn-warning">
+                                    <i class="fas fa-clipboard-check"></i>Moderate Projects
+                                </a>
+                                <a href="/index.php?page=moderate_comments" class="admin-btn admin-btn-warning">
+                                    <i class="fas fa-comments"></i>Moderate Comments
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- System Management Section (Admin Only) -->
+                        <?php if ($currentUser['role'] === 'admin'): ?>
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
+                                <i class="fas fa-users-cog" style="color: var(--admin-info); margin-right: 0.5rem;"></i>
+                                User & System Management
+                            </h4>
+                            <div class="admin-grid admin-grid-cols-2">
+                                <a href="/index.php?page=manage_users" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-users"></i>Manage Users
+                                </a>
+                                <a href="/index.php?page=site_settings" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-cogs"></i>Site Settings
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- System Monitoring Section (Admin Only) -->
+                        <div>
+                            <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
+                                <i class="fas fa-chart-line" style="color: var(--admin-success); margin-right: 0.5rem;"></i>
+                                System Monitoring
+                            </h4>
+                            <div class="admin-grid admin-grid-cols-2">
+                                <a href="/index.php?page=system_monitor" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-chart-line"></i>System Monitor
+                                </a>
+                                <a href="/index.php?page=backup_monitor" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-database"></i>Backup Monitor
+                                </a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <!-- Profile Summary -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-user"></i>Profile Summary
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="width: 64px; height: 64px; background: var(--admin-primary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                                <i class="fas fa-user" style="color: var(--admin-primary); font-size: 1.5rem;"></i>
+                            </div>
+                            <h6 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-weight: 600;">
+                                <?= htmlspecialchars($currentUser['username']) ?>
+                            </h6>
+                            <span class="admin-badge admin-badge-primary">
+                                <i class="fas fa-<?= $currentUser['role'] === 'admin' ? 'crown' : ($currentUser['role'] === 'employee' ? 'user-tie' : 'user') ?>"></i>
+                                <?= ucfirst($currentUser['role']) ?>
+                            </span>
+                        </div>
+
+                        <!-- Profile Completion Progress -->
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="font-size: 0.875rem; color: var(--admin-text-secondary);">Profile Completion</span>
+                                <span style="font-size: 0.875rem; color: var(--admin-text-primary); font-weight: 600;"><?= $profileCompletion['percentage'] ?? 0 ?>%</span>
+                            </div>
+                            <div style="background: var(--admin-bg-secondary); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: var(--admin-success); height: 100%; width: <?= $profileCompletion['percentage'] ?? 0 ?>%; transition: all 0.3s;"></div>
+                            </div>
+                        </div>
+
+                        <a href="/index.php?page=user_profile" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-edit"></i>Edit Profile
+                        </a>
+                        <a href="/index.php?page=user_portfolio_settings" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                            <i class="fas fa-cogs"></i>Portfolio Settings
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-external-link-alt"></i>Quick Links
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: space-between;">
+                            <span><i class="fas fa-ticket-alt"></i>Support Tickets</span>
+                            <?php if (($ticketStats['open'] ?? 0) > 0): ?>
+                                <span class="admin-badge admin-badge-error"><?= $ticketStats['open'] ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-briefcase"></i>My Portfolio
+                        </a>
+                        <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-code"></i>Studio Projects
+                        </a>
+                        <a href="/index.php?page=user_invoices" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-file-invoice-dollar"></i>Invoices
+                        </a>
+                        <a href="/index.php?page=user_documents" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                            <i class="fas fa-folder"></i>Documents
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Help & Support -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3 class="admin-card-title">
+                            <i class="fas fa-question-circle"></i>Help & Support
+                        </h3>
+                    </div>
+                    <div class="admin-card-body">
+                        <p style="font-size: 0.875rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                            Need assistance? Our support team is here to help you with any questions or issues.
+                        </p>
+                        <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-plus"></i>Create Support Ticket
+                        </a>
+                        <a href="/index.php?page=contact" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
+                            <i class="fas fa-phone"></i>Contact Us
+                        </a>
+                        <a href="/index.php?page=help" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                            <i class="fas fa-book"></i>Documentation
+                        </a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Admin Scripts -->
+    <script src="/public/assets/js/admin.js"></script>
+    <script>
+        // Initialize dashboard functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss flash messages after 5 seconds
+            setTimeout(function() {
+                document.querySelectorAll('.admin-flash-message').forEach(function(message) {
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.remove();
+                    }, 300);
+                });
+            }, 5000);
+
+            // Add hover effects to stat cards
+            document.querySelectorAll('.admin-stat-card').forEach(function(card) {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Add click tracking for dashboard actions
+            document.querySelectorAll('.admin-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    console.log('Dashboard action clicked:', this.textContent.trim());
+                });
+            });
+        });
+    </script>

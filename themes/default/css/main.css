@@ -29,26 +29,17 @@
 
 /* Pages */
 @import "pages/_auth.css";
+@import "pages/_about.css";
 @import "pages/_news-isolated.css";
 @import "pages/_hero.css";
 @import "pages/_home.css";
 @import "pages/_comments.css";
-@import "pages/_dashboard.css";
-@import "pages/_profile-edit.css";
-@import "pages/_settings.css";
-@import "pages/_about.css";
-@import "pages/_manage.css";
-@import "pages/_manage-articles.css";
-@import "pages/_manage-categories.css";
-@import "pages/_edit-category.css";
 @import "pages/_contact.css";
 @import "pages/_projects.css";
 @import "pages/_services.css";
 @import "pages/_team.css";
 @import "pages/_careers.css";
 @import "pages/_legal.css";
-@import "pages/_admin_settings.css";
-@import "pages/_create-article.css";
 
 /* Utilities */
 @import "utils/_scrollbar.css";

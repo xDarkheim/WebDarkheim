@@ -348,9 +348,12 @@ class ModerationService
 
             // Get comments
             $commentsSql = "SELECT c.*, 
-                                  u.username as user_username
+                                  u.username as user_username,
+                                  cp.id as project_id,
+                                  cp.title as project_title
                            FROM comments c
                            LEFT JOIN users u ON c.user_id = u.id
+                           LEFT JOIN client_portfolio cp ON c.commentable_type = 'portfolio_project' AND c.commentable_id = cp.id
                            $whereClause
                            ORDER BY c.created_at DESC
                            LIMIT ? OFFSET ?";

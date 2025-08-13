@@ -8,7 +8,7 @@ use App\Domain\Models\SupportTicket;
 use App\Domain\Interfaces\DatabaseInterface;
 use App\Domain\Interfaces\LoggerInterface;
 use App\Application\Services\AuthenticationService;
-use App\Application\Services\FlashMessageService;
+use App\Infrastructure\Lib\FlashMessageService;
 use Exception;
 use InvalidArgumentException;
 

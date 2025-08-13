@@ -1,7 +1,7 @@
 <?php
 /**
- * Comments List View for Moderation
- * Displays list of comments awaiting moderation
+ * Comments List View for Moderation - MODERN DARK ADMIN INTERFACE
+ * Modern dark administrative interface for comment moderation
  */
 
 // Extract data from view context
@@ -14,336 +14,376 @@ $currentUser = $viewData['currentUser'] ?? null;
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="admin-panel">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($viewData['pageTitle'] ?? 'Comments Moderation') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .comment-card {
-            transition: all 0.3s ease;
-            border: 1px solid #dee2e6;
-        }
-        .comment-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .action-buttons .btn {
-            margin: 0 2px;
-        }
-        .comment-content {
-            max-height: 100px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    </style>
-</head>
-<body class="bg-light">
 
-<div class="container-fluid py-4">
+    <!-- Admin Dark Theme Styles -->
+    <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-container">
+
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <a href="/index.php?page=dashboard" class="admin-nav-brand">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin Panel</span>
+            </a>
+
+            <div class="admin-nav-links">
+                <a href="/index.php?page=manage_articles" class="admin-nav-link">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Articles</span>
+                </a>
+                <a href="/index.php?page=manage_categories" class="admin-nav-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="/index.php?page=manage_users" class="admin-nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="/page/admin/moderation/comments.php" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
+                    <i class="fas fa-gavel"></i>
+                    <span>Moderation</span>
+                </a>
+                <a href="/index.php?page=site_settings" class="admin-nav-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="/index.php?page=dashboard" class="admin-nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h3 mb-0">
-                    <i class="fas fa-comments text-primary"></i>
-                    Comments Moderation
-                </h1>
-                <div class="btn-group">
-                    <a href="/index.php?page=admin_moderation_dashboard" class="btn btn-outline-primary">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-comments"></i>
+                    <div class="admin-header-text">
+                        <h1>Comment Moderation</h1>
+                        <p>Review and moderate user comments on projects and articles</p>
+                    </div>
+                </div>
+
+                <div class="admin-header-actions">
+                    <a href="/page/admin/moderation/dashboard.php" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-tachometer-alt"></i>Moderation Dashboard
                     </a>
-                    <a href="/index.php?page=admin_moderation_projects" class="btn btn-outline-secondary">
-                        <i class="fas fa-tasks"></i> Projects
+                    <a href="/page/admin/moderation/projects.php" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-clipboard-list"></i>Projects
                     </a>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
 
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
-        <div class="row mb-4">
-            <div class="col-12">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="alert alert-<?= $type === 'error' ? 'danger' : $type ?> alert-dismissible fade show">
-                            <?= htmlspecialchars($message['text']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['pending'] ?? 0 ?></h3>
-                    <p class="mb-0">Pending Comments</p>
+    <div class="admin-flash-messages">
+        <?php foreach ($flashMessages as $type => $messages): ?>
+            <?php foreach ($messages as $message): ?>
+            <div class="admin-flash-message admin-flash-<?= $type ?>">
+                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
+                <div>
+                    <?= is_array($message) ? ($message['is_html'] ? $message['text'] : htmlspecialchars($message['text'])) : htmlspecialchars($message) ?>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['approved'] ?? 0 ?></h3>
-                    <p class="mb-0">Approved</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= $statistics['rejected'] ?? 0 ?></h3>
-                    <p class="mb-0">Rejected</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h3 class="mb-0"><?= count($statistics['by_type'] ?? []) ?></h3>
-                    <p class="mb-0">Content Types</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <input type="hidden" name="page" value="admin_moderation_comments">
-
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="all" <?= ($filters['status'] ?? '') === 'all' ? 'selected' : '' ?>>All Statuses</option>
-                        <option value="pending" <?= ($filters['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
-                        <option value="approved" <?= ($filters['status'] ?? '') === 'approved' ? 'selected' : '' ?>>Approved</option>
-                        <option value="rejected" <?= ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' ?>>Rejected</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Type</label>
-                    <select name="type" class="form-select">
-                        <option value="all" <?= ($filters['type'] ?? '') === 'all' ? 'selected' : '' ?>>All Types</option>
-                        <option value="article" <?= ($filters['type'] ?? '') === 'article' ? 'selected' : '' ?>>Articles</option>
-                        <option value="portfolio_project" <?= ($filters['type'] ?? '') === 'portfolio_project' ? 'selected' : '' ?>>Portfolio Projects</option>
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control" placeholder="Search comments..."
-                           value="<?= htmlspecialchars($filters['search'] ?? '') ?>">
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary d-block w-100">
-                        <i class="fas fa-search"></i> Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Comments List -->
-    <div class="row">
-        <?php if (empty($comments)): ?>
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">No Comments Found</h4>
-                        <p class="text-muted">No comments match your current filters.</p>
-                    </div>
-                </div>
-            </div>
-        <?php else: ?>
-            <?php foreach ($comments as $comment): ?>
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <div class="card comment-card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <strong class="text-truncate" style="max-width: 200px;">
-                                <?= htmlspecialchars($comment['author_name']) ?>
-                            </strong>
-                            <span class="badge status-badge bg-<?=
-                                match($comment['status']) {
-                                    'pending' => 'warning',
-                                    'approved' => 'success',
-                                    'rejected' => 'danger',
-                                    default => 'secondary'
-                                }
-                            ?>">
-                                <?= ucfirst($comment['status']) ?>
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small mb-2">
-                                <i class="fas fa-envelope"></i>
-                                <?= htmlspecialchars($comment['author_email']) ?>
-                                <br>
-                                <i class="fas fa-tag"></i>
-                                <?= ucfirst(str_replace('_', ' ', $comment['commentable_type'])) ?>
-                                <?php if (!empty($comment['user_username'])): ?>
-                                    <br><i class="fas fa-user"></i>
-                                    User: <?= htmlspecialchars($comment['user_username']) ?>
-                                <?php endif; ?>
-                            </p>
-
-                            <div class="comment-content mb-3">
-                                <?= htmlspecialchars($comment['content']) ?>
-                            </div>
-
-                            <div class="text-muted small mb-3">
-                                <i class="fas fa-calendar"></i>
-                                <?= date('M j, Y g:i A', strtotime($comment['created_at'])) ?>
-                            </div>
-
-                            <?php if ($comment['thread_level'] > 0): ?>
-                                <div class="mb-2">
-                                    <span class="badge bg-secondary">
-                                        <i class="fas fa-reply"></i> Reply (Level <?= $comment['thread_level'] ?>)
-                                    </span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="card-footer">
-                            <div class="action-buttons d-flex justify-content-between">
-                                <small class="text-muted">
-                                    ID: <?= $comment['id'] ?>
-                                </small>
-
-                                <?php if ($comment['status'] === 'pending'): ?>
-                                    <div>
-                                        <button class="btn btn-success btn-sm"
-                                                onclick="moderateComment(<?= $comment['id'] ?>, 'approved')">
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <button class="btn btn-danger btn-sm"
-                                                onclick="moderateComment(<?= $comment['id'] ?>, 'rejected')">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
-                                    </div>
-                                <?php else: ?>
-                                    <span class="text-muted small">
-                                        <?= $comment['status'] === 'approved' ? 'Approved' : 'Rejected' ?>
-                                        <?php if (!empty($comment['moderated_at'])): ?>
-                                            on <?= date('M j', strtotime($comment['moderated_at'])) ?>
-                                        <?php endif; ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             <?php endforeach; ?>
-        <?php endif; ?>
+        <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 
-    <!-- Pagination -->
-    <?php if ($pagination['total_pages'] > 1): ?>
-        <div class="row">
-            <div class="col-12">
-                <nav aria-label="Comments pagination">
-                    <ul class="pagination justify-content-center">
-                        <?php
-                        $currentPage = $pagination['current_page'];
-                        $totalPages = $pagination['total_pages'];
-                        $baseUrl = '/index.php?page=admin_moderation_comments';
-                        $queryParams = array_filter([
-                            'status' => $filters['status'] ?? null,
-                            'type' => $filters['type'] ?? null,
-                            'search' => $filters['search'] ?? null
-                        ]);
-                        ?>
+    <!-- Main Content -->
+    <main>
+        <div class="admin-layout-main">
+            <div class="admin-content">
 
-                        <!-- Previous Page -->
-                        <?php if ($currentPage > 1): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $currentPage - 1])) ?>">
-                                    <i class="fas fa-chevron-left"></i> Previous
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                <!-- Statistics Cards -->
+                <?php if (!empty($statistics)): ?>
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card admin-glow-primary">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-warning-bg); color: var(--admin-warning);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Pending Review</h3>
+                                <p><?= htmlspecialchars((string)($statistics['pending'] ?? 0)) ?></p>
+                                <span>Comments awaiting moderation</span>
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- Page Numbers -->
-                        <?php for ($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++): ?>
-                            <li class="page-item <?= $i === $currentPage ? 'active' : '' ?>">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $i])) ?>">
-                                    <?= $i ?>
-                                </a>
-                            </li>
-                        <?php endfor; ?>
+                    <div class="admin-stat-card admin-glow-success">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-success-bg); color: var(--admin-success);">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Approved</h3>
+                                <p><?= htmlspecialchars((string)($statistics['approved'] ?? 0)) ?></p>
+                                <span>Comments approved today</span>
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- Next Page -->
-                        <?php if ($currentPage < $totalPages): ?>
-                            <li class="page-item">
-                                <a class="page-link" href="<?= $baseUrl ?>&<?= http_build_query(array_merge($queryParams, ['page' => $currentPage + 1])) ?>">
-                                    Next <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
+                    <div class="admin-stat-card admin-glow-error">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-error-bg); color: var(--admin-error);">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Spam Blocked</h3>
+                                <p><?= htmlspecialchars((string)($statistics['spam'] ?? 0)) ?></p>
+                                <span>Spam comments blocked</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="text-center text-muted">
-                    Showing comments <?= ($currentPage - 1) * 20 + 1 ?> to <?= min($currentPage * 20, $pagination['total']) ?>
-                    of <?= $pagination['total'] ?> total
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon" style="background: var(--admin-info-bg); color: var(--admin-info);">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Total Comments</h3>
+                                <p><?= htmlspecialchars((string)($statistics['total'] ?? 0)) ?></p>
+                                <span>All time comments</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <?php endif; ?>
+
+                <!-- Comments List -->
+                <?php if (empty($comments)): ?>
+                    <!-- Empty State -->
+                    <div class="admin-card admin-glow-primary">
+                        <div class="admin-card-body" style="text-align: center; padding: 3rem;">
+                            <div style="font-size: 4rem; color: var(--admin-text-muted); margin-bottom: 1rem;">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem;">No Comments to Moderate</h3>
+                            <p style="color: var(--admin-text-muted); margin-bottom: 2rem;">
+                                All comments have been reviewed. Check back later for new submissions.
+                            </p>
+                            <a href="/page/admin/moderation/dashboard.php" class="admin-btn admin-btn-primary admin-btn-lg">
+                                <i class="fas fa-tachometer-alt"></i>View Dashboard
+                            </a>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- Comments Cards -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h3 class="admin-card-title">
+                                <i class="fas fa-comments"></i>Comments for Review
+                                <span class="admin-badge admin-badge-warning">
+                                    <?= count($comments) ?> Pending
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="admin-card-body">
+                            <div class="admin-grid admin-grid-cols-1">
+                                <?php foreach ($comments as $comment): ?>
+                                    <div class="admin-card" style="margin-bottom: 1rem; border: 1px solid var(--admin-border);">
+                                        <div class="admin-card-body">
+                                            <!-- Comment Header -->
+                                            <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 1rem;">
+                                                <div style="display: flex; align-items: center; flex: 1;">
+                                                    <div style="width: 40px; height: 40px; background: var(--admin-primary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                                                        <i class="fas fa-user" style="color: var(--admin-primary);"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div style="font-weight: 600; color: var(--admin-text-primary);">
+                                                            <?= htmlspecialchars($comment['author_name'] ?? 'Anonymous') ?>
+                                                        </div>
+                                                        <div style="color: var(--admin-text-secondary); font-size: 0.875rem;">
+                                                            <?= htmlspecialchars($comment['author_email'] ?? 'No email') ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                    <span class="admin-badge admin-badge-gray">
+                                                        <i class="fas fa-calendar"></i>
+                                                        <?= htmlspecialchars(date("M j, Y", strtotime($comment['created_at'] ?? 'now'))) ?>
+                                                    </span>
+                                                    <?php
+                                                    $status = $comment['status'] ?? 'pending';
+                                                    $statusConfig = [
+                                                        'pending' => ['class' => 'warning', 'icon' => 'clock'],
+                                                        'approved' => ['class' => 'success', 'icon' => 'check'],
+                                                        'rejected' => ['class' => 'error', 'icon' => 'times'],
+                                                        'spam' => ['class' => 'error', 'icon' => 'ban']
+                                                    ];
+                                                    $config = $statusConfig[$status] ?? $statusConfig['pending'];
+                                                    ?>
+                                                    <span class="admin-badge admin-badge-<?= $config['class'] ?>">
+                                                        <i class="fas fa-<?= $config['icon'] ?>"></i>
+                                                        <?= htmlspecialchars(ucfirst($status)) ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Comment Content -->
+                                            <div style="background: var(--admin-bg-secondary); border-radius: var(--admin-border-radius); padding: 1rem; margin-bottom: 1rem;">
+                                                <div style="color: var(--admin-text-primary); line-height: 1.6;">
+                                                    <?= nl2br(htmlspecialchars($comment['content'] ?? '')) ?>
+                                                </div>
+                                            </div>
+
+                                            <!-- Comment Meta -->
+                                            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: var(--admin-bg-primary); border-radius: var(--admin-border-radius);">
+                                                <div style="display: flex; gap: 1rem;">
+                                                    <div>
+                                                        <span style="color: var(--admin-text-muted); font-size: 0.75rem;">On Project:</span>
+                                                        <div style="color: var(--admin-text-primary); font-weight: 500;">
+                                                            <?= htmlspecialchars($comment['project_title'] ?? 'Unknown Project') ?>
+                                                        </div>
+                                                    </div>
+                                                    <?php if (!empty($comment['ip_address'])): ?>
+                                                    <div>
+                                                        <span style="color: var(--admin-text-muted); font-size: 0.75rem;">IP Address:</span>
+                                                        <div style="color: var(--admin-text-secondary); font-family: var(--admin-font-mono); font-size: 0.875rem;">
+                                                            <?= htmlspecialchars($comment['ip_address']) ?>
+                                                        </div>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                            <!-- Actions -->
+                                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                                <?php if ($status === 'pending'): ?>
+                                                    <form method="POST" style="display: inline;"
+                                                          action="/page/api/moderation/comments.php">
+                                                        <input type="hidden" name="action" value="approve">
+                                                        <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                        <button type="submit" class="admin-btn admin-btn-success admin-btn-sm">
+                                                            <i class="fas fa-check"></i>Approve
+                                                        </button>
+                                                    </form>
+
+                                                    <form method="POST" style="display: inline;"
+                                                          action="/page/api/moderation/comments.php"
+                                                          onsubmit="return confirm('Are you sure you want to reject this comment?');">
+                                                        <input type="hidden" name="action" value="reject">
+                                                        <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">
+                                                            <i class="fas fa-times"></i>Reject
+                                                        </button>
+                                                    </form>
+
+                                                    <form method="POST" style="display: inline;"
+                                                          action="/page/api/moderation/comments.php"
+                                                          onsubmit="return confirm('Mark this comment as spam?');">
+                                                        <input type="hidden" name="action" value="spam">
+                                                        <input type="hidden" name="comment_id" value="<?= $comment['id'] ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+                                                        <button type="submit" class="admin-btn admin-btn-warning admin-btn-sm">
+                                                            <i class="fas fa-ban"></i>Spam
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" disabled>
+                                                        <i class="fas fa-lock"></i>Already Reviewed
+                                                    </button>
+                                                <?php endif; ?>
+
+                                                <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                                                        onclick="viewCommentDetails(<?= $comment['id'] ?>)">
+                                                    <i class="fas fa-eye"></i>Details
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <?php if (!empty($pagination) && $pagination['total_pages'] > 1): ?>
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            <div style="display: flex; justify-content: between; align-items: center;">
+                                <div style="color: var(--admin-text-secondary);">
+                                    Showing <?= $pagination['offset'] + 1 ?> to <?= min($pagination['offset'] + $pagination['limit'], $pagination['total']) ?>
+                                    of <?= $pagination['total'] ?> comments
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <?php if ($pagination['current_page'] > 1): ?>
+                                        <a href="?page=<?= $pagination['current_page'] - 1 ?>" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                            <i class="fas fa-chevron-left"></i>Previous
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = max(1, $pagination['current_page'] - 2); $i <= min($pagination['total_pages'], $pagination['current_page'] + 2); $i++): ?>
+                                        <a href="?page=<?= $i ?>"
+                                           class="admin-btn <?= $i === $pagination['current_page'] ? 'admin-btn-primary' : 'admin-btn-secondary' ?> admin-btn-sm">
+                                            <?= $i ?>
+                                        </a>
+                                    <?php endfor; ?>
+
+                                    <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
+                                        <a href="?page=<?= $pagination['current_page'] + 1 ?>" class="admin-btn admin-btn-secondary admin-btn-sm">
+                                            Next<i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
         </div>
-    <?php endif; ?>
-</div>
+    </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function moderateComment(commentId, action) {
-    if (confirm(`Are you sure you want to ${action === 'approved' ? 'approve' : 'reject'} this comment?`)) {
-        fetch('/page/api/moderation/moderate_comment.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                comment_id: commentId,
-                action: action,
-                rejection_reason: action === 'rejected' ? prompt('Reason for rejection (optional):') : ''
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + (data.message || 'Unknown error'));
+    <!-- Admin Scripts -->
+    <script src="/public/assets/js/admin.js"></script>
+
+    <script>
+        // Comment moderation functions
+        function viewCommentDetails(commentId) {
+            // Implementation for viewing comment details
+            console.log('View comment details:', commentId);
+            // You can implement a modal or redirect to details page
+        }
+
+        // Auto-refresh for real-time updates
+        setTimeout(() => {
+            location.reload();
+        }, 300000); // Refresh every 5 minutes
+
+        // Bulk actions
+        function initializeBulkActions() {
+            const selectAllCheckbox = document.querySelector('[data-select-all]');
+            const commentCheckboxes = document.querySelectorAll('[data-select-comment]');
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', () => {
+                    commentCheckboxes.forEach(checkbox => {
+                        checkbox.checked = selectAllCheckbox.checked;
+                    });
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Network error occurred');
-        });
-    }
-}
-</script>
+        }
 
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeBulkActions);
+    </script>
 </body>
 </html>
