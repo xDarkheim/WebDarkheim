@@ -1,70 +1,33 @@
 <?php
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-/**
- * Add Message to Ticket API
- * Handles adding messages to existing support tickets
- */
+use App\Application\Controllers\SupportTicketController;
+use App\Infrastructure\Lib\Database;
 
-declare(strict_types=1);
-
-// Include bootstrap
-require_once __DIR__ . '/../../../includes/bootstrap.php';
-
-// Set JSON response header
 header('Content-Type: application/json');
 
-// Get global services
-global $container;
+// Проверяем авторизацию
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Authentication required']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
+}
 
 try {
-    // Get ServiceProvider
-    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
+    $database = new Database();
+    $controller = new SupportTicketController($database);
+    $result = $controller->replyToTicket();
 
-    // Get required services
-    $authService = $serviceProvider->getAuth();
-    $database = $serviceProvider->getDatabase();
-    $flashService = $serviceProvider->getFlashMessage();
-    $logger = $serviceProvider->getLogger();
-
-    // Only allow POST requests
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Method not allowed'
-        ]);
-        exit;
-    }
-
-    // Create ticket controller
-    $ticketController = new \App\Application\Controllers\SupportTicketController(
-        $database,
-        $authService,
-        $flashService,
-        $logger
-    );
-
-    // Handle message addition
-    $response = $ticketController->addMessage();
-
-    // Set appropriate HTTP status code
-    if ($response['success']) {
-        http_response_code(201); // Created
-    } else {
-        http_response_code(400); // Bad Request
-    }
-
-    echo json_encode($response);
+    echo json_encode($result);
 
 } catch (Exception $e) {
-    // Handle critical errors
-    if (isset($logger)) {
-        $logger->critical("Critical error in add message API: " . $e->getMessage());
-    }
-
+    error_log("API Error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Internal server error'
-    ]);
+    echo json_encode(['success' => false, 'error' => 'Internal server error']);
 }

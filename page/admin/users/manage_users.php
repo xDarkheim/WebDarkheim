@@ -11,15 +11,26 @@
 
 declare(strict_types=1);
 
+use App\Domain\Models\User;
+use App\Application\Components\AdminNavigation;
+
 // Use global services from bootstrap.php
-global $flashMessageService, $database_handler, $auth;
+global $flashMessageService, $database_handler, $serviceProvider;
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Get AuthenticationService instead of direct auth access
+try {
+    $authService = $serviceProvider->getAuth();
+} catch (Exception $e) {
+    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
+    die("A critical system error occurred. Please try again later.");
+}
+
 // Check authentication and admin rights
-if (!$auth || !$auth->isAuthenticated() || !$auth->hasRole('admin')) {
+if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
     if (isset($flashMessageService)) {
         $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
     }
@@ -57,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flashMessageService->addError("Invalid user ID for deletion.");
         } else {
             // Get current user
-            $currentUser = $auth->getCurrentUser();
+            $currentUser = $authService->getCurrentUser();
             if ($currentUser && $user_id_to_delete == $currentUser['id']) {
                 $flashMessageService->addError("You cannot delete your own account.");
             } else {
@@ -118,43 +129,17 @@ $csrf_token = $_SESSION['csrf_token_manage_users'];
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
 
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 ?>
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="/public/assets/css/admin-navigation.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -239,7 +224,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                                     </thead>
                                     <tbody>
                                         <?php
-                                        $currentUser = $auth->getCurrentUser();
+                                        $currentUser = $authService->getCurrentUser();
                                         foreach ($users as $user):
                                         ?>
                                             <tr>

@@ -273,6 +273,9 @@ class Router
                     $page_title = $routeConfig['title'];
                 }
 
+                // Initialize global services for legacy pages that expect them
+                $this->initializeGlobalServices();
+
                 // Safe output buffering to prevent race conditions
                 if (ob_get_level() > 0) {
                     ob_end_clean(); // Clearly previously buffer if exists
@@ -394,6 +397,9 @@ class Router
                 ]);
 
                 try {
+                    // Initialize global services for legacy pages that ожидают их
+                    $this->initializeGlobalServices();
+
                     // Safe output buffering to prevent race conditions
                     if (ob_get_level() > 0) {
                         ob_end_clean(); // Clearly previously buffer if exists
@@ -739,5 +745,49 @@ class Router
         // Perform redirect
         header('Location: ' . $redirectUrl);
         exit;
+    }
+
+    /**
+     * Initialize global services for legacy pages
+     */
+    private function initializeGlobalServices(): void
+    {
+        global $container;
+
+        if (!isset($container)) {
+            return;
+        }
+
+        try {
+            // Initialize ServiceProvider globally
+            global $serviceProvider;
+            if (!isset($serviceProvider)) {
+                $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
+            }
+
+            // Initialize FlashMessageService globally
+            global $flashMessageService;
+            if (!isset($flashMessageService)) {
+                $flashMessageService = $serviceProvider->getFlashMessage();
+            }
+
+            // Initialize database handler globally
+            global $database_handler;
+            if (!isset($database_handler)) {
+                $database_handler = $serviceProvider->getDatabase();
+            }
+
+            // Initialize logger globally
+            global $logger;
+            if (!isset($logger)) {
+                $logger = $serviceProvider->getLogger();
+            }
+
+        } catch (Throwable $e) {
+            $this->logger->error('Failed to initialize global services', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 }

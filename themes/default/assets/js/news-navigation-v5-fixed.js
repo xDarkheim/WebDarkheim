@@ -28,7 +28,7 @@
                     searchForm: '.news-search-form'
                 },
                 api: {
-                    filterUrl: '/page/api/filter_articles.php'
+                    filterUrl: '/page/api/system/filter_articles.php'
                 }
             };
 
@@ -72,18 +72,43 @@
         }
 
         /**
-         * Установка обработчиков событий - ДОРАБОТАНО
+         * Установка обработчиков событий - ДОРАБОТАНО с отладкой
          */
         setupEventHandlers() {
             // Используем делегирование событий только для новостной страницы
             const newsPage = document.querySelector('[data-page="news"]');
             if (!newsPage) {
-                this.logger.warn('[NewsNavigation] News page container not found');
-                return;
+                // ДОБАВЛЕНО: Проверяем альтернативные селекторы
+                const altContainers = [
+                    'body',
+                    'main',
+                    '.news-page',
+                    '.content',
+                    '#content'
+                ];
+
+                let foundContainer = null;
+                for (const selector of altContainers) {
+                    foundContainer = document.querySelector(selector);
+                    if (foundContainer) {
+                        console.log(`[NewsNavigation] Using alternative container: ${selector}`);
+                        break;
+                    }
+                }
+
+                if (!foundContainer) {
+                    this.logger.warn('[NewsNavigation] No suitable page container found');
+                    return;
+                }
+
+                // Используем найденный контейнер
+                foundContainer.setAttribute('data-page', 'news');
             }
 
+            const pageContainer = document.querySelector('[data-page="news"]') || document.body;
+
             // ДОРАБОТАНО: Улучшенная обработка кликов с защитой от дублирования
-            newsPage.addEventListener('click', (event) => {
+            pageContainer.addEventListener('click', (event) => {
                 // Проверяем, что элемент существует и видим
                 if (!event.target || !event.target.offsetParent) return;
 
@@ -91,6 +116,8 @@
                 if (categoryLink && !categoryLink.classList.contains('processing')) {
                     event.preventDefault();
                     event.stopPropagation();
+
+                    console.log('[NewsNavigation] Category link clicked:', categoryLink);
 
                     // ДОРАБОТАНО: Защита от множественных кликов
                     categoryLink.classList.add('processing');
@@ -104,6 +131,8 @@
                 if (paginationLink && !paginationLink.classList.contains('processing')) {
                     event.preventDefault();
                     event.stopPropagation();
+
+                    console.log('[NewsNavigation] Pagination link clicked:', paginationLink);
 
                     // ДОРАБОТАНО: Защита от множественных кликов
                     paginationLink.classList.add('processing');
@@ -357,53 +386,141 @@
         }
 
         /**
-         * Обновление контента - ДОРАБОТАНО для работы с реальным дизайном
+         * Обновление контента - ИСПРАВЛЕНО для работы с новым API
          */
         updateContent(data) {
-            // ДОРАБОТАНО: Обновляем только articles-grid, а не всю articles-section
-            const articlesGrid = document.querySelector('.articles-grid');
-            if (articlesGrid && data.articles_html) {
-                // Сохраняем существующую структуру и обновляем только содержимое
-                articlesGrid.innerHTML = data.articles_html;
+            try {
+                // Получаем HTML из правильной структуры ответа API
+                const articlesHtml = data.data?.html?.articles_grid || data.html?.articles_grid || data.articles_html;
+                const paginationHtml = data.data?.html?.pagination || data.html?.pagination || data.pagination_html;
 
-                // ДОРАБОТАНО: Добавляем анимацию появления для новых карточек
-                const newCards = articlesGrid.querySelectorAll('.article-card');
-                newCards.forEach((card, index) => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    setTimeout(() => {
-                        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                        card.style.opacity = '1';
-                        card.style.transform = 'translateY(0)';
-                    }, index * 50);
-                });
-            }
+                console.log('[NewsNavigation] Updating content with data:', data);
+                console.log('[NewsNavigation] Articles HTML available:', !!articlesHtml);
+                console.log('[NewsNavigation] Pagination HTML available:', !!paginationHtml);
 
-            // ДОРАБОТАНО: Обновляем пагинацию, сохраняя структуру
-            const paginationContainer = document.querySelector('.pagination-section');
-            if (paginationContainer) {
-                if (data.pagination_html) {
-                    paginationContainer.innerHTML = data.pagination_html;
-                } else {
-                    paginationContainer.innerHTML = '';
+                // ИСПРАВЛЕНО: Ищем различные возможные контейнеры для статей
+                let articlesContainer = document.querySelector('.articles-grid');
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.news-grid');
                 }
-            }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.articles-container');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.news-articles');
+                }
+                if (!articlesContainer) {
+                    // Ищем секцию со статьями
+                    const articlesSection = document.querySelector('.articles-section');
+                    if (articlesSection) {
+                        articlesContainer = articlesSection.querySelector('.articles-grid');
+                    }
+                }
 
-            // ДОРАБОТАНО: Обновляем счетчик статей в заголовке
-            const articleCount = document.querySelector('.article-count');
-            if (articleCount && data.summary) {
-                articleCount.textContent = `(${data.summary.total_results} articles)`;
-            }
+                console.log('[NewsNavigation] Found articles container:', articlesContainer);
 
-            // ИСПРАВЛЕНО: Безопасный emit события
-            if (this.core && this.core.emit) {
-                this.core.emit('navigation:content:updated', {
-                    data: data,
-                    timestamp: Date.now()
-                });
-            }
+                if (articlesContainer && articlesHtml) {
+                    // Создаем временный div для парсинга HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = articlesHtml;
 
-            this.logger.debug('[NewsNavigation] Content updated with real design preserved');
+                    // Ищем статьи в полученном HTML
+                    const newArticles = tempDiv.querySelectorAll('.article-card, .news-item, .post, article, .card');
+
+                    if (newArticles.length > 0) {
+                        // Очищаем контейнер и добавляем новые статьи
+                        articlesContainer.innerHTML = articlesHtml;
+
+                        // Анимация появления
+                        const allArticles = articlesContainer.querySelectorAll('.article-card, .news-item, .post, article, .card');
+                        allArticles.forEach((article, index) => {
+                            article.style.opacity = '0';
+                            article.style.transform = 'translateY(20px)';
+                            setTimeout(() => {
+                                article.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                article.style.opacity = '1';
+                                article.style.transform = 'translateY(0)';
+                            }, index * 50);
+                        });
+                    } else {
+                        // Если не найдены отдельные статьи, заменяем весь контент
+                        articlesContainer.innerHTML = articlesHtml;
+                    }
+
+                    console.log('[NewsNavigation] Articles content updated successfully');
+                } else {
+                    console.warn('[NewsNavigation] Articles container not found or no articles HTML');
+                    console.log('[NewsNavigation] Container:', articlesContainer);
+                    console.log('[NewsNavigation] HTML:', articlesHtml ? 'available' : 'not available');
+                }
+
+                // ИСПРАВЛЕНО: Обновляем пагинацию с различными возможными селекторами
+                let paginationContainer = document.querySelector('.pagination-section');
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.pagination-wrapper');
+                }
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.pagination');
+                }
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.page-navigation');
+                }
+
+                console.log('[NewsNavigation] Found pagination container:', paginationContainer);
+
+                if (paginationContainer) {
+                    if (paginationHtml && paginationHtml.trim() !== '') {
+                        paginationContainer.innerHTML = paginationHtml;
+                        console.log('[NewsNavigation] Pagination updated');
+                    } else {
+                        paginationContainer.innerHTML = '';
+                        console.log('[NewsNavigation] Pagination cleared (no content)');
+                    }
+                }
+
+                // ИСПРАВЛЕНО: Обновляем счетчик статей в основном заголовке страницы
+                const articleCount = document.querySelector('.article-count, .results-count, .total-count');
+                const totalArticles = data.data?.pagination?.total_articles || data.pagination?.total_articles;
+
+                if (articleCount && totalArticles !== undefined) {
+                    articleCount.textContent = `(${totalArticles} articles)`;
+                }
+
+                // ДОБАВЛЕНО: Обновляем заголовок раздела в зависимости от выбранной категории
+                const sectionTitle = document.querySelector('.news-title, h1, .page-title');
+                if (sectionTitle && data.data?.filters?.category) {
+                    const categoryName = data.data.filters.category;
+                    if (categoryName) {
+                        // Находим название категории из данных
+                        const categories = data.data?.categories || [];
+                        const currentCategory = categories.find(cat => cat.slug === categoryName);
+                        const categoryDisplayName = currentCategory ? currentCategory.name : categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+                        const icon = sectionTitle.querySelector('i');
+                        const iconHtml = icon ? icon.outerHTML : '<i class="fas fa-newspaper"></i>';
+                        sectionTitle.innerHTML = `${iconHtml} ${categoryDisplayName} News`;
+                    }
+                } else if (sectionTitle && (!data.data?.filters?.category || data.data.filters.category === '')) {
+                    // Возвращаем обратно заголовок "News Hub" для всех новостей
+                    const icon = sectionTitle.querySelector('i');
+                    const iconHtml = icon ? icon.outerHTML : '<i class="fas fa-newspaper"></i>';
+                    sectionTitle.innerHTML = `${iconHtml} News Hub`;
+                }
+
+                // Emit событие о успешном обновлении
+                if (this.core && this.core.emit) {
+                    this.core.emit('navigation:content:updated', {
+                        data: data,
+                        timestamp: Date.now()
+                    });
+                }
+
+                this.logger.debug('[NewsNavigation] Content updated successfully');
+
+            } catch (error) {
+                this.logger.error('[NewsNavigation] Content update failed:', error);
+                throw error;
+            }
         }
 
         /**

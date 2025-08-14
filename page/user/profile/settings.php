@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService, $database_handler;
 
 try {
@@ -26,6 +28,10 @@ if (!$authService->isAuthenticated()) {
 
 $currentUser = $authService->getCurrentUser();
 $userId = $authService->getCurrentUserId();
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 $pageTitle = 'Profile Settings';
 
 // Handle form submissions
@@ -148,54 +154,12 @@ try {
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-    <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .danger-zone {
-            border: 2px solid var(--admin-error);
-            background: var(--admin-error-bg);
-        }
-        .danger-zone .admin-card-header {
-            background: var(--admin-error-bg);
-            border-bottom-color: var(--admin-error);
-        }
-        .danger-zone .admin-card-title {
-            color: var(--admin-error-light);
-        }
-        .security-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .security-strong { background-color: var(--admin-success); }
-        .security-medium { background-color: var(--admin-warning); }
-        .security-weak { background-color: var(--admin-error); }
-    </style>
+<link rel="stylesheet" href="/public/assets/css/admin.css">
 
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
 
 <div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-user-circle"></i>
-                Client Portal
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i> Portfolio
-                </a>
-            </div>
-        </div>
-    </nav>
-
     <!-- Header -->
     <header class="admin-header">
         <div class="admin-header-container">
@@ -216,19 +180,7 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="admin-flash-messages">
-            <?php foreach ($flashMessages as $type => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
-                        <div><?= htmlspecialchars($message['text']) ?></div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<!-- Flash messages handled by global toast system -->
 
     <div class="admin-layout-main">
         <div class="admin-content">
@@ -249,7 +201,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                         <small style="color: var(--admin-text-muted);">Last changed: <?= date('F j, Y', strtotime($currentUser['updated_at'])) ?></small>
                     </div>
 
-                    <form method="POST" action="/index.php?page=user_profile_settings">
+                    <form method="POST" action="/index.php?page=profile_edit">
                         <input type="hidden" name="action" value="change_password">
 
                         <div class="admin-form-group">
@@ -298,7 +250,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                     </h5>
                 </div>
                 <div class="admin-card-body">
-                    <form method="POST" action="/index.php?page=user_profile_settings">
+                    <form method="POST" action="/index.php?page=profile_edit">
                         <input type="hidden" name="action" value="update_preferences">
 
                         <div class="admin-form-group">
@@ -520,7 +472,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                     <span style="color: var(--admin-error-light);">This action cannot be undone. All your data will be permanently deleted.</span>
                 </div>
 
-                <form method="POST" action="/index.php?page=user_profile_settings" id="deleteAccountForm">
+                <form method="POST" action="/index.php?page=profile_edit" id="deleteAccountForm">
                     <input type="hidden" name="action" value="delete_account">
 
                     <div class="admin-form-group">

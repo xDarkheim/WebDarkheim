@@ -314,8 +314,8 @@ class LogMonitorController
                 'limit' => ini_get('memory_limit')
             ],
             'disk_space' => [
-                'free' => $this->formatFileSize(disk_free_space(ROOT_PATH)),
-                'total' => $this->formatFileSize(disk_total_space(ROOT_PATH))
+                'free' => $this->formatFileSize((int)disk_free_space(ROOT_PATH)),
+                'total' => $this->formatFileSize((int)disk_total_space(ROOT_PATH))
             ],
             'php_version' => PHP_VERSION,
             'server_load' => function_exists('sys_getloadavg') ? sys_getloadavg()[0] : 'N/A'
@@ -450,6 +450,70 @@ class LogMonitorController
     }
 
     /**
+     * Format file size in human-readable format
+     */
+    private function formatFileSize(int $bytes): string
+    {
+        if ($bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $power = floor(log($bytes, 1024));
+        $power = min($power, count($units) - 1);
+
+        $size = $bytes / pow(1024, $power);
+        return round($size, 2) . ' ' . $units[$power];
+    }
+
+    /**
+     * Count lines in a file
+     */
+    private function countLines(string $file): int
+    {
+        if (!file_exists($file)) {
+            return 0;
+        }
+
+        $lineCount = 0;
+        $handle = fopen($file, 'r');
+
+        if ($handle) {
+            while (($line = fgets($handle)) !== false) {
+                $lineCount++;
+            }
+            fclose($handle);
+        }
+
+        return $lineCount;
+    }
+
+    /**
+     * Count logs by specific levels
+     */
+    private function countLogsByLevel(string $file, array $levels): int
+    {
+        if (!file_exists($file)) {
+            return 0;
+        }
+
+        $count = 0;
+        $handle = fopen($file, 'r');
+
+        if ($handle) {
+            while (($line = fgets($handle)) !== false) {
+                $parsed = $this->parseLogLine(trim($line));
+                if (isset($parsed['level']) && in_array(strtoupper($parsed['level']), array_map('strtoupper', $levels))) {
+                    $count++;
+                }
+            }
+            fclose($handle);
+        }
+
+        return $count;
+    }
+
+    /**
      * Gets recent errors from log
      */
     private function getRecentErrors(string $file): array
@@ -458,103 +522,54 @@ class LogMonitorController
             return [];
         }
 
-        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if (!$lines) {
-            return [];
-        }
+        $recentErrors = [];
+        $command = "tail -n 50 " . escapeshellarg($file);
+        $output = shell_exec($command);
 
-        $errors = [];
-        $lines = array_reverse($lines);
+        if ($output) {
+            $lines = explode("\n", trim($output));
+            foreach ($lines as $line) {
+                if (empty(trim($line))) continue;
 
-        foreach ($lines as $line) {
-            $parsed = $this->parseLogLine($line);
-            if (in_array(strtoupper($parsed['level']), ['ERROR', 'CRITICAL', 'EMERGENCY', 'ALERT'])) {
-                $errors[] = $parsed;
-                if (count($errors) >= 10) {
-                    break;
+                $parsed = $this->parseLogLine($line);
+                if (isset($parsed['level']) && in_array($parsed['level'], ['ERROR', 'CRITICAL', 'EMERGENCY'])) {
+                    $recentErrors[] = [
+                        'timestamp' => $parsed['timestamp'] ?? 'Unknown',
+                        'level' => $parsed['level'],
+                        'message' => substr($parsed['message'] ?? $line, 0, 100) . '...'
+                    ];
                 }
             }
         }
 
-        return $errors;
+        return array_slice($recentErrors, -5); // Last 5 errors
     }
 
     /**
-     * Counts lines in a file
-     */
-    private function countLines(string $file): int
-    {
-        if (!file_exists($file)) {
-            return 0;
-        }
-
-        $lines = file($file);
-        return $lines ? count($lines) : 0;
-    }
-
-    /**
-     * Counts logs by level
-     */
-    private function countLogsByLevel(string $file, array $levels): int
-    {
-        if (!file_exists($file)) {
-            return 0;
-        }
-
-        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if (!$lines) {
-            return 0;
-        }
-
-        $count = 0;
-        $upperLevels = array_map('strtoupper', $levels);
-
-        foreach ($lines as $line) {
-            $parsed = $this->parseLogLine($line);
-            if (in_array(strtoupper($parsed['level']), $upperLevels)) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
-     * Formats file size
-     */
-    private function formatFileSize(int|float $bytes): string
-    {
-        $bytes = (int)$bytes;
-
-        if ($bytes === 0) return '0 B';
-
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $power = floor(log($bytes, 1024));
-
-        return round($bytes / pow(1024, $power), 2) . ' ' . $units[$power];
-    }
-
-    /**
-     * Gets directory size
+     * Calculate directory size recursively
      */
     private function getDirSize(string $directory): int
     {
-        $size = 0;
-        if (is_dir($directory)) {
-            try {
-                $files = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
-                );
-
-                foreach ($files as $file) {
-                    if ($file->isFile()) {
-                        $size += $file->getSize();
-                    }
-                }
-            } catch (Exception) {
-                // Ignore permission errors
-            }
+        if (!is_dir($directory)) {
+            return 0;
         }
+
+        $size = 0;
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $size += $file->getSize();
+                }
+            }
+        } catch (Exception $e) {
+            // If we can't read the directory, return 0
+            return 0;
+        }
+
         return $size;
     }
 }

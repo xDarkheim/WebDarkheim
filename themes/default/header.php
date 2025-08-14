@@ -160,6 +160,11 @@
                             </a>
                         </div>
                     <?php else: ?>
+                        <?php
+                        // Получаем пользовательскую навигацию из NavigationHelper
+                        $userNavigation = \App\Application\Helpers\NavigationHelper::getUserNavigation(true);
+                        $userDropdownItems = $userNavigation[0]['dropdown'] ?? [];
+                        ?>
                         <div class="user-menu">
                             <button class="user-menu-toggle" aria-expanded="false" aria-haspopup="true">
                                 <div class="user-avatar">
@@ -187,38 +192,61 @@
                                     </div>
                                 </div>
                                 <div class="user-dropdown-menu">
-                                    <a href="/index.php?page=dashboard" class="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="3" width="7" height="7"/>
-                                            <rect x="14" y="3" width="7" height="7"/>
-                                            <rect x="14" y="14" width="7" height="7"/>
-                                            <rect x="3" y="14" width="7" height="7"/>
-                                        </svg>
-                                        Dashboard
-                                    </a>
-                                    <a href="/index.php?page=profile" class="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="12" cy="7" r="4"/>
-                                        </svg>
-                                        Profile
-                                    </a>
-                                    <a href="/index.php?page=profile_settings" class="dropdown-item">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="3"/>
-                                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
-                                        </svg>
-                                        Settings
-                                    </a>
-                                    <hr class="dropdown-divider">
-                                    <a href="/index.php?page=api_auth_logout" class="dropdown-item dropdown-item--danger">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                            <polyline points="16,17 21,12 16,7"/>
-                                            <line x1="21" y1="12" x2="9" y2="12"/>
-                                        </svg>
-                                        Sign Out
-                                    </a>
+                                    <?php foreach ($userDropdownItems as $item): ?>
+                                        <?php if ($item['text'] === 'Logout'): ?>
+                                            <hr class="dropdown-divider">
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item dropdown-item--danger">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                                    <polyline points="16,17 21,12 16,7"/>
+                                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Dashboard'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="3" y="3" width="7" height="7"/>
+                                                    <rect x="14" y="3" width="7" height="7"/>
+                                                    <rect x="14" y="14" width="7" height="7"/>
+                                                    <rect x="3" y="14" width="7" height="7"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'My Profile'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="12" cy="7" r="4"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'My Portfolio'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                                                    <polyline points="21,15 16,10 5,21"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Support Tickets'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Settings'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="3"/>
+                                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>
@@ -273,15 +301,14 @@
                             <a href="/index.php?page=register" class="mobile-nav-link mobile-auth-link mobile-auth-link--register">Get Started</a>
                         </div>
                     <?php else: ?>
-                        <div class="mobile-nav-item mobile-auth-item">
-                            <a href="/index.php?page=dashboard" class="mobile-nav-link mobile-auth-link mobile-auth-link--dashboard">Dashboard</a>
-                        </div>
-                        <div class="mobile-nav-item mobile-auth-item">
-                            <a href="/index.php?page=profile" class="mobile-nav-link mobile-auth-link mobile-auth-link--register">Profile</a>
-                        </div>
-                        <div class="mobile-nav-item mobile-auth-item">
-                            <a href="/index.php?page=api_auth_logout" class="mobile-nav-link mobile-auth-link mobile-auth-link--logout">Sign Out</a>
-                        </div>
+                        <?php foreach ($userDropdownItems as $item): ?>
+                            <div class="mobile-nav-item mobile-auth-item">
+                                <a href="<?php echo htmlspecialchars($item['url']); ?>"
+                                   class="mobile-nav-link mobile-auth-link <?php echo $item['text'] === 'Logout' ? 'mobile-auth-link--logout' : 'mobile-auth-link--dashboard'; ?>">
+                                    <?php echo htmlspecialchars($item['text']); ?>
+                                </a>
+                            </div>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </li>
             </ul>

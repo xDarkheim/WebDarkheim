@@ -9,6 +9,9 @@
 
 declare(strict_types=1);
 
+// Include required components
+use App\Application\Components\AdminNavigation;
+
 use App\Application\Controllers\LogMonitorController;
 
 // Use global services from bootstrap.php
@@ -33,6 +36,9 @@ if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
     exit();
 }
 
+// Create unified navigation after authentication check
+$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+
 $page_title = "System Monitor";
 
 // Initialize monitor controller
@@ -56,6 +62,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'ajax') {
                 $level = $_GET['level'] ?? '';
                 $search = $_GET['search'] ?? '';
                 $response = $logMonitor->getLogs($logType, $lines, $level, $search);
+
+                // Don't add success flash messages for regular log loading
+                // Only add messages for errors or special cases
+                if (isset($response['error'])) {
+                    $flashMessageService->addError('Failed to load logs: ' . $response['error']);
+                }
                 break;
 
             case 'stats':
@@ -64,18 +76,73 @@ if (isset($_GET['action']) && $_GET['action'] === 'ajax') {
 
             case 'clear_logs':
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $response = $logMonitor->clearLogs();
+                    $result = $logMonitor->clearLogs();
+
+                    if (isset($result['error'])) {
+                        $flashMessageService->addError('Error clearing logs: ' . $result['error']);
+                        $response = $result;
+                    } else {
+                        $message = 'Logs cleared successfully! Files processed: ' . ($result['files_cleared'] ?? 0);
+                        if (!empty($result['errors'])) {
+                            $flashMessageService->addWarning($message . ' (Some errors occurred)');
+                        } else {
+                            $flashMessageService->addSuccess($message);
+                        }
+                        $response = $result;
+                    }
                 } else {
+                    $flashMessageService->addError('Only POST requests allowed for log clearing');
                     $response = ['error' => 'Only POST requests allowed for log clearing'];
                 }
                 break;
 
+            case 'export':
+                try {
+                    $exportData = [
+                        'system_status' => $logMonitor->getSystemStatus(),
+                        'log_statistics' => $logMonitor->getLogStatistics(),
+                        'recent_logs' => $logMonitor->getLogs('app', 100),
+                        'export_time' => date('Y-m-d H:i:s'),
+                        'server_info' => [
+                            'php_version' => PHP_VERSION,
+                            'server_name' => $_SERVER['SERVER_NAME'] ?? 'Unknown',
+                            'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? 'Unknown'
+                        ]
+                    ];
+
+                    $flashMessageService->addSuccess('System data exported successfully');
+                    $response = $exportData;
+                } catch (Exception $e) {
+                    $flashMessageService->addError('Failed to export system data: ' . $e->getMessage());
+                    $response = ['error' => 'Export failed: ' . $e->getMessage()];
+                }
+                break;
+
+            case 'refresh':
+                try {
+                    $response = [
+                        'system_status' => $logMonitor->getSystemStatus(),
+                        'log_statistics' => $logMonitor->getLogStatistics(),
+                        'logs' => $logMonitor->getLogs('app', 50)
+                    ];
+                    $flashMessageService->addSuccess('System data refreshed successfully');
+                } catch (Exception $e) {
+                    $flashMessageService->addError('Failed to refresh system data: ' . $e->getMessage());
+                    $response = ['error' => 'Refresh failed: ' . $e->getMessage()];
+                }
+                break;
+
             default:
+                $flashMessageService->addError('Unknown action type requested');
                 $response = ['error' => 'Unknown action type: ' . ($_GET['type'] ?? 'none')];
         }
     } catch (Exception $e) {
+        $flashMessageService->addError('System error: ' . $e->getMessage());
         $response = ['error' => 'Internal error: ' . $e->getMessage()];
     }
+
+    // Add flash messages to AJAX response
+    $response['flash_messages'] = $flashMessageService->getAllMessages();
 
     echo json_encode($response);
     exit();
@@ -93,72 +160,9 @@ $flashMessages = $flashMessageService->getAllMessages();
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .log-container {
-            background: var(--admin-bg-primary);
-            border: 1px solid var(--admin-border);
-            border-radius: var(--admin-border-radius);
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 1rem;
-            font-family: var(--admin-font-mono);
-            font-size: 0.75rem;
-            line-height: 1.4;
-        }
-        .log-entry {
-            margin-bottom: 0.25rem;
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-        .log-error { color: var(--admin-error-light); }
-        .log-warning { color: var(--admin-warning-light); }
-        .log-info { color: var(--admin-info-light); }
-        .log-debug { color: var(--admin-text-muted); }
-        .log-loading {
-            text-align: center;
-            color: var(--admin-text-muted);
-            padding: 2rem;
-        }
-        .log-loading i {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-    </style>
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/index.php?page=system_monitor" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-chart-line"></i>
-                    <span>System Monitor</span>
-                </a>
-                <a href="/index.php?page=backup_monitor" class="admin-nav-link">
-                    <i class="fas fa-database"></i>
-                    <span>Backup Monitor</span>
-                </a>
-                <a href="/index.php?page=admin_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -184,21 +188,8 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-    <div class="admin-flash-messages">
-        <?php foreach ($flashMessages as $type => $messages): ?>
-            <?php foreach ($messages as $message): ?>
-            <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
-                <div>
-                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
+    <!-- Flash Messages - Let global toast system handle all messages -->
+    <div id="flash-messages-data" data-php-messages="<?= htmlspecialchars(json_encode($flashMessages)) ?>" style="display: none;"></div>
 
     <!-- Main Content -->
     <main>
@@ -434,116 +425,111 @@ $flashMessages = $flashMessageService->getAllMessages();
         let hideDeprecated = false;
 
         function toggleDeprecatedMessages() {
-            hideDeprecated = !hideDeprecated;
-            const button = document.getElementById('toggle-deprecated');
-            const logEntries = document.querySelectorAll('.log-entry');
-
-            if (hideDeprecated) {
-                button.innerHTML = '<i class="fas fa-eye"></i> Show Deprecated';
-                button.classList.remove('admin-btn-secondary');
-                button.classList.add('admin-btn-warning');
-
-                logEntries.forEach(entry => {
-                    if (entry.textContent.includes('E_STRICT is deprecated') ||
-                        entry.textContent.includes('Constant E_STRICT is deprecated')) {
-                        entry.style.display = 'none';
-                    }
-                });
+            // Use admin panel method for consistency
+            if (window.adminPanel && window.adminPanel.toggleDeprecatedMessages) {
+                window.adminPanel.toggleDeprecatedMessages();
             } else {
-                button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Deprecated';
-                button.classList.remove('admin-btn-warning');
-                button.classList.add('admin-btn-secondary');
+                // Fallback for direct implementation
+                hideDeprecated = !hideDeprecated;
+                const button = document.getElementById('toggle-deprecated');
+                const logEntries = document.querySelectorAll('.log-entry');
 
-                logEntries.forEach(entry => {
-                    entry.style.display = '';
-                });
-            }
-        }
+                if (hideDeprecated) {
+                    button.innerHTML = '<i class="fas fa-eye"></i> Show Deprecated';
+                    button.classList.remove('admin-btn-secondary');
+                    button.classList.add('admin-btn-warning');
 
-        // Function to load logs via AJAX
-        function loadLogs() {
-            const logContainer = document.getElementById('log-container');
-            const logType = document.getElementById('log-type').value;
-            const logLevel = document.getElementById('log-level').value;
-            const logLines = document.getElementById('log-lines').value;
-
-            logContainer.innerHTML = '<div class="log-loading"><i class="fas fa-spinner"></i> Loading logs...</div>';
-
-            window.adminPanel.request(`/index.php?page=system_monitor&action=ajax&type=logs&log_type=${logType}&level=${logLevel}&lines=${logLines}`)
-                .then(data => {
-                    if (data.error) {
-                        logContainer.innerHTML = `<div style="color: var(--admin-error);">Error: ${data.error}</div>`;
-                    } else if (data.logs && data.logs.length > 0) {
-                        const logsHtml = data.logs.map(log =>
-                            `<div class="log-entry ${log.level ? 'log-' + log.level.toLowerCase() : ''}">${escapeHtml(log.message)}</div>`
-                        ).join('');
-                        logContainer.innerHTML = logsHtml;
-
-                        // Apply deprecated filter if active
-                        if (hideDeprecated) {
-                            toggleDeprecatedMessages();
-                            toggleDeprecatedMessages(); // Call twice to reapply
+                    logEntries.forEach(entry => {
+                        if (entry.textContent.includes('E_STRICT is deprecated') ||
+                            entry.textContent.includes('Constant E_STRICT is deprecated')) {
+                            entry.style.display = 'none';
                         }
-                    } else {
-                        logContainer.innerHTML = '<div style="color: var(--admin-text-muted); text-align: center; padding: 2rem;">No logs found</div>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading logs:', error);
-                    logContainer.innerHTML = '<div style="color: var(--admin-error); text-align: center; padding: 2rem;">Failed to load logs</div>';
-                });
-        }
-
-        // Function to clear logs
-        function clearLogs() {
-            if (!confirm('Are you sure you want to clear all log files? This action cannot be undone.')) {
-                return;
-            }
-
-            window.adminPanel.request('/index.php?page=system_monitor&action=ajax&type=clear_logs', {
-                method: 'POST'
-            })
-            .then(data => {
-                if (data.error) {
-                    window.adminPanel.showFlashMessage('error', 'Error clearing logs: ' + data.error);
+                    });
                 } else {
-                    const message = `Logs cleared successfully! Files processed: ${data.files_cleared}`;
-                    if (data.errors && data.errors.length > 0) {
-                        window.adminPanel.showFlashMessage('warning', message + ' (Some errors occurred)');
-                    } else {
-                        window.adminPanel.showFlashMessage('success', message);
-                    }
-                    refreshAllData();
+                    button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Deprecated';
+                    button.classList.remove('admin-btn-warning');
+                    button.classList.add('admin-btn-secondary');
+
+                    logEntries.forEach(entry => {
+                        entry.style.display = '';
+                    });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                window.adminPanel.showFlashMessage('error', 'An error occurred while clearing logs');
-            });
+            }
         }
 
-        // Function to refresh all data
+        // Function to load logs via AJAX - use admin panel method
+        function loadLogs() {
+            if (window.adminPanel && window.adminPanel.loadLogs) {
+                window.adminPanel.loadLogs();
+            }
+        }
+
+        // Function to clear logs - use admin panel method
+        function clearLogs() {
+            if (window.adminPanel && window.adminPanel.clearSystemLogs) {
+                window.adminPanel.clearSystemLogs();
+            }
+        }
+
+        // Function to refresh all data - use admin panel method
         function refreshAllData() {
-            window.adminPanel.showFlashMessage('info', 'Refreshing system data...');
-            setTimeout(() => {
-                location.reload();
-            }, 500);
+            if (window.adminPanel && window.adminPanel.refreshSystemData) {
+                window.adminPanel.refreshSystemData();
+            }
         }
 
-        // Helper function to escape HTML
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        // Function to export system data - use admin panel method
+        function exportSystemData() {
+            if (window.adminPanel && window.adminPanel.exportSystemData) {
+                window.adminPanel.exportSystemData();
+            }
         }
 
-        // Load logs on page load
+        // Initialize page when DOM and admin panel are ready
         document.addEventListener('DOMContentLoaded', function() {
-            loadLogs();
+            // Wait for admin panel to be available
+            const initializeWhenReady = () => {
+                if (window.adminPanel) {
+                    // Process PHP flash messages through global toast system
+                    const flashData = document.getElementById('flash-messages-data');
+                    if (flashData && flashData.dataset.phpMessages) {
+                        try {
+                            const messages = JSON.parse(flashData.dataset.phpMessages);
+                            if (window.showToast && Object.keys(messages).length > 0) {
+                                Object.keys(messages).forEach(type => {
+                                    if (Array.isArray(messages[type])) {
+                                        messages[type].forEach(message => {
+                                            const text = message.text || message;
+                                            window.showToast(text, type);
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.warn('Failed to parse PHP flash messages:', error);
+                        }
+                    }
+
+                    // Load initial logs
+                    loadLogs();
+
+                    // Add export button to sidebar
+                    const exportButton = document.createElement('button');
+                    exportButton.className = 'admin-btn admin-btn-secondary';
+                    exportButton.style.cssText = 'width: 100%; justify-content: center; margin-top: 0.75rem;';
+                    exportButton.innerHTML = '<i class="fas fa-download"></i>Export Data';
+                    exportButton.onclick = exportSystemData;
+
+                    const quickActionsBody = document.querySelector('.admin-card:last-child .admin-card-body');
+                    if (quickActionsBody) {
+                        quickActionsBody.appendChild(exportButton);
+                    }
+                } else {
+                    // Retry in 100ms if admin panel not ready
+                    setTimeout(initializeWhenReady, 100);
+                }
+            };
+
+            initializeWhenReady();
         });
     </script>

@@ -11,7 +11,7 @@ namespace App\Application\Controllers;
 
 use App\Domain\Interfaces\DatabaseInterface;
 use App\Domain\Models\ClientProfile;
-use App\Domain\Models\User;
+use App\Domain\Models\ClientProject;
 use App\Application\Middleware\ClientAreaMiddleware;
 use Exception;
 

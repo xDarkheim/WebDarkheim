@@ -131,7 +131,7 @@ class LoginFormController extends BaseFormController
                 $_SESSION['current_user'] = [
                     'id' => $userData['id'] ?? null,
                     'username' => $userData['username'] ?? null,
-                    'role' => $_SESSION['user_role'] ?? ($userData['role'] ?? null),
+                    'role' => $userData['role'] ?? null,
                 ];
             }
 

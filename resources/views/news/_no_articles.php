@@ -1,33 +1,46 @@
 <?php
 /**
- * No Articles Found Component - Обновлен для официального дизайна
+ * No Articles Component - Центрированное сообщение для пустых результатов
  */
-
-// Проверяем, что переменная $data доступна
-if (!isset($data)) {
-    $data = ['filters' => ['search' => '', 'category' => '']];
-}
 ?>
 
-<div class="no-articles">
-    <i class="fas fa-newspaper"></i>
+<div class="no-articles-container">
+    <div class="no-articles-content">
+        <div class="no-articles-icon">
+            <i class="fas fa-newspaper"></i>
+        </div>
 
-    <h3>No Articles Found</h3>
+        <h3 class="no-articles-title">
+            <?php if (isset($data['filters']['search']) && !empty($data['filters']['search'])): ?>
+                No Search Results
+            <?php elseif (isset($data['filters']['category']) && !empty($data['filters']['category'])): ?>
+                No Articles in This Category
+            <?php else: ?>
+                No Articles Available
+            <?php endif; ?>
+        </h3>
 
-    <?php if (!empty($data['filters']['search'])) : ?>
-        <p>
-            No articles found for "<strong><?php echo htmlspecialchars($data['filters']['search']); ?></strong>".
-            Try adjusting your search terms or browse by category.
+        <p class="no-articles-message">
+            <?php if (isset($data['filters']['search']) && !empty($data['filters']['search'])): ?>
+                No articles found matching "<strong><?php echo htmlspecialchars($data['filters']['search']); ?></strong>".
+                <br>Try different keywords or browse all articles.
+            <?php elseif (isset($data['filters']['category']) && !empty($data['filters']['category'])): ?>
+                This category doesn't have any articles yet.
+                <br>Check back later or explore other categories.
+            <?php else: ?>
+                There are no articles available at the moment.
+                <br>Please check back later for new content.
+            <?php endif; ?>
         </p>
-    <?php elseif (!empty($data['filters']['category'])) : ?>
-        <p>
-            No articles found in the
-            "<strong><?php echo htmlspecialchars($data['filters']['category']); ?></strong>" category.
-            Try browsing other categories or search for specific content.
-        </p>
-    <?php else : ?>
-        <p>
-            No articles are currently available. Check back later for new content.
-        </p>
-    <?php endif; ?>
+
+        <?php if (isset($data['filters']['search']) && !empty($data['filters']['search']) ||
+                  isset($data['filters']['category']) && !empty($data['filters']['category'])): ?>
+            <div class="no-articles-actions">
+                <a href="/index.php?page=news" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to All Articles
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>

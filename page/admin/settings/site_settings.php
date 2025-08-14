@@ -14,6 +14,7 @@ declare(strict_types=1);
 use App\Application\Core\ServiceProvider;
 use App\Application\Services\SiteSettingsService;
 use App\Application\Middleware\CSRFMiddleware;
+use App\Application\Components\AdminNavigation;
 
 // Use global services from bootstrap.php
 global $database_handler, $serviceProvider, $flashMessageService;
@@ -48,13 +49,12 @@ try {
     $allSettings = $settingsService->getAllForAdmin();
 } catch (Exception $e) {
     error_log("Failed to initialize SiteSettingsService: " . $e->getMessage());
-    $flashMessageService->addError("Failed to load settings service: " . $e->getMessage());
-    $allSettings = [];
-} catch (Error $e) {
-    error_log("Fatal error in SiteSettingsService: " . $e->getMessage());
-    $flashMessageService->addError("A critical error occurred while loading settings.");
+    $flashMessageService->addError("Failed to load site settings. Please try again later.");
     $allSettings = [];
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 // Handle POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -216,39 +216,10 @@ $flashMessages = $flashMessageService->getAllMessages();
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="/public/assets/css/admin-navigation.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-            
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -565,3 +536,4 @@ $flashMessages = $flashMessageService->getAllMessages();
         });
     }
     </script>
+

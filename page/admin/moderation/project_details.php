@@ -12,9 +12,14 @@ declare(strict_types=1);
 // Get global services from DI container
 global $container;
 
+
+use App\Application\Controllers\ModerationController;
+use App\Application\Core\ServiceProvider;
+use App\Application\Components\AdminNavigation;
+
 try {
     // Get ServiceProvider for accessing services
-    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
+    $serviceProvider = ServiceProvider::getInstance($container);
 
     // Get required services
     $authService = $serviceProvider->getAuth();
@@ -30,7 +35,7 @@ try {
     }
 
     // Create moderation controller
-    $moderationController = new \App\Application\Controllers\ModerationController(
+    $moderationController = new ModerationController(
         $database,
         $authService,
         $flashService,
@@ -46,10 +51,13 @@ try {
     // Set page title
     $pageTitle = 'Project Details - ' . ($data['project']['title'] ?? 'Unknown') . ' - Admin Panel';
 
+    // Create unified navigation
+    $adminNavigation = new AdminNavigation($authService);
+
 } catch (Exception $e) {
     // Handle critical errors
     if (isset($logger)) {
-        $logger->critical("Critical error in project details moderation page: " . $e->getMessage());
+        $logger->critical('Critical error in project details moderation page: ' . $e->getMessage());
     }
 
     $data = [
@@ -59,6 +67,15 @@ try {
         'moderation_history' => []
     ];
     $flashMessages = [];
+
+    // Still create navigation even on error
+    try {
+        $serviceProvider = ServiceProvider::getInstance($container);
+        $authService = $serviceProvider->getAuth();
+        $adminNavigation = new AdminNavigation($authService);
+    } catch (Exception $navException) {
+        $adminNavigation = null;
+    }
 }
 
 ?>
@@ -66,38 +83,10 @@ try {
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=admin_moderation_dashboard" class="admin-nav-brand">
-                <i class="fas fa-gavel"></i>
-                <span>Moderation Center</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=admin_moderation_dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/index.php?page=moderate_projects" class="admin-nav-link">
-                    <i class="fas fa-clipboard-check"></i>
-                    <span>Projects</span>
-                </a>
-                <a href="/index.php?page=moderate_comments" class="admin-nav-link">
-                    <i class="fas fa-comments"></i>
-                    <span>Comments</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=moderate_projects" class="admin-nav-link">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Back to Projects</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?php if (isset($adminNavigation)): ?>
+        <?= $adminNavigation->render() ?>
+    <?php endif; ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -494,8 +483,8 @@ try {
             <div class="admin-card-body">
                 <div class="admin-form-group">
                     <label class="admin-label">Reason for flagging</label>
-                    <textarea id="flagReason" class="admin-input admin-textarea" rows="4"
-                              placeholder="Explain why this project needs attention..."></textarea>
+                    <label for="flagReason"></label><textarea id="flagReason" class="admin-input admin-textarea" rows="4"
+                                                              placeholder="Explain why this project needs attention..."></textarea>
                 </div>
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button type="button" class="admin-btn admin-btn-secondary" data-modal-close>Cancel</button>

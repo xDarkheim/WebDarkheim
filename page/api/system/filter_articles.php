@@ -1,191 +1,175 @@
 <?php
-
 /**
- * Filter Articles API
- *
- * This API allows admins to filter articles based on various criteria.
- * It supports sorting, filtering, and pagination.
- * It returns a JSON response containing the filtered articles and pagination information.
+ * Articles Filter API Endpoint
+ * Handles AJAX requests for filtering news articles by category, search, and sorting
  *
  * @author Dmytro Hovenko
+ * @version 1.0.0
  */
 
-// FIXED: Improved error handling and logging
-use App\Application\Controllers\NewsController;
-use App\Application\Core\ServiceProvider;
+declare(strict_types=1);
 
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Do not show errors in browser for JSON API
+// Set content type for JSON response
+header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
 
-// Function for safe exit with JSON response
-function apiResponse($success, $data = null, $error = null, $httpCode = 200): void
-{
-    http_response_code($httpCode);
-    header('Content-Type: application/json; charset=utf-8');
-    header('Cache-Control: no-cache, must-revalidate');
-
-    $response = ['success' => $success];
-    if ($data !== null) {
-        $response = array_merge($response, $data);
-    }
-    if ($error !== null) {
-        $response['error'] = $error;
-    }
-
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// Check AJAX request
-if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
-    apiResponse(false, null, 'Only AJAX requests allowed', 400);
-}
+// Include bootstrap
+require_once __DIR__ . '/../../../includes/bootstrap.php';
 
 try {
-    // FIXED: Use existing architecture instead of standalone code
-    require_once __DIR__ . '/../../includes/bootstrap.php';
-
-    // Get global services from DI container (as in news.php)
+    // Get global services from DI container
     global $container;
 
-    $serviceProvider = ServiceProvider::getInstance($container);
+    // Get ServiceProvider for accessing services
+    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
     $newsService = $serviceProvider->getNewsService();
-    $authService = $serviceProvider->getAuth();
-    $flashService = $serviceProvider->getFlashMessage();
     $logger = $serviceProvider->getLogger();
 
-    // Create a news controller (same as in the main system)
-    $newsController = new NewsController(
-        $newsService,
-        $authService,
-        $flashService,
-        $logger
-    );
+    // Only allow GET requests
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+        exit;
+    }
 
-    // FIXED: Emulate $_GET parameters for controller
-    $originalGet = $_GET;
-
-    // Set parameters for NewsController in the same format
-    $_GET = [
-        'page' => 'news',
-        'category' => $_GET['category'] ?? '',
-        'search' => $_GET['search'] ?? '',
+    // Get filtering parameters from request
+    $filters = [
+        'page' => max(1, (int)($_GET['page_num'] ?? $_GET['page'] ?? 1)),
+        'per_page' => 12,
+        'search' => trim($_GET['search'] ?? ''),
         'sort' => $_GET['sort'] ?? 'date_desc',
-        'page_num' => (int)($_GET['page_num'] ?? 1)
+        'category' => $_GET['category'] ?? null
     ];
 
-    // Log request for debugging
-    $logger->info('API Request:', $_GET);
-
-    // Get data via existing controller
-    $data = $newsController->handle();
-
-    // Restore original $_GET
-    $_GET = $originalGet;
-
-    // FIXED: Check that data is received correctly
-
-    // FIXED: Use the same logic as in list.php for handling no articles
-    ob_start();
-
-    if (!empty($data['articles'])) {
-        // Include a real _articles_grid.php component with controller data
-        include __DIR__ . '/../../resources/views/news/_articles_grid.php';
-        $fullArticlesHtml = ob_get_clean();
-
-        // Extract only .articles-grid content without a section and headers
-        libxml_use_internal_errors(true);
-        $dom = new DOMDocument();
-        $dom->loadHTML('<?xml encoding="utf-8" ?>' . $fullArticlesHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-
-        $xpath = new DOMXPath($dom);
-        $articlesGridNode = $xpath->query('//div[@class="articles-grid"]')->item(0);
-
-        if ($articlesGridNode) {
-            // Get only articles-grid content (articles inside)
-            $articlesHtml = '';
-            foreach ($articlesGridNode->childNodes as $child) {
-                $articlesHtml .= $dom->saveHTML($child);
-            }
-        } else {
-            // Fallback: if parsing failed, take all HTML
-            $articlesHtml = $fullArticlesHtml;
-        }
-    } else {
-        // FIXED: Use existing _no_articles.php component
-        include __DIR__ . '/../../resources/views/news/_no_articles.php';
-        $noArticlesHtml = ob_get_clean();
-
-        // If _no_articles.php is empty or does not exist, use fallback
-        if (empty(trim($noArticlesHtml))) {
-            $articlesHtml = "
-                <div class=\"no-articles-message\">
-                    <div class=\"no-articles-icon\">
-                        <i class=\"fas fa-newspaper\"></i>
-                    </div>
-                    <h3>No articles found</h3>
-                    <p>Try adjusting your search criteria or browsing all categories.</p>
-                    <a href=\"/index.php?page=news\" class=\"btn btn-primary\">View All Articles</a>
-                </div>";
-        } else {
-            $articlesHtml = $noArticlesHtml;
-        }
-    }
-
-    // Generate pagination using existing component
-    ob_start();
-
-    // Include real pagination component
-    if (isset($data['pagination']) && $data['pagination']['total_pages'] > 1) {
-        include __DIR__ . '/../../resources/views/news/_pagination.php';
-    }
-
-    $paginationHtml = ob_get_clean();
-
-    // Form response in the same format
-    $responseData = [
-        'articles_html' => $articlesHtml,
-        'pagination_html' => $paginationHtml,
-        'summary' => [
-            'total_results' => $data['pagination']['total_articles'] ?? 0,
-            'current_page' => $data['pagination']['current_page'] ?? 1,
-            'total_pages' => $data['pagination']['total_pages'] ?? 1,
-            'showing_from' => (($data['pagination']['current_page'] ?? 1) - 1) * ($data['pagination']['per_page'] ?? 12) + 1,
-            'showing_to' => min(
-                ($data['pagination']['current_page'] ?? 1) * ($data['pagination']['per_page'] ?? 12),
-                $data['pagination']['total_articles'] ?? 0
-            ),
-            'current_filter' => !empty($_GET['category']) ? ucfirst($_GET['category']) : 'All Categories'
-        ],
-        'filters' => $data['filters'] ?? [],
-        'timestamp' => time()
-    ];
-
-    // Log successful response
-    $logger->info('API Success:', [
-        'total_results' => $responseData['summary']['total_results'],
-        'current_page' => $responseData['summary']['current_page']
+    // Log the request for debugging
+    $logger->info('Filter articles API called', [
+        'filters' => $filters,
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
     ]);
 
-    apiResponse(true, $responseData);
+    // Get articles data
+    $articlesData = $newsService->getArticles($filters);
+
+    // Get categories for filters
+    $categories = $newsService->getAllCategories();
+
+    // Prepare response data
+    $responseData = [
+        'success' => true,
+        'data' => [
+            'articles' => [],
+            'pagination' => [
+                'current_page' => $articlesData['current_page'],
+                'total_pages' => $articlesData['pages'],
+                'total_articles' => $articlesData['total'],
+                'per_page' => $filters['per_page']
+            ],
+            'filters' => $filters,
+            'categories' => []
+        ]
+    ];
+
+    // Convert articles to array format for JSON with all necessary fields
+    foreach ($articlesData['articles'] as $article) {
+        // Get categories for this article
+        $articleCategories = $newsService->getArticleCategories($article->id);
+        $categoryName = !empty($articleCategories) ? $articleCategories[0]['name'] : '';
+
+        // Format the short_description using TextEditorComponent
+        $textEditorComponent = $serviceProvider->getTextEditorComponent();
+        $formattedDescription = '';
+
+        if (!empty($article->short_description)) {
+            $formattedPreview = $textEditorComponent->formatContent($article->short_description);
+
+            // Truncate if too long (same logic as in the view)
+            $plainText = strip_tags($formattedPreview);
+            if (strlen($plainText) > 150) {
+                $words = explode(' ', $plainText);
+                $truncatedWords = array_slice($words, 0, 25);
+                $formattedDescription = implode(' ', $truncatedWords) . '...';
+            } else {
+                $formattedDescription = $formattedPreview;
+            }
+        }
+
+        $responseData['data']['articles'][] = [
+            'id' => $article->id,
+            'title' => $article->title,
+            'short_description' => $article->short_description,
+            'formatted_description' => $formattedDescription, // Добавляем отформатированное описание
+            'full_text' => $article->full_text,
+            'date' => $article->date,
+            'created_at' => $article->created_at,
+            'status' => $article->status,
+            'category_name' => $categoryName,
+            'image_path' => $article->image_path ?? null,
+            'url' => '/index.php?page=news&id=' . $article->id
+        ];
+    }
+
+    // Convert categories to array format for JSON
+    if ($categories) {
+        foreach ($categories as $category) {
+            $responseData['data']['categories'][] = [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'article_count' => $category->article_count ?? 0
+            ];
+        }
+    }
+
+    // Generate HTML content for AJAX replacement
+    ob_start();
+    $data = $responseData['data'];
+    $data['view_type'] = 'articles_list';
+
+    // Convert article arrays back to objects for compatibility with the view
+    $articleObjects = [];
+    foreach ($data['articles'] as $articleData) {
+        $articleObject = (object) $articleData;
+        $articleObjects[] = $articleObject;
+    }
+    $data['articles'] = $articleObjects;
+
+    include __DIR__ . '/../../../resources/views/news/_articles_grid.php';
+    $articlesHtml = ob_get_clean();
+
+    // Generate pagination HTML
+    ob_start();
+    include __DIR__ . '/../../../resources/views/news/_pagination.php';
+    $paginationHtml = ob_get_clean();
+
+    // Add HTML to response in the structure JavaScript expects
+    $responseData['html'] = [
+        'articles_grid' => $articlesHtml,
+        'pagination' => $paginationHtml
+    ];
+
+    // Also add data structure that JavaScript expects
+    $responseData['data']['html'] = [
+        'articles_grid' => $articlesHtml,
+        'pagination' => $paginationHtml
+    ];
+
+    // Return JSON response
+    echo json_encode($responseData, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
 } catch (Exception $e) {
-    // Use logger from a system if available
+    // Log error
     if (isset($logger)) {
-        $logger->error("API Error: " . $e->getMessage(), [
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
+        $logger->error('Articles filter API error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'filters' => $filters ?? []
         ]);
     }
 
-    // FIXED: More informative error messages
-    $errorMessage = 'Server error occurred';
-
-    // Show details in development mode
-    if (defined('APP_DEBUG') && APP_DEBUG) {
-        $errorMessage .= ': ' . $e->getMessage();
-    }
-
-    apiResponse(false, null, $errorMessage, 500);
+    // Return error response
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Internal server error occurred while filtering articles'
+    ], JSON_UNESCAPED_UNICODE);
 }

@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 use App\Domain\Models\Category;
 use App\Infrastructure\Lib\SlugGenerator;
+use App\Application\Components\AdminNavigation;
+use Random\RandomException;
 
 // Use global services from bootstrap.php
 global $flashMessageService, $database_handler, $serviceProvider;
@@ -25,51 +27,57 @@ if (session_status() == PHP_SESSION_NONE) {
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: Failed to get AuthenticationService instance: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
 }
 
 // Check authentication and admin rights
 if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
-    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    $flashMessageService->addError('Access Denied. You do not have permission to view this page.');
     header('Location: /index.php?page=login');
     exit();
 }
 
 // Check required services
 if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in edit_category.php");
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: FlashMessageService not available in edit_category.php');
+    die('A critical system error occurred. Please try again later.');
 }
 
 if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in edit_category.php");
-    $flashMessageService->addError("Database connection error. Please try again later.");
+    error_log('Critical: Database handler not available in edit_category.php');
+    $flashMessageService->addError('Database connection error. Please try again later.');
     header('Location: /index.php?page=manage_categories');
     exit();
 }
 
-$pageTitle = "Edit Category";
+$page_title = "Edit Category";
+
+// Get category ID from request
+$category_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($category_id <= 0) {
+    $flashMessageService->addError('Invalid category ID.');
+    header('Location: /index.php?page=manage_categories');
+    exit();
+}
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 $category = null;
-$category_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
-if (!$category_id) {
-    $flashMessageService->addError("Invalid category ID specified.");
-    header('Location: /index.php?page=manage_categories');
-    exit();
-}
-
-// Handle POST request (Update Category)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle form submission
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token_edit_category_' . $category_id] ?? '', $_POST['csrf_token'])) {
-        $flashMessageService->addError("Invalid CSRF token. Action aborted.");
+        $flashMessageService->addError('Invalid CSRF token. Action aborted.');
         header('Location: /index.php?page=edit_category&id=' . $category_id);
         exit();
     }
 
     $posted_category_id = filter_input(INPUT_POST, 'category_id', FILTER_VALIDATE_INT);
     if ($posted_category_id !== $category_id) {
-        $flashMessageService->addError("Category ID mismatch. Action aborted.");
+        $flashMessageService->addError('Category ID mismatch. Action aborted.');
         header('Location: /index.php?page=edit_category&id=' . $category_id);
         exit();
     }
@@ -81,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validation_passed = true;
 
     if (empty($updated_name)) {
-        $flashMessageService->addError("Category name cannot be empty.");
+        $flashMessageService->addError('Category name cannot be empty.');
         $validation_passed = false;
     }
 
@@ -89,14 +97,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updated_slug = SlugGenerator::generate($updated_name);
     } else {
         if (!SlugGenerator::isValid($updated_slug)) {
-            $flashMessageService->addError("Slug can only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.");
+            $flashMessageService->addError('Slug can only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.');
             $validation_passed = false;
         }
     }
 
     if ($validation_passed) {
         if (Category::existsByNameOrSlugExcludingId($database_handler, $updated_name, $updated_slug, $category_id)) {
-            $flashMessageService->addError("Another category with this name or slug already exists.");
+            $flashMessageService->addError('Another category with this name or slug already exists.');
         } else {
             try {
                 $success = Category::updateById($database_handler, $category_id, $updated_name, $updated_slug);
@@ -107,12 +115,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: /index.php?page=manage_categories');
                     exit();
                 } else {
-                    $flashMessageService->addError("Failed to update category. Database error.");
+                    $flashMessageService->addError('Failed to update category. Database error.');
                     error_log("Edit Category - Update failed for category ID: $category_id");
                 }
             } catch (Exception $e) {
-                $flashMessageService->addError("Database error updating category: " . $e->getMessage());
-                error_log("Edit Category - Update Exception: " . $e->getMessage());
+                $flashMessageService->addError('Database error updating category: ' . $e->getMessage());
+                error_log('Edit Category - Update Exception: ' . $e->getMessage());
             }
         }
     }
@@ -131,13 +139,13 @@ if (!$category) {
         $category = Category::findById($database_handler, $category_id);
 
         if (!$category) {
-            $flashMessageService->addError("Category not found.");
+            $flashMessageService->addError('Category not found.');
             header('Location: /index.php?page=manage_categories');
             exit();
         }
     } catch (Exception $e) {
-        $flashMessageService->addError("Database error fetching category: " . $e->getMessage());
-        error_log("Edit Category - Fetch Exception: " . $e->getMessage());
+        $flashMessageService->addError('Database error fetching category: ' . $e->getMessage());
+        error_log('Edit Category - Fetch Exception: ' . $e->getMessage());
         header('Location: /index.php?page=manage_categories');
         exit();
     }
@@ -146,7 +154,11 @@ if (!$category) {
 // Generate CSRF token for the form
 $csrf_token_key = 'csrf_token_edit_category_' . $category_id;
 if (empty($_SESSION[$csrf_token_key])) {
-    $_SESSION[$csrf_token_key] = bin2hex(random_bytes(32));
+    try {
+        $_SESSION[$csrf_token_key] = bin2hex(random_bytes(32));
+    } catch (RandomException $e) {
+        $flashMessageService->addError('Failed to generate CSRF token. Please try again later.');
+    }
 }
 $csrf_token = $_SESSION[$csrf_token_key];
 
@@ -159,37 +171,7 @@ $flashMessages = $flashMessageService->getAllMessages();
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
     <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-            
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">

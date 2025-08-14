@@ -14,6 +14,7 @@ use App\Domain\Models\ClientProject;
 use App\Domain\Models\ClientProfile;
 use App\Domain\Models\User;
 use App\Application\Middleware\ClientAreaMiddleware;
+use Exception;
 
 class ClientPortfolioController {
     private DatabaseInterface $db_handler;

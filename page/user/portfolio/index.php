@@ -7,8 +7,12 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
+// Include profile completion helper
+require_once dirname(__DIR__, 3) . '/includes/profile_completion_helper.php';
 
 global $serviceProvider, $flashMessageService, $database_handler;
+
+use App\Application\Components\AdminNavigation;
 
 try {
     $authService = $serviceProvider->getAuth();
@@ -36,16 +40,12 @@ $currentUser = $authService->getCurrentUser();
 $userId = $authService->getCurrentUserId();
 $pageTitle = 'My Portfolio';
 
-// Get client profile
-$clientProfile = null;
-try {
-    $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
-    $stmt = $database_handler->getConnection()->prepare($sql);
-    $stmt->execute([$userId]);
-    $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    error_log("Error fetching client profile: " . $e->getMessage());
-}
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
+// Use unified helper for client profile and completion calculation
+$clientProfile = getClientProfileData($database_handler, $userId);
+$profileCompletion = calculateProfileCompletion($currentUser, $clientProfile);
 
 // Get portfolio projects
 $projects = [];
@@ -55,7 +55,7 @@ if ($clientProfile) {
     try {
         $sql = "SELECT p.*, 
                        (SELECT COUNT(*) FROM project_views pv WHERE pv.project_id = p.id) as view_count,
-                       (SELECT COUNT(*) FROM comments c WHERE c.project_id = p.id AND c.status = 'approved') as comment_count
+                       (SELECT COUNT(*) FROM comments c WHERE c.commentable_id = p.id AND c.commentable_type = 'portfolio_project' AND c.status = 'approved') as comment_count
                 FROM client_portfolio p 
                 WHERE p.client_profile_id = ? 
                 ORDER BY p.updated_at DESC";
@@ -77,7 +77,7 @@ if ($clientProfile) {
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-    <link rel="stylesheet" href="/public/assets/css/admin.css">
+<link rel="stylesheet" href="/public/assets/css/admin.css">
     <style>
         .project-card {
             transition: var(--admin-transition);
@@ -131,28 +131,13 @@ $flashMessages = $flashMessageService->getAllMessages();
             border: 1px solid var(--admin-primary);
         }
     </style>
+</head>
+<body>
 
 <div class="admin-container">
     <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-briefcase"></i>
-                Portfolio Management
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/index.php?page=user_profile_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i> Settings
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -428,6 +413,22 @@ $flashMessages = $flashMessageService->getAllMessages();
                         <small style="color: var(--admin-text-muted);">Total Views</small>
                     </div>
 
+                    <!-- Profile Completion using unified helper -->
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--admin-border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--admin-text-primary); font-size: 0.75rem;">Profile Completion</span>
+                            <span style="color: var(--admin-text-primary); font-size: 0.75rem;">
+                                <?= $profileCompletion['percentage'] ?>%
+                            </span>
+                        </div>
+                        <div style="background: var(--admin-bg-secondary); border-radius: 9999px; height: 6px; overflow: hidden;">
+                            <div style="background: var(--admin-success); height: 100%; width: <?= $profileCompletion['percentage'] ?>%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <small style="color: var(--admin-text-muted); display: block; margin-top: 0.5rem;">
+                            <?= $profileCompletion['completed'] ?> of <?= $profileCompletion['total'] ?> fields completed
+                        </small>
+                    </div>
+
                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--admin-border);">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span style="color: var(--admin-text-primary); font-size: 0.75rem;">Portfolio Completion</span>
@@ -436,7 +437,10 @@ $flashMessages = $flashMessageService->getAllMessages();
                             </span>
                         </div>
                         <div style="background: var(--admin-bg-secondary); border-radius: 9999px; height: 6px; overflow: hidden;">
-                            <div style="background: var(--admin-success); height: 100%; width: <?= $stats['total'] > 0 ? round(($stats['published'] / $stats['total']) * 100) : 0 ?>%; transition: width 0.3s ease;"></div>
+                            <?php
+                            $portfolioPercentage = $stats['total'] > 0 ? round(($stats['published'] / $stats['total']) * 100) : 0;
+                            ?>
+                            <div style="background: var(--admin-primary); height: 100%; width: <?= $portfolioPercentage ?>%; transition: width 0.3s ease;"></div>
                         </div>
                         <small style="color: var(--admin-text-muted); display: block; margin-top: 0.5rem;">
                             <?= $stats['published'] ?> of <?= $stats['total'] ?> projects published
@@ -581,4 +585,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 5000);
 });
 </script>
-
+</body>
+</html>

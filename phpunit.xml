@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.1/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         testdox="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         stopOnFailure="false">
+
+    <testsuites>
+        <testsuite name="Unit Tests">
+            <directory>tests/Unit</directory>
+        </testsuite>
+
+        <testsuite name="Integration Tests">
+            <directory>tests/Integration</directory>
+        </testsuite>
+
+        <testsuite name="Functional Tests">
+            <directory>tests/Functional</directory>
+        </testsuite>
+
+        <testsuite name="All Tests">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory>src</directory>
+            <directory>page/api</directory>
+        </include>
+        <exclude>
+            <directory>vendor</directory>
+            <directory>tests</directory>
+            <directory>storage</directory>
+            <directory>public</directory>
+        </exclude>
+    </source>
+
+    <logging>
+        <testdoxHtml outputFile="storage/logs/testdox.html"/>
+        <junit outputFile="storage/logs/junit.xml"/>
+        <clover outputFile="storage/logs/clover.xml"/>
+    </logging>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="DB_CONNECTION" value="testing"/>
+        <server name="HTTP_HOST" value="darkheim.net"/>
+        <server name="REQUEST_METHOD" value="GET"/>
+        <server name="REQUEST_URI" value="/"/>
+    </php>
+</phpunit>

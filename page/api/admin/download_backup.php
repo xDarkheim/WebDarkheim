@@ -4,129 +4,112 @@
  * Download Backup API
  *
  * This API allows admins to download database backups.
- * It supports downloading specific backups by filename.
- * It returns a download link for the specified backup file.
- * It also handles security checks to ensure the file is within the backup directory.
- * It also handles errors gracefully and logs any exceptions.
+ * It supports downloading specific backups by filename with security checks.
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
 declare(strict_types=1);
 
 use App\Application\Controllers\DatabaseBackupController;
 
-// Start a session if not already started
+// Load global services from bootstrap.php
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
+
+// Use global services from bootstrap.php
+global $database_handler, $serviceProvider, $flashMessageService;
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 try {
-    // Load bootstrap
-    require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
-
-    // Use global services from bootstrap.php
-    global $auth;
+    // Get AuthenticationService
+    $authService = $serviceProvider->getAuth();
 
     // Check authentication and admin rights
-    if (!$auth || !$auth->isAuthenticated() || !$auth->hasRole('admin')) {
+    if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
+        header('Content-Type: application/json');
         http_response_code(403);
-        die('Access denied. Admin privileges required.');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Access denied. Admin privileges required.'
+        ]);
+        exit();
     }
 
-    // Only allow GET requests for downloads
-    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-        http_response_code(405);
-        die('Method not allowed. Only GET requests are accepted.');
-    }
-
-    // Get filename from query parameters - поддерживаем оба параметра для совместимости
-    $filename = '';
-    if (!empty($_GET['filename'])) {
-        $filename = $_GET['filename'];
-    } elseif (!empty($_GET['file'])) {
-        $filename = $_GET['file']; // Для обратной совместимости
-    } else {
+    // Check request method and filename parameter
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET' || !isset($_GET['filename'])) {
+        header('Content-Type: application/json');
         http_response_code(400);
-        die('Missing required parameter: filename');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Invalid request. GET method with filename parameter required.'
+        ]);
+        exit();
     }
 
-    // Validate filename
-    if (!is_string($filename) || str_contains($filename, '..')) {
-        http_response_code(400);
-        die('Invalid filename provided.');
-    }
+    $filename = $_GET['filename'];
 
     // Initialize backup controller
     $backupController = new DatabaseBackupController();
-    $backups = $backupController->getBackupsList();
 
-    // Find the backup file
-    $backupPath = '';
-    $backupFound = false;
-
-    foreach ($backups as $backup) {
-        if ($backup['filename'] === $filename) {
-            $backupPath = $backup['path'];
-            $backupFound = true;
-            break;
-        }
-    }
-
-    if (!$backupFound) {
-        http_response_code(404);
-        die('Backup file not found in system records.');
-    }
+    // Get backup directory and construct file path
+    $backupDir = dirname(__DIR__, 3) . '/storage/backups/';
+    $backupPath = $backupDir . $filename;
 
     if (!file_exists($backupPath)) {
+        header('Content-Type: application/json');
         http_response_code(404);
-        die('Backup file not found on filesystem.');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Backup file not found.'
+        ]);
+        exit();
     }
 
-    // Security check - ensure a file is within a backup directory
+    // Security check: ensure file is within backup directory
     $realPath = realpath($backupPath);
-    $backupDir = realpath(dirname($backupPath));
 
-    if (!$realPath || !str_starts_with($realPath, $backupDir)) {
+    if (!$realPath || strpos($realPath, $backupDir) !== 0) {
+        header('Content-Type: application/json');
         http_response_code(403);
-        die('Access denied. Invalid file path.');
+        echo json_encode([
+            'success' => false,
+            'error' => 'Invalid file path.'
+        ]);
+        exit();
     }
 
-    // Get file info
+    // Set headers for file download
     $fileSize = filesize($backupPath);
     $mimeType = 'application/gzip';
 
-    // Set headers for download
     header('Content-Type: ' . $mimeType);
-    header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
     header('Content-Length: ' . $fileSize);
-    header('Cache-Control: no-cache, must-revalidate');
-    header('Pragma: no-cache');
-    header('Expires: 0');
+    header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+    header('Cache-Control: must-revalidate');
+    header('Pragma: public');
 
-    // Clear any output buffers
+    // Clear any output buffer
     if (ob_get_level()) {
         ob_end_clean();
     }
 
-    // Read and output the file
-    if ($handle = fopen($backupPath, 'rb')) {
-        while (!feof($handle)) {
-            echo fread($handle, 8192);
-            flush();
-        }
-        fclose($handle);
-    } else {
-        http_response_code(500);
-        die('Error reading backup file.');
-    }
+    // Read and output file
+    readfile($backupPath);
 
+    // Log successful download
+    error_log("Admin downloaded backup file: " . $filename);
     exit();
 
 } catch (Exception $e) {
     error_log("Download backup API error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
 
+    header('Content-Type: application/json');
     http_response_code(500);
-    die('Internal server error occurred.');
+    echo json_encode([
+        'success' => false,
+        'error' => 'System error occurred during download'
+    ]);
 }

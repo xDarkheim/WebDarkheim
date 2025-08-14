@@ -1,10 +1,15 @@
 <?php
 /**
  * Admin Layout Template
- * Common layout for all administrative pages
+ * Common layout for all administrative pages with unified navigation
  */
 
 declare(strict_types=1);
+
+// Include the AdminNavigation component
+require_once __DIR__ . '/../../../src/Application/Components/AdminNavigation.php';
+
+use App\Application\Components\AdminNavigation;
 
 if (!function_exists('renderAdminLayout')) {
     /**
@@ -22,6 +27,9 @@ if (!function_exists('renderAdminLayout')) {
         $authService = $serviceProvider->getAuth();
         $currentUser = $authService->getCurrentUser();
 
+        // Initialize AdminNavigation
+        $adminNavigation = new AdminNavigation($authService);
+
         // Default configuration
         $defaultConfig = [
             'icon' => 'fas fa-cog',
@@ -38,6 +46,11 @@ if (!function_exists('renderAdminLayout')) {
         // Get flash messages
         $flashMessages = $flashMessageService->getAllMessages();
 
+        // Auto-generate breadcrumbs if not provided
+        if (empty($config['breadcrumbs'])) {
+            $config['breadcrumbs'] = $adminNavigation->getBreadcrumbs();
+        }
+
         ?>
 <!DOCTYPE html>
 <html lang="en" class="admin-panel">
@@ -48,6 +61,7 @@ if (!function_exists('renderAdminLayout')) {
 
     <!-- Admin Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="/public/assets/css/admin-navigation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Additional Styles -->
@@ -57,40 +71,32 @@ if (!function_exists('renderAdminLayout')) {
 </head>
 <body class="admin-container">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <?php if ($currentUser['role'] === 'admin'): ?>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <?php endif; ?>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
+    <!-- Breadcrumbs -->
+    <?php if (!empty($config['breadcrumbs'])): ?>
+    <nav class="admin-breadcrumbs">
+        <div class="admin-breadcrumbs-container">
+            <ol class="admin-breadcrumb-list">
+                <?php foreach ($config['breadcrumbs'] as $index => $breadcrumb): ?>
+                <li class="admin-breadcrumb-item">
+                    <?php if ($breadcrumb['url'] && $index < count($config['breadcrumbs']) - 1): ?>
+                    <a href="<?= htmlspecialchars($breadcrumb['url']) ?>" class="admin-breadcrumb-link">
+                        <?= htmlspecialchars($breadcrumb['title']) ?>
+                    </a>
+                    <?php else: ?>
+                    <span class="admin-breadcrumb-current"><?= htmlspecialchars($breadcrumb['title']) ?></span>
+                    <?php endif; ?>
+                    <?php if ($index < count($config['breadcrumbs']) - 1): ?>
+                    <i class="fas fa-chevron-right admin-breadcrumb-separator"></i>
+                    <?php endif; ?>
+                </li>
+                <?php endforeach; ?>
+            </ol>
         </div>
     </nav>
+    <?php endif; ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -151,20 +157,19 @@ if (!function_exists('renderAdminLayout')) {
             </aside>
         </div>
         <?php else: ?>
-        <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem 2rem 1rem;">
+        <div class="admin-content">
             <?= $content ?>
         </div>
         <?php endif; ?>
     </main>
 
     <!-- Admin Scripts -->
-    <script src="/public/assets/js/admin.js"></script>
+    <script src="/public/assets/js/admin-navigation.js"></script>
 
     <!-- Additional Scripts -->
     <?php foreach ($config['scripts'] as $script): ?>
     <script src="<?= htmlspecialchars($script) ?>"></script>
     <?php endforeach; ?>
-
 </body>
 </html>
         <?php

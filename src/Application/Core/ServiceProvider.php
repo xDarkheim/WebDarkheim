@@ -175,6 +175,16 @@ class ServiceProvider
     }
 
     /**
+     * Get InvoiceService instance
+     * @return \App\Application\Services\InvoiceService
+     * @throws ReflectionException
+     */
+    public function getInvoiceService(): \App\Application\Services\InvoiceService
+    {
+        return $this->getService(\App\Application\Services\InvoiceService::class);
+    }
+
+    /**
      * Get TextEditorComponent instance
      * @return TextEditorComponent
      * @throws ReflectionException
@@ -296,6 +306,14 @@ class ServiceProvider
         $this->container->singleton(NewsService::class, function ($container) {
             return new NewsService(
                 $container->make(DatabaseInterface::class)
+            );
+        });
+
+        // Invoice Service
+        $this->container->singleton(\App\Application\Services\InvoiceService::class, function ($container) {
+            return new \App\Application\Services\InvoiceService(
+                $container->make(DatabaseInterface::class),
+                $container->make(LoggerInterface::class)
             );
         });
 

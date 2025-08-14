@@ -2,17 +2,20 @@
 
 /**
  * Client Portal Dashboard - PHASE 8 - DARK ADMIN THEME
- *
- * Comprehensive dashboard for client portal with support tickets,
- * portfolio management, projects overview and studio services
- *
- * @author GitHub Copilot
+ * Updated to use unified AdminNavigation component
  */
 
 declare(strict_types=1);
 
 // Use global services from the new DI architecture
 global $flashMessageService, $database_handler, $container, $serviceProvider;
+
+// Include profile completion helper
+require_once __DIR__ . '/../../includes/profile_completion_helper.php';
+
+// Include the unified AdminNavigation component
+require_once __DIR__ . '/../../src/Application/Components/AdminNavigation.php';
+use App\Application\Components\AdminNavigation;
 
 // Get AuthenticationService instead of direct SessionManager access
 try {
@@ -55,22 +58,41 @@ try {
     // Recent activity
     $recentActivity = getRecentActivity($database_handler, $current_user_id);
 
-    // Profile completion
-    $profileCompletion = calculateProfileCompletion($database_handler, $current_user_id);
+    // Profile completion - using unified helper function
+    $userData = $currentUser;
+    $clientProfile = getClientProfileData($database_handler, $current_user_id);
+    $profileCompletion = calculateProfileCompletion($userData, $clientProfile);
 
     // Get recent tickets (simplified)
     $recentTickets = getRecentTicketsSimple($database_handler, $current_user_id, 3);
+
+    // Get invoices stats - ДОБАВЛЕНО: статистика инвойсов
+    $invoicesStats = getInvoicesStats($database_handler, $current_user_id, $current_user_role);
+
+    // Get recent invoices - ДОБАВЛЕНО: последние инвойсы
+    $recentInvoices = getRecentInvoices($database_handler, $current_user_id, 3);
+
+    // Create unified navigation with badge counts
+    $adminNavigation = new AdminNavigation($authService);
+    if (($ticketStats['open'] ?? 0) > 0) {
+        $adminNavigation->setBadgeCount('user_tickets', $ticketStats['open']);
+    }
 
 } catch (Exception $e) {
     error_log("Dashboard data error: " . $e->getMessage());
 
     // Fallback empty data
-    $ticketStats = ['total' => 0, 'open' => 0, 'in_progress' => 0];
+    $ticketStats = ['total' => 0, 'open' => 0, 'in_progress' => 0, 'waiting_client' => 0, 'critical' => 0, 'today' => 0];
     $portfolioStats = ['total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0];
-    $studioProjectsStats = ['total_projects' => 0, 'in_development' => 0, 'planning' => 0, 'completed' => 0];
+    $studioProjectsStats = ['total_projects' => 0, 'in_development' => 0, 'planning' => 0, 'completed' => 0, 'avg_progress' => 0];
     $recentActivity = [];
     $profileCompletion = ['percentage' => 0, 'missing' => []];
     $recentTickets = [];
+    $invoicesStats = ['total' => 0, 'paid' => 0, 'due' => 0, 'overdue' => 0, 'draft' => 0, 'total_amount' => 0, 'paid_amount' => 0, 'outstanding_amount' => 0];
+    $recentInvoices = [];
+
+    // Still create navigation even on error
+    $adminNavigation = new AdminNavigation($authService);
 }
 
 // Get flash messages
@@ -80,33 +102,33 @@ $flashMessages = $flashMessageService->getAllMessages();
 $pageTitle = 'Client Portal Dashboard';
 
 /**
- * Get support tickets statistics
+ * Get support tickets statistics - исправлено для работы с реальной таблицей tickets
  */
 function getSupportTicketStats($database, $userId, $userRole): array
 {
     try {
         if (in_array($userRole, ['admin', 'employee'])) {
-            // Admin/employee see all tickets
+            // Admin/employee see all tickets (согласно Phase 1 - hierarchy roles)
             $sql = "SELECT 
                         COUNT(*) as total,
                         COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
                         COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
                         COUNT(CASE WHEN status = 'waiting_client' THEN 1 END) as waiting_client,
-                        COUNT(CASE WHEN priority = 'critical' THEN 1 END) as critical,
+                        COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as critical,
                         COUNT(CASE WHEN created_at >= CURDATE() THEN 1 END) as today
-                    FROM support_tickets";
+                    FROM tickets";
             $stmt = $database->getConnection()->prepare($sql);
             $stmt->execute();
         } else {
-            // Clients see only their tickets
+            // Clients see only their tickets (согласно Phase 8 - client access rights)
             $sql = "SELECT 
                         COUNT(*) as total,
                         COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
                         COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
                         COUNT(CASE WHEN status = 'waiting_client' THEN 1 END) as waiting_client,
-                        COUNT(CASE WHEN priority = 'critical' THEN 1 END) as critical,
+                        COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as critical,
                         COUNT(CASE WHEN created_at >= CURDATE() THEN 1 END) as today
-                    FROM support_tickets WHERE client_id = ?";
+                    FROM tickets WHERE user_id = ?";
             $stmt = $database->getConnection()->prepare($sql);
             $stmt->execute([$userId]);
         }
@@ -146,11 +168,11 @@ function getPortfolioStatsData($database, $userId): array
         $stmt->execute([$userId]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
-            'total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0
+            'total_projects' => 0, 'published' => 0, 'pending' => 0, 'draft' => 0, 'total_views' => 0
         ];
     } catch (Exception $e) {
         error_log("Error getting portfolio stats: " . $e->getMessage());
-        return ['total_projects' => 0, 'published' => 0, 'pending' => 0, 'drafts' => 0, 'total_views' => 0];
+        return ['total_projects' => 0, 'published' => 0, 'pending' => 0, 'draft' => 0, 'total_views' => 0];
     }
 }
 
@@ -182,20 +204,21 @@ function getStudioProjectsStats($database, $userId): array
 }
 
 /**
- * Get recent tickets (simplified version)
+ * Get recent tickets (simplified version) - ИСПРАВЛЕНО: корректная обработка приоритетов и полей
  */
 function getRecentTicketsSimple($database, $userId, $limit = 3): array
 {
     try {
-        $sql = "SELECT st.*, 
-                       CASE st.priority 
-                           WHEN 'critical' THEN 'bg-danger'
+        // Проверяем, какие поля есть в таблице tickets
+        $sql = "SELECT t.*, 
+                       CASE t.priority 
+                           WHEN 'urgent' THEN 'bg-danger'
                            WHEN 'high' THEN 'bg-warning' 
                            WHEN 'medium' THEN 'bg-primary'
                            WHEN 'low' THEN 'bg-secondary'
                            ELSE 'bg-secondary'
                        END as priority_badge_class,
-                       CASE st.status
+                       CASE t.status
                            WHEN 'open' THEN 'bg-info'
                            WHEN 'in_progress' THEN 'bg-warning'
                            WHEN 'waiting_client' THEN 'bg-secondary'
@@ -203,9 +226,9 @@ function getRecentTicketsSimple($database, $userId, $limit = 3): array
                            WHEN 'closed' THEN 'bg-dark'
                            ELSE 'bg-secondary'
                        END as status_badge_class
-                FROM support_tickets st
-                WHERE st.client_id = ?
-                ORDER BY st.updated_at DESC 
+                FROM tickets t
+                WHERE t.user_id = ?
+                ORDER BY t.created_at DESC 
                 LIMIT ?";
 
         $stmt = $database->getConnection()->prepare($sql);
@@ -219,17 +242,17 @@ function getRecentTicketsSimple($database, $userId, $limit = 3): array
 }
 
 /**
- * Get recent activity
+ * Get recent activity - исправлено для работы с реальной таблицей tickets
  */
 function getRecentActivity($database, $userId): array
 {
     try {
         $activities = [];
 
-        // Recent ticket activities
+        // Recent ticket activities - исправлено: используем таблицу tickets вместо support_tickets
         $sql = "SELECT 'ticket' as type, subject as title, created_at, status, id
-                FROM support_tickets 
-                WHERE client_id = ? 
+                FROM tickets 
+                WHERE user_id = ? 
                 ORDER BY created_at DESC LIMIT 5";
         $stmt = $database->getConnection()->prepare($sql);
         $stmt->execute([$userId]);
@@ -319,40 +342,79 @@ function getRecentActivity($database, $userId): array
 }
 
 /**
- * Calculate profile completion
+ * Get invoices statistics - ИСПРАВЛЕНО: использует правильную таблицу client_invoices
  */
-function calculateProfileCompletion($database, $userId): array
+function getInvoicesStats($database, $userId, $userRole): array
 {
     try {
-        $sql = "SELECT 
-                    CASE WHEN company_name IS NOT NULL AND company_name != '' THEN 1 ELSE 0 END as has_company,
-                    CASE WHEN bio IS NOT NULL AND bio != '' THEN 1 ELSE 0 END as has_bio,
-                    CASE WHEN location IS NOT NULL AND location != '' THEN 1 ELSE 0 END as has_location,
-                    CASE WHEN website IS NOT NULL AND website != '' THEN 1 ELSE 0 END as has_website,
-                    CASE WHEN skills IS NOT NULL AND JSON_LENGTH(skills) > 0 THEN 1 ELSE 0 END as has_skills
-                FROM client_profiles WHERE user_id = ?";
-
-        $stmt = $database->getConnection()->prepare($sql);
-        $stmt->execute([$userId]);
-        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$profile) {
-            return ['percentage' => 0, 'missing' => ['profile']];
+        if (in_array($userRole, ['admin', 'employee'])) {
+            // Admin/employee see all invoices
+            $sql = "SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid,
+                        COUNT(CASE WHEN status = 'sent' THEN 1 END) as due,
+                        COUNT(CASE WHEN status = 'overdue' THEN 1 END) as overdue,
+                        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft,
+                        SUM(total_amount) as total_amount,
+                        SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END) as paid_amount,
+                        SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN total_amount ELSE 0 END) as outstanding_amount
+                    FROM client_invoices";
+            $stmt = $database->getConnection()->prepare($sql);
+            $stmt->execute();
+        } else {
+            // Clients see only their invoices
+            $sql = "SELECT 
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid,
+                        COUNT(CASE WHEN status = 'sent' THEN 1 END) as due,
+                        COUNT(CASE WHEN status = 'overdue' THEN 1 END) as overdue,
+                        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft,
+                        SUM(total_amount) as total_amount,
+                        SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END) as paid_amount,
+                        SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN total_amount ELSE 0 END) as outstanding_amount
+                    FROM client_invoices WHERE client_id = ?";
+            $stmt = $database->getConnection()->prepare($sql);
+            $stmt->execute([$userId]);
         }
 
-        $completed = array_sum($profile);
-        $total = count($profile);
-        $percentage = round(($completed / $total) * 100);
-
-        return [
-            'percentage' => $percentage,
-            'completed' => $completed,
-            'total' => $total,
-            'missing' => array_keys(array_filter($profile, fn($v) => $v === 0))
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [
+            'total' => 0, 'paid' => 0, 'due' => 0, 'overdue' => 0, 'draft' => 0,
+            'total_amount' => 0, 'paid_amount' => 0, 'outstanding_amount' => 0
         ];
     } catch (Exception $e) {
-        error_log("Error calculating profile completion: " . $e->getMessage());
-        return ['percentage' => 0, 'missing' => []];
+        error_log("Error getting invoices stats: " . $e->getMessage());
+        return ['total' => 0, 'paid' => 0, 'due' => 0, 'overdue' => 0, 'draft' => 0,
+                'total_amount' => 0, 'paid_amount' => 0, 'outstanding_amount' => 0];
+    }
+}
+
+/**
+ * Get recent invoices - ИСПРАВЛЕНО: использует правильную таблицу client_invoices
+ */
+function getRecentInvoices($database, $userId, $limit = 3): array
+{
+    try {
+        $sql = "SELECT ci.*, 
+                       CASE ci.status
+                           WHEN 'paid' THEN 'bg-success'
+                           WHEN 'sent' THEN 'bg-warning'
+                           WHEN 'overdue' THEN 'bg-danger'
+                           WHEN 'draft' THEN 'bg-secondary'
+                           WHEN 'cancelled' THEN 'bg-dark'
+                           ELSE 'bg-secondary'
+                       END as status_badge_class
+                FROM client_invoices ci
+                WHERE ci.client_id = ?
+                ORDER BY ci.created_at DESC 
+                LIMIT ?";
+
+        $stmt = $database->getConnection()->prepare($sql);
+        $stmt->execute([$userId, $limit]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("Error getting recent invoices: " . $e->getMessage());
+        return [];
     }
 }
 ?>
@@ -362,42 +424,7 @@ function calculateProfileCompletion($database, $userId): array
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Client Portal</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=user_tickets" class="admin-nav-link">
-                    <i class="fas fa-ticket-alt"></i>
-                    <span>Support</span>
-                    <?php if (($ticketStats['open'] ?? 0) > 0): ?>
-                        <span class="admin-badge admin-badge-error" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem;">
-                            <?= $ticketStats['open'] ?>
-                        </span>
-                    <?php endif; ?>
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i>
-                    <span>Portfolio</span>
-                </a>
-                <a href="/index.php?page=user_projects" class="admin-nav-link">
-                    <i class="fas fa-code"></i>
-                    <span>Projects</span>
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i>
-                    <span>Profile</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -428,22 +455,6 @@ function calculateProfileCompletion($database, $userId): array
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-    <div class="admin-flash-messages">
-        <?php foreach ($flashMessages as $type => $messages): ?>
-            <?php foreach ($messages as $message): ?>
-            <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
-                <div>
-                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
-
     <!-- Main Content -->
     <main>
         <div class="admin-layout-main">
@@ -451,7 +462,7 @@ function calculateProfileCompletion($database, $userId): array
                 <!-- Statistics Cards -->
                 <div class="admin-stats-grid">
                     <!-- Support Tickets -->
-                    <div class="admin-stat-card admin-glow-primary">
+                    <div class="admin-stat-card">
                         <div class="admin-stat-content">
                             <div class="admin-stat-icon admin-stat-icon-primary">
                                 <i class="fas fa-ticket-alt"></i>
@@ -474,7 +485,7 @@ function calculateProfileCompletion($database, $userId): array
                     </div>
 
                     <!-- Portfolio Projects -->
-                    <div class="admin-stat-card admin-glow-success">
+                    <div class="admin-stat-card">
                         <div class="admin-stat-content">
                             <div class="admin-stat-icon admin-stat-icon-success">
                                 <i class="fas fa-briefcase"></i>
@@ -519,73 +530,37 @@ function calculateProfileCompletion($database, $userId): array
                         </div>
                     </div>
 
-                    <!-- Profile Completion -->
+                    <!-- Invoices - ЗАМЕНЕНО: вместо Profile Complete -->
                     <div class="admin-stat-card">
                         <div class="admin-stat-content">
-                            <div class="admin-stat-icon admin-stat-icon-warning">
-                                <i class="fas fa-user-circle"></i>
+                            <div class="admin-stat-icon" style="background-color: var(--admin-warning-bg); color: var(--admin-warning);">
+                                <i class="fas fa-file-invoice-dollar"></i>
                             </div>
                             <div class="admin-stat-details">
-                                <h3>Profile Complete</h3>
-                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $profileCompletion['percentage'] ?? 0 ?>%</p>
-                                <?php if (($profileCompletion['percentage'] ?? 0) < 100): ?>
-                                    <span style="font-size: 0.75rem; color: var(--admin-text-muted); margin-top: 0.5rem; display: block;">
-                                        Missing: <?= implode(', ', array_slice($profileCompletion['missing'] ?? [], 0, 2)) ?>
+                                <h3>Invoices</h3>
+                                <p style="color: var(--admin-text-primary); font-size: 1.5rem; font-weight: 700;"><?= $invoicesStats['total'] ?? 0 ?></p>
+                                <?php if (($invoicesStats['overdue'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-error" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-exclamation-triangle"></i><?= $invoicesStats['overdue'] ?> Overdue
+                                    </span>
+                                <?php elseif (($invoicesStats['draft'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-secondary" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-edit"></i><?= $invoicesStats['draft'] ?> Draft
+                                    </span>
+                                <?php elseif (($invoicesStats['paid'] ?? 0) > 0): ?>
+                                    <span class="admin-badge admin-badge-success" style="margin-top: 0.5rem;">
+                                        <i class="fas fa-check-circle"></i><?= $invoicesStats['paid'] ?> Paid
                                     </span>
                                 <?php endif; ?>
                             </div>
                         </div>
                         <div style="margin-top: 1rem; text-align: center;">
-                            <a href="/index.php?page=user_profile" class="admin-btn admin-btn-warning admin-btn-sm">
-                                <i class="fas fa-edit"></i>Complete
+                            <a href="/index.php?page=user_invoices" class="admin-btn admin-btn-warning admin-btn-sm">
+                                <i class="fas fa-file-invoice"></i>View All
                             </a>
                         </div>
                     </div>
                 </div>
-
-                <!-- Recent Support Tickets -->
-                <?php if (!empty($recentTickets)): ?>
-                <div class="admin-card">
-                    <div class="admin-card-header">
-                        <h3 class="admin-card-title">
-                            <i class="fas fa-ticket-alt"></i>Recent Support Tickets
-                        </h3>
-                    </div>
-                    <div class="admin-card-body">
-                        <?php foreach ($recentTickets as $ticket): ?>
-                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--admin-border);">
-                                <div style="display: flex; align-items: center; gap: 1rem;">
-                                    <span class="admin-badge admin-badge-<?= $ticket['priority'] === 'critical' ? 'error' : ($ticket['priority'] === 'high' ? 'warning' : 'gray') ?>">
-                                        <?= ucfirst($ticket['priority'] ?? 'medium') ?>
-                                    </span>
-                                    <div>
-                                        <h6 style="margin: 0 0 0.25rem 0; font-weight: 600;">
-                                            <a href="/index.php?page=user_tickets_view&id=<?= $ticket['id'] ?>" style="color: var(--admin-text-primary); text-decoration: none;">
-                                                <?= htmlspecialchars($ticket['subject']) ?>
-                                            </a>
-                                        </h6>
-                                        <div style="font-size: 0.75rem; color: var(--admin-text-muted);">
-                                            <?= date('M j, Y', strtotime($ticket['created_at'])) ?> •
-                                            <span class="admin-badge admin-badge-<?= $ticket['status'] === 'resolved' ? 'success' : ($ticket['status'] === 'in_progress' ? 'warning' : 'gray') ?>" style="margin-left: 0.5rem;">
-                                                <?= ucfirst(str_replace('_', ' ', $ticket['status'])) ?>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <a href="/index.php?page=user_tickets_view&id=<?= $ticket['id'] ?>" class="admin-btn admin-btn-primary admin-btn-sm">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="admin-card-footer">
-                        <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary">
-                            <i class="fas fa-list"></i>View All Tickets
-                        </a>
-                    </div>
-                </div>
-                <?php endif; ?>
-
                 <!-- Recent Activity -->
                 <?php if (!empty($recentActivity)): ?>
                 <div class="admin-card">
@@ -741,7 +716,7 @@ function calculateProfileCompletion($database, $userId): array
                         <a href="/index.php?page=user_profile" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
                             <i class="fas fa-edit"></i>Edit Profile
                         </a>
-                        <a href="/index.php?page=user_portfolio_settings" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                        <a href="/index.php?page=portfolio_settings" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
                             <i class="fas fa-cogs"></i>Portfolio Settings
                         </a>
                     </div>
@@ -793,7 +768,7 @@ function calculateProfileCompletion($database, $userId): array
                         <a href="/index.php?page=contact" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.5rem; justify-content: flex-start;">
                             <i class="fas fa-phone"></i>Contact Us
                         </a>
-                        <a href="/index.php?page=help" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
+                        <a href="/index.php?page=about" class="admin-btn admin-btn-secondary" style="width: 100%; justify-content: flex-start;">
                             <i class="fas fa-book"></i>Documentation
                         </a>
                     </div>
@@ -816,17 +791,6 @@ function calculateProfileCompletion($database, $userId): array
                     }, 300);
                 });
             }, 5000);
-
-            // Add hover effects to stat cards
-            document.querySelectorAll('.admin-stat-card').forEach(function(card) {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-4px)';
-                });
-
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                });
-            });
 
             // Add click tracking for dashboard actions
             document.querySelectorAll('.admin-btn').forEach(function(btn) {

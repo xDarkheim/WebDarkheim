@@ -7,8 +7,12 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
+// Include profile completion helper
+require_once dirname(__DIR__, 3) . '/includes/profile_completion_helper.php';
 
 global $serviceProvider, $flashMessageService, $database_handler;
+
+use App\Application\Components\AdminNavigation;
 
 try {
     $authService = $serviceProvider->getAuth();
@@ -28,6 +32,9 @@ $currentUser = $authService->getCurrentUser();
 $userId = $authService->getCurrentUserId();
 $pageTitle = 'Edit Profile';
 
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 // Get client profile data if exists
 $clientProfile = null;
 try {
@@ -41,217 +48,144 @@ try {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $errors = [];
-
-    // Basic user data
-    $email = trim($_POST['email'] ?? '');
-    $username = trim($_POST['username'] ?? '');
-
-    // Client profile data
-    $company_name = trim($_POST['company_name'] ?? '');
-    $position = trim($_POST['position'] ?? '');
-    $bio = trim($_POST['bio'] ?? '');
-    $location = trim($_POST['location'] ?? '');
-    $website = trim($_POST['website'] ?? '');
-    $portfolio_visibility = $_POST['portfolio_visibility'] ?? 'private';
-    $allow_contact = isset($_POST['allow_contact']) ? 1 : 0;
-    $skills = $_POST['skills'] ?? [];
-
-    // Social links
-    $social_links = [
-        'linkedin' => trim($_POST['linkedin'] ?? ''),
-        'github' => trim($_POST['github'] ?? ''),
-        'twitter' => trim($_POST['twitter'] ?? ''),
-        'website' => trim($_POST['website'] ?? ''),
-        'behance' => trim($_POST['behance'] ?? ''),
-        'dribbble' => trim($_POST['dribbble'] ?? '')
-    ];
-
-    // Remove empty social links
-    $social_links = array_filter($social_links);
-
-    // Validation
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Valid email is required.';
-    }
-
-    if (empty($username) || strlen($username) < 3) {
-        $errors[] = 'Username must be at least 3 characters long.';
-    }
-
-    if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
-        $errors[] = 'Please enter a valid website URL.';
-    }
-
-    // Validate social links
-    foreach ($social_links as $platform => $url) {
-        if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
-            $errors[] = "Please enter a valid {$platform} URL.";
+    try {
+        // CSRF token validation
+        $token = $_POST['csrf_token'] ?? '';
+        if (empty($token) || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+            throw new Exception('Invalid CSRF token.');
         }
-    }
 
-    if (empty($errors)) {
-        try {
-            $database_handler->getConnection()->beginTransaction();
+        $errors = [];
 
-            // Update basic user data
-            $sql = "UPDATE users SET username = ?, email = ?, updated_at = NOW() WHERE id = ?";
-            $stmt = $database_handler->getConnection()->prepare($sql);
-            $stmt->execute([$username, $email, $userId]);
+        // Basic user data
+        $email = trim($_POST['email'] ?? '');
+        $username = trim($_POST['username'] ?? '');
 
-            // Update or create client profile
-            if ($clientProfile) {
-                // Update existing profile
-                $sql = "UPDATE client_profiles SET 
-                        company_name = ?, position = ?, bio = ?, location = ?, 
-                        website = ?, portfolio_visibility = ?, allow_contact = ?,
-                        skills = ?, social_links = ?, updated_at = NOW()
-                        WHERE user_id = ?";
-                $stmt = $database_handler->getConnection()->prepare($sql);
-                $stmt->execute([
-                    $company_name, $position, $bio, $location, $website,
-                    $portfolio_visibility, $allow_contact,
-                    json_encode(array_values(array_filter($skills))),
-                    json_encode($social_links),
-                    $userId
-                ]);
-            } else {
-                // Create new profile
-                $sql = "INSERT INTO client_profiles 
-                        (user_id, company_name, position, bio, location, website, 
-                         portfolio_visibility, allow_contact, skills, social_links, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-                $stmt = $database_handler->getConnection()->prepare($sql);
-                $stmt->execute([
-                    $userId, $company_name, $position, $bio, $location, $website,
-                    $portfolio_visibility, $allow_contact,
-                    json_encode(array_values(array_filter($skills))),
-                    json_encode($social_links)
-                ]);
+        // Client profile data
+        $company_name = trim($_POST['company_name'] ?? '');
+        $position = trim($_POST['position'] ?? '');
+        $bio = trim($_POST['bio'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+        $portfolio_visibility = $_POST['portfolio_visibility'] ?? 'private';
+        $allow_contact = isset($_POST['allow_contact']) ? 1 : 0;
+        $skills = $_POST['skills'] ?? [];
+
+        // Social links
+        $social_links = [
+            'linkedin' => trim($_POST['linkedin'] ?? ''),
+            'github' => trim($_POST['github'] ?? ''),
+            'twitter' => trim($_POST['twitter'] ?? ''),
+            'website' => trim($_POST['website'] ?? ''),
+            'behance' => trim($_POST['behance'] ?? ''),
+            'dribbble' => trim($_POST['dribbble'] ?? '')
+        ];
+
+        // Remove empty social links
+        $social_links = array_filter($social_links);
+
+        // Validation
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Valid email is required.';
+        }
+
+        if (empty($username) || strlen($username) < 3) {
+            $errors[] = 'Username must be at least 3 characters long.';
+        }
+
+        if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
+            $errors[] = 'Please enter a valid website URL.';
+        }
+
+        // Validate social links
+        foreach ($social_links as $platform => $url) {
+            if (!empty($url) && !filter_var($url, FILTER_VALIDATE_URL)) {
+                $errors[] = "Please enter a valid {$platform} URL.";
             }
-
-            $database_handler->getConnection()->commit();
-            $flashMessageService->addSuccess('Profile updated successfully!');
-
-            // Refresh data
-            $currentUser = $authService->getCurrentUser();
-            $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
-            $stmt = $database_handler->getConnection()->prepare($sql);
-            $stmt->execute([$userId]);
-            $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        } catch (Exception $e) {
-            $database_handler->getConnection()->rollBack();
-            error_log("Error updating profile: " . $e->getMessage());
-            $flashMessageService->addError('Failed to update profile. Please try again.');
         }
-    } else {
-        foreach ($errors as $error) {
-            $flashMessageService->addError($error);
+
+        if (empty($errors)) {
+            try {
+                $database_handler->getConnection()->beginTransaction();
+
+                // Update basic user data
+                $sql = "UPDATE users SET username = ?, email = ?, updated_at = NOW() WHERE id = ?";
+                $stmt = $database_handler->getConnection()->prepare($sql);
+                $stmt->execute([$username, $email, $userId]);
+
+                // Update or create client profile
+                if ($clientProfile) {
+                    // Update existing profile
+                    $sql = "UPDATE client_profiles SET 
+                            company_name = ?, position = ?, bio = ?, location = ?, 
+                            website = ?, portfolio_visibility = ?, allow_contact = ?,
+                            skills = ?, social_links = ?, updated_at = NOW()
+                            WHERE user_id = ?";
+                    $stmt = $database_handler->getConnection()->prepare($sql);
+                    $stmt->execute([
+                        $company_name, $position, $bio, $location, $website,
+                        $portfolio_visibility, $allow_contact,
+                        json_encode(array_values(array_filter($skills))),
+                        json_encode($social_links),
+                        $userId
+                    ]);
+                } else {
+                    // Create new profile
+                    $sql = "INSERT INTO client_profiles 
+                            (user_id, company_name, position, bio, location, website, 
+                             portfolio_visibility, allow_contact, skills, social_links, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                    $stmt = $database_handler->getConnection()->prepare($sql);
+                    $stmt->execute([
+                        $userId, $company_name, $position, $bio, $location, $website,
+                        $portfolio_visibility, $allow_contact,
+                        json_encode(array_values(array_filter($skills))),
+                        json_encode($social_links)
+                    ]);
+                }
+
+                $database_handler->getConnection()->commit();
+                $flashMessageService->addSuccess('Profile updated successfully!');
+
+                // Refresh data
+                $currentUser = $authService->getCurrentUser();
+                $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
+                $stmt = $database_handler->getConnection()->prepare($sql);
+                $stmt->execute([$userId]);
+                $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            } catch (Exception $e) {
+                $database_handler->getConnection()->rollBack();
+                error_log("Error updating profile: " . $e->getMessage());
+                $flashMessageService->addError('Failed to update profile. Please try again.');
+            }
+        } else {
+            foreach ($errors as $error) {
+                $flashMessageService->addError($error);
+            }
         }
+    } catch (Exception $e) {
+        $flashMessageService->addError('Error processing request: ' . $e->getMessage());
     }
+}
+
+// Generate CSRF token if not exists
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
 
-// Calculate profile completion
-function calculateProfileCompletion($user, $profile): array {
-    $fields = [
-        'email' => !empty($user['email']),
-        'company' => !empty($profile['company_name'] ?? ''),
-        'position' => !empty($profile['position'] ?? ''),
-        'bio' => !empty($profile['bio'] ?? ''),
-        'location' => !empty($profile['location'] ?? ''),
-        'website' => !empty($profile['website'] ?? ''),
-        'skills' => !empty($profile['skills'] ?? ''),
-    ];
-
-    $completed = count(array_filter($fields));
-    $total = count($fields);
-    $percentage = round(($completed / $total) * 100);
-
-    return [
-        'percentage' => $percentage,
-        'completed' => $completed,
-        'total' => $total,
-        'missing' => array_keys(array_filter($fields, fn($v) => !$v))
-    ];
-}
-
-$completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
+// Calculate profile completion using unified helper function
+$clientProfile = getClientProfileData($database_handler, $userId);
+$completion = calculateProfileCompletion($currentUser, $clientProfile);
 ?>
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .skill-tag {
-            display: inline-flex;
-            align-items: center;
-            background: var(--admin-primary-bg);
-            color: var(--admin-primary-light);
-            padding: 0.375rem 0.75rem;
-            border-radius: 9999px;
-            margin: 0.25rem;
-            font-size: 0.75rem;
-            border: 1px solid var(--admin-primary);
-        }
-        .skill-tag .remove-skill {
-            margin-left: 0.5rem;
-            cursor: pointer;
-            color: var(--admin-error);
-            font-weight: bold;
-        }
-        .skill-tag .remove-skill:hover {
-            color: var(--admin-error-light);
-        }
-        .social-input-group {
-            position: relative;
-        }
-        .social-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--admin-text-muted);
-            z-index: 10;
-        }
-        .social-input {
-            padding-left: 40px;
-        }
-        .progress-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            background: var(--admin-primary);
-        }
-    </style>
 
-<div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-user-circle"></i>
-                Client Portal
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i> Portfolio
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -278,19 +212,7 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="admin-flash-messages">
-            <?php foreach ($flashMessages as $type => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
-                        <div><?= htmlspecialchars($message['text']) ?></div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<!-- Flash messages handled by global toast system -->
 
     <form method="POST" action="/index.php?page=profile_edit">
         <div class="admin-layout-main">
@@ -597,6 +519,8 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile ?: []);
                 </div>
             </div>
         </div>
+
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
     </form>
 </div>
 

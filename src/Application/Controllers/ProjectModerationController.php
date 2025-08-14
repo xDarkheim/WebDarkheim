@@ -11,9 +11,9 @@ namespace App\Application\Controllers;
 
 use App\Domain\Interfaces\DatabaseInterface;
 use App\Domain\Models\ClientProject;
-use App\Domain\Models\User;
 use App\Application\Middleware\RoleMiddleware;
 use Exception;
+use PDO;
 
 class ProjectModerationController {
     private DatabaseInterface $db_handler;

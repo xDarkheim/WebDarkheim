@@ -1,25 +1,36 @@
 <?php
 
 /**
- * Invoices & Billing - Client Portal - DARK ADMIN THEME
+ * Invoices & Billing - Client Portal - PHASE 8
  * View and manage invoices and billing information
+ * Based on dashboard design and structure
  *
- * @author GitHub Copilot
+ * @author Darkheim Studio
  */
 
 declare(strict_types=1);
 
-// Use global services from the DI architecture
+// Use global services from DI container (same pattern as dashboard)
 global $flashMessageService, $database_handler, $container, $serviceProvider;
+
+use App\Application\Components\AdminNavigation;
+
+// Ensure all required services are available
+if (!isset($serviceProvider)) {
+    error_log("Critical: ServiceProvider not available in user_invoices page");
+    die("System error: Services not initialized.");
+}
 
 try {
     $authService = $serviceProvider->getAuth();
+    $invoiceService = $serviceProvider->getInvoiceService();
+    $logger = $serviceProvider->getLogger();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
+    error_log("Critical: Failed to get services: " . $e->getMessage());
     die("A critical system error occurred. Please try again later.");
 }
 
-// Check authentication
+// Check authentication (same pattern as dashboard)
 if (!$authService->isAuthenticated()) {
     $flashMessageService->addError('Please log in to access your invoices.');
     header("Location: /index.php?page=login");
@@ -27,206 +38,309 @@ if (!$authService->isAuthenticated()) {
 }
 
 $currentUser = $authService->getCurrentUser();
+$current_user_role = $authService->getCurrentUserRole();
+$current_user_id = $authService->getCurrentUserId();
+$current_username = $authService->getCurrentUsername();
 
-// Check if user can access client area
-if (!in_array($currentUser['role'], ['client', 'employee', 'admin'])) {
+// Check if user can access client area (same pattern as dashboard)
+if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     header('Location: /index.php?page=home');
     exit;
 }
 
-// Get invoices for current user
+// Get invoices data with error handling (like dashboard)
 try {
-    $sql = "SELECT ci.*, sp.project_name
-            FROM client_invoices ci
-            LEFT JOIN studio_projects sp ON ci.project_id = sp.id
-            WHERE ci.client_id = ?
-            ORDER BY ci.created_at DESC";
+    // Get filters from request
+    $filters = [
+        'status' => $_GET['status'] ?? '',
+        'date_from' => $_GET['date_from'] ?? '',
+        'date_to' => $_GET['date_to'] ?? '',
+        'limit' => 50
+    ];
 
-    $stmt = $database_handler->getConnection()->prepare($sql);
-    $stmt->execute([$currentUser['id']]);
-    $invoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Calculate totals
-    $totalAmount = 0;
-    $paidAmount = 0;
-    $pendingAmount = 0;
-
-    foreach ($invoices as $invoice) {
-        $totalAmount += $invoice['total_amount'];
-        if ($invoice['status'] === 'paid') {
-            $paidAmount += $invoice['total_amount'];
-        } else {
-            $pendingAmount += $invoice['total_amount'];
-        }
-    }
+    // Get client invoices and statistics
+    $invoices = $invoiceService->getClientInvoices($current_user_id, $filters);
+    $statistics = $invoiceService->getClientStatistics($current_user_id);
+    $statusFilters = $invoiceService->getStatusFilters();
 
 } catch (Exception $e) {
-    error_log("Error getting invoices: " . $e->getMessage());
+    $logger->error('Error loading invoices: ' . $e->getMessage());
+
+    // Fallback empty data (like dashboard)
     $invoices = [];
-    $totalAmount = $paidAmount = $pendingAmount = 0;
+    $statistics = $invoiceService->getEmptyStatistics();
+    $statusFilters = [];
 }
 
-// Get flash messages
+// Get flash messages (same pattern as dashboard)
 $flashMessages = $flashMessageService->getAllMessages();
-$pageTitle = 'Invoices & Billing - Client Portal';
 
+// Set page title (same pattern as dashboard)
+$pageTitle = 'My Invoices';
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 ?>
 
+
+    <!-- Admin CSS for consistent dark theme -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<!-- Navigation -->
-<nav class="admin-nav">
-    <div class="admin-nav-container">
-        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
-            <i class="fas fa-file-invoice-dollar"></i>
-            Billing Portal
-        </a>
-        <div class="admin-nav-links">
-            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-        </div>
-    </div>
-</nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
-<!-- Header -->
-<header class="admin-header">
-    <div class="admin-header-container">
-        <div class="admin-header-content">
-            <div class="admin-header-title">
-                <i class="admin-header-icon fas fa-file-invoice-dollar"></i>
-                <div class="admin-header-text">
-                    <h1>Invoices & Billing</h1>
-                    <p>View and manage your invoices and payments</p>
+    <!-- Header Section -->
+    <header class="admin-header">
+        <div class="admin-header-container">
+            <div class="admin-header-content">
+                <div class="admin-header-title">
+                    <i class="admin-header-icon fas fa-file-invoice-dollar"></i>
+                    <div class="admin-header-text">
+                        <h1>My Invoices</h1>
+                        <p>Manage your billing and payment information</p>
+                    </div>
+                </div>
+                <div class="admin-header-actions">
+                    <a href="/index.php?page=dashboard" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Dashboard
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
-</header>
+    </header>
 
-<div class="admin-layout-main">
-    <div class="admin-content">
-        <!-- Flash Messages -->
-        <?php if (!empty($flashMessages)): ?>
-            <div class="admin-flash-messages">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                            <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
-                            <div><?= htmlspecialchars($message['text']) ?></div>
-                        </div>
-                    <?php endforeach; ?>
+    <!-- Flash Messages -->
+    <?php if (!empty($flashMessages)): ?>
+        <div class="admin-flash-messages">
+            <?php foreach ($flashMessages as $type => $messages): ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="admin-flash-message admin-flash-<?php echo $type; ?>">
+                        <i class="fas fa-<?php echo $type === 'error' ? 'exclamation-triangle' : ($type === 'success' ? 'check-circle' : 'info-circle'); ?>"></i>
+                        <div><?php echo htmlspecialchars($message['text']); ?></div>
+                    </div>
                 <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Summary Cards -->
-        <div class="admin-stats-grid" style="margin-bottom: 2rem;">
-            <div class="admin-stat-card">
-                <div class="admin-stat-content">
-                    <div class="admin-stat-icon admin-stat-icon-primary">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="admin-stat-details">
-                        <h3>Total Invoiced</h3>
-                        <p style="color: var(--admin-text-primary);">$<?= number_format($totalAmount, 2) ?></p>
-                    </div>
-                </div>
-            </div>
-            <div class="admin-stat-card">
-                <div class="admin-stat-content">
-                    <div class="admin-stat-icon admin-stat-icon-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="admin-stat-details">
-                        <h3>Paid</h3>
-                        <p style="color: var(--admin-text-primary);">$<?= number_format($paidAmount, 2) ?></p>
-                    </div>
-                </div>
-            </div>
-            <div class="admin-stat-card">
-                <div class="admin-stat-content">
-                    <div class="admin-stat-icon admin-stat-icon-warning">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="admin-stat-details">
-                        <h3>Pending</h3>
-                        <p style="color: var(--admin-text-primary);">$<?= number_format($pendingAmount, 2) ?></p>
-                    </div>
-                </div>
-            </div>
+            <?php endforeach; ?>
         </div>
+    <?php endif; ?>
 
-        <!-- Invoices List -->
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h3 class="admin-card-title">
-                    <i class="fas fa-list"></i>
-                    Invoice History
-                </h3>
+    <!-- Main Layout -->
+    <div class="admin-layout-main">
+        <main class="admin-content">
+
+            <!-- Statistics Cards -->
+            <?php if (!empty($statistics['total_invoices'])): ?>
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-primary">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Total Invoices</h3>
+                                <p><?php echo $statistics['total_invoices']; ?></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-primary">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Total Billed</h3>
+                                <p><?php echo $statistics['formatted_total_billed']; ?></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon admin-stat-icon-success">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Total Paid</h3>
+                                <p><?php echo $statistics['formatted_total_paid']; ?></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-content">
+                            <div class="admin-stat-icon <?php echo $statistics['total_outstanding'] > 0 ? 'admin-stat-icon-warning' : 'admin-stat-icon-success'; ?>">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="admin-stat-details">
+                                <h3>Outstanding</h3>
+                                <p><?php echo $statistics['formatted_total_outstanding']; ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Overdue Warning -->
+            <?php if (!empty($statistics['overdue_count'])): ?>
+                <div class="overdue-alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention:</strong> You have <?php echo $statistics['overdue_count']; ?> overdue invoice(s).
+                    Please contact us for payment arrangements.
+                </div>
+            <?php endif; ?>
+
+            <!-- Filters Card -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-filter"></i>
+                        Filter Invoices
+                    </h3>
+                </div>
+                <div class="admin-card-body">
+                    <form method="GET" class="filter-form">
+                        <input type="hidden" name="page" value="user_invoices">
+
+                        <div class="admin-grid admin-grid-cols-4">
+                            <div class="admin-form-group">
+                                <label for="status" class="admin-label">Status</label>
+                                <select name="status" id="status" class="admin-input admin-select">
+                                    <?php foreach ($statusFilters as $value => $label): ?>
+                                        <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $filters['status'] === $value ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($label); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="date_from" class="admin-label">From Date</label>
+                                <input type="date" name="date_from" id="date_from" class="admin-input" value="<?php echo htmlspecialchars($filters['date_from']); ?>">
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="date_to" class="admin-label">To Date</label>
+                                <input type="date" name="date_to" id="date_to" class="admin-input" value="<?php echo htmlspecialchars($filters['date_to']); ?>">
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="admin-btn admin-btn-primary">
+                                    <i class="fas fa-search"></i>
+                                    Filter
+                                </button>
+                                <a href="/index.php?page=user_invoices" class="admin-btn admin-btn-secondary">
+                                    <i class="fas fa-times"></i>
+                                    Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="admin-card-body">
+
+            <!-- Invoices Table -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-list"></i>
+                        Invoice List
+                    </h3>
+                </div>
+
                 <?php if (empty($invoices)): ?>
-                    <div style="text-align: center; padding: 3rem 0;">
-                        <i class="fas fa-file-invoice fa-3x" style="color: var(--admin-text-muted); margin-bottom: 1rem;"></i>
-                        <h5 style="color: var(--admin-text-muted); margin-bottom: 0.5rem;">No invoices found</h5>
-                        <p style="color: var(--admin-text-muted);">You don't have any invoices yet.</p>
+                    <!-- Empty State -->
+                    <div class="admin-card-body" style="text-align: center; padding: 3rem;">
+                        <div style="color: var(--admin-text-muted); margin-bottom: 1rem;">
+                            <i class="fas fa-file-invoice" style="font-size: 3rem;"></i>
+                        </div>
+                        <h3 style="color: var(--admin-text-primary); margin: 0 0 0.5rem 0;">No Invoices Found</h3>
+                        <p style="color: var(--admin-text-muted); margin: 0;">
+                            <?php if (!empty($filters['status']) || !empty($filters['date_from']) || !empty($filters['date_to'])): ?>
+                                No invoices match your current filters. Try adjusting your search criteria.
+                            <?php else: ?>
+                                You don't have any invoices yet. They will appear here once created.
+                            <?php endif; ?>
+                        </p>
                     </div>
                 <?php else: ?>
                     <div class="admin-table-container">
                         <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 20%;">Invoice #</th>
-                                    <th style="width: 25%;">Project</th>
-                                    <th style="width: 15%;">Amount</th>
-                                    <th style="width: 15%;">Due Date</th>
-                                    <th style="width: 15%;">Status</th>
-                                    <th style="width: 10%;">Actions</th>
+                                    <th>Invoice #</th>
+                                    <th>Title</th>
+                                    <th>Issue Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Balance</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($invoices as $invoice): ?>
-                                    <tr>
+                                    <tr class="<?php echo $invoice['is_overdue'] ? 'row-danger' : ''; ?>">
                                         <td>
-                                            <strong><?= htmlspecialchars($invoice['invoice_number']) ?></strong>
-                                            <br>
-                                            <small style="color: var(--admin-text-muted);"><?= date('M j, Y', strtotime($invoice['created_at'])) ?></small>
-                                        </td>
-                                        <td>
-                                            <?= $invoice['project_name'] ? htmlspecialchars($invoice['project_name']) : 'General Service' ?>
-                                        </td>
-                                        <td>
-                                            <span style="font-size: 1.1rem; font-weight: 600;">$<?= number_format($invoice['total_amount'], 2) ?></span>
-                                            <?php if ($invoice['tax_amount'] > 0): ?>
-                                                <br><small style="color: var(--admin-text-muted);">Tax: $<?= number_format($invoice['tax_amount'], 2) ?></small>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?= date('M j, Y', strtotime($invoice['due_date'])) ?>
-                                            <?php if (strtotime($invoice['due_date']) < time() && $invoice['status'] !== 'paid'): ?>
-                                                <br><small style="color: var(--admin-error);">Overdue</small>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <span class="admin-badge admin-badge-<?= getInvoiceStatusBadgeClass($invoice['status']) ?>">
-                                                <?= ucfirst($invoice['status']) ?>
+                                            <span style="font-family: var(--admin-font-mono); font-weight: 600;">
+                                                <?php echo htmlspecialchars($invoice['invoice_number']); ?>
                                             </span>
-                                            <?php if ($invoice['payment_date']): ?>
-                                                <br><small style="color: var(--admin-text-muted);">Paid: <?= date('M j, Y', strtotime($invoice['payment_date'])) ?></small>
+                                        </td>
+                                        <td>
+                                            <div style="font-weight: 500; color: var(--admin-text-primary); margin-bottom: 0.25rem;">
+                                                <?php echo htmlspecialchars($invoice['title']); ?>
+                                            </div>
+                                            <?php if ($invoice['description']): ?>
+                                                <small style="color: var(--admin-text-muted);">
+                                                    <?php echo htmlspecialchars(substr($invoice['description'], 0, 60)); ?>
+                                                    <?php if (strlen($invoice['description']) > 60): ?>...<?php endif; ?>
+                                                </small>
                                             <?php endif; ?>
+                                        </td>
+                                        <td><?php echo date('M j, Y', strtotime($invoice['issue_date'])); ?></td>
+                                        <td>
+                                            <?php echo date('M j, Y', strtotime($invoice['due_date'])); ?>
+                                            <?php if ($invoice['is_overdue']): ?>
+                                                <br><small style="color: var(--admin-error);">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    <?php echo abs($invoice['days_until_due']); ?> days overdue
+                                                </small>
+                                            <?php elseif ($invoice['days_until_due'] <= 7 && $invoice['status'] !== 'paid'): ?>
+                                                <br><small style="color: var(--admin-warning);">
+                                                    <i class="fas fa-clock"></i>
+                                                    Due in <?php echo $invoice['days_until_due']; ?> day(s)
+                                                </small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <span class="admin-badge invoice-badge-<?php echo $invoice['status']; ?>">
+                                                <?php echo ucfirst(str_replace('_', ' ', $invoice['status'])); ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="invoice-amount">
+                                                <?php echo $invoice['formatted_total']; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="invoice-amount <?php echo $invoice['balance_remaining'] > 0 ? 'amount-negative' : 'amount-zero'; ?>">
+                                                <?php echo $invoice['formatted_balance']; ?>
+                                            </span>
                                         </td>
                                         <td>
                                             <div class="admin-table-actions">
-                                                <?php if ($invoice['pdf_path']): ?>
-                                                    <a href="/index.php?page=user_invoices_download&id=<?= $invoice['id'] ?>"
-                                                       class="admin-btn admin-btn-sm admin-btn-primary" target="_blank">
-                                                        <i class="fas fa-download"></i> <span>Download</span>
-                                                    </a>
-                                                <?php endif; ?>
-                                                <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="viewInvoiceDetails(<?= $invoice['id'] ?>)">
-                                                    <i class="fas fa-eye"></i> <span>View</span>
-                                                </button>
+                                                <a href="/index.php?page=user_invoice_view&id=<?php echo $invoice['id']; ?>"
+                                                   class="admin-btn admin-btn-sm admin-btn-primary"
+                                                   title="View Invoice">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span>View</span>
+                                                </a>
+                                                <a href="/page/user/invoices/download.php?id=<?php echo $invoice['id']; ?>"
+                                                   class="admin-btn admin-btn-sm admin-btn-secondary"
+                                                   title="Download PDF">
+                                                    <i class="fas fa-download"></i>
+                                                    <span>PDF</span>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -236,111 +350,94 @@ $pageTitle = 'Invoices & Billing - Client Portal';
                     </div>
                 <?php endif; ?>
             </div>
-        </div>
-    </div>
 
-    <!-- Sidebar -->
-    <div class="admin-sidebar">
-        <!-- Payment Information -->
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h4 class="admin-card-title">
-                    <i class="fas fa-credit-card"></i>
-                    Payment Information
-                </h4>
-            </div>
-            <div class="admin-card-body">
-                <h6>Payment Methods</h6>
-                <ul style="font-size: 0.875rem; margin-bottom: 1.5rem;">
-                    <li>Bank Transfer</li>
-                    <li>Credit/Debit Card</li>
-                    <li>PayPal</li>
-                    <li>Cryptocurrency</li>
-                </ul>
+        </main>
 
-                <h6>Payment Terms</h6>
-                <ul style="font-size: 0.875rem;">
-                    <li>Net 30 days from invoice date</li>
-                    <li>Late fees may apply after due date</li>
-                    <li>Payment confirmations sent via email</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Support -->
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h4 class="admin-card-title">
-                    <i class="fas fa-question-circle"></i>
-                    Billing Support
-                </h4>
-            </div>
-            <div class="admin-card-body">
-                <p style="font-size: 0.875rem; margin-bottom: 1rem;">
-                    Questions about your invoices or payments?
-                </p>
-                <div style="display: grid; gap: 0.5rem;">
-                    <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-sm admin-btn-primary">
-                        <i class="fas fa-ticket-alt"></i> Create Support Ticket
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <!-- Quick Actions -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h4 class="admin-card-title">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
+                    </h4>
+                </div>
+                <div class="admin-card-body">
+                    <a href="/index.php?page=dashboard" class="admin-btn admin-btn-primary" style="width: 100%; margin-bottom: 0.75rem;">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
                     </a>
-                    <a href="mailto:billing@darkheim.net" class="admin-btn admin-btn-sm admin-btn-secondary">
-                        <i class="fas fa-envelope"></i> Email Billing
+                    <a href="/index.php?page=user_profile" class="admin-btn admin-btn-secondary" style="width: 100%; margin-bottom: 0.75rem;">
+                        <i class="fas fa-user"></i>
+                        My Profile
+                    </a>
+                    <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary" style="width: 100%;">
+                        <i class="fas fa-ticket-alt"></i>
+                        Support Tickets
                     </a>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Invoice Details Modal -->
-<div class="admin-modal admin-hidden" id="invoiceModal">
-    <div class="admin-modal-content">
-        <div class="admin-modal-header">
-            <h5>Invoice Details</h5>
-            <button type="button" data-modal-close>
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="admin-modal-body" id="invoiceModalBody">
-            <div style="text-align: center; padding: 2rem;">
-                <div class="admin-spinner"></div>
-                <p style="color: var(--admin-text-muted); margin-top: 1rem;">Loading...</p>
+            <!-- Account Summary -->
+            <?php if (!empty($statistics['total_invoices'])): ?>
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h4 class="admin-card-title">
+                            <i class="fas fa-chart-pie"></i>
+                            Account Summary
+                    </h4>
+                    </div>
+                    <div class="admin-card-body">
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: var(--admin-text-secondary);">Total Invoices:</span>
+                                <span style="font-weight: 600;"><?php echo $statistics['total_invoices']; ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: var(--admin-text-secondary);">Total Billed:</span>
+                                <span style="font-weight: 600;"><?php echo $statistics['formatted_total_billed']; ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: var(--admin-text-secondary);">Total Paid:</span>
+                                <span style="font-weight: 600; color: var(--admin-success);"><?php echo $statistics['formatted_total_paid']; ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--admin-text-secondary);">Outstanding:</span>
+                                <span style="font-weight: 600; color: <?php echo $statistics['total_outstanding'] > 0 ? 'var(--admin-error)' : 'var(--admin-success)'; ?>;">
+                                    <?php echo $statistics['formatted_total_outstanding']; ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Help & Support -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h4 class="admin-card-title">
+                        <i class="fas fa-question-circle"></i>
+                        Help & Support
+                    </h4>
+                </div>
+                <div class="admin-card-body">
+                    <p style="color: var(--admin-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                        Need help with your invoices or have billing questions?
+                    </p>
+                    <a href="/index.php?page=contact" class="admin-btn admin-btn-success" style="width: 100%; margin-bottom: 0.5rem;">
+                        <i class="fas fa-envelope"></i>
+                        Contact Support
+                    </a>
+                    <a href="/index.php?page=user_tickets" class="admin-btn admin-btn-secondary" style="width: 100%;">
+                        <i class="fas fa-ticket-alt"></i>
+                        Create Ticket
+                    </a>
+                </div>
             </div>
-        </div>
+        </aside>
     </div>
 </div>
 
+<!-- Admin JavaScript -->
 <script src="/public/assets/js/admin.js"></script>
-<script>
-function viewInvoiceDetails(invoiceId) {
-    const modal = document.getElementById('invoiceModal');
-    modal.classList.remove('admin-hidden');
-    modal.style.display = 'flex';
-
-    // Here you would load invoice details via AJAX
-    // For now, just show a placeholder
-    setTimeout(() => {
-        document.getElementById('invoiceModalBody').innerHTML = `
-            <h6>Invoice #INV-${invoiceId}</h6>
-            <p>Detailed invoice information would be loaded here via AJAX.</p>
-            <div class="admin-flash-message admin-flash-info">
-                <i class="fas fa-construction"></i>
-                <div>Full invoice details functionality is under development in Phase 8.</div>
-            </div>
-        `;
-    }, 500);
-}
-</script>
-
-
-<?php
-function getInvoiceStatusBadgeClass($status): string
-{
-    return match($status) {
-        'sent' => 'info',
-        'paid' => 'success',
-        'overdue' => 'error',
-        default => 'gray'
-    };
-}
-?>

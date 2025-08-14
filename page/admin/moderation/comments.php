@@ -1,40 +1,49 @@
 <?php
 
 /**
- * Comments Moderation Page - DARK ADMIN THEME
- * Administrative interface for moderating user comments
- *
- * @author GitHub Copilot
+ * Comments Moderation - Updated to use unified AdminNavigation and FlashMessage
  */
 
 declare(strict_types=1);
 
-// Get global services from DI container
-global $container;
+// Get global services
+global $container, $serviceProvider, $flashMessageService;
+
+use App\Application\Components\AdminNavigation;
+use App\Application\Controllers\ModerationController;
+use App\Application\Core\ServiceProvider;
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
 
 try {
     // Get ServiceProvider for accessing services
-    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
+    $serviceProvider = ServiceProvider::getInstance($container);
 
     // Get required services
     $authService = $serviceProvider->getAuth();
-    $flashService = $serviceProvider->getFlashMessage();
     $logger = $serviceProvider->getLogger();
     $database = $serviceProvider->getDatabase();
 
-    // Create moderation controller
-    $moderationController = new \App\Application\Controllers\ModerationController(
+    // Use global FlashMessage service instead of creating new one
+    if (!isset($flashMessageService)) {
+        error_log("Critical: FlashMessageService not available in comments moderation");
+        die("A critical system error occurred. Please try again later.");
+    }
+
+    // Create moderation controller with global FlashMessage service
+    $moderationController = new ModerationController(
         $database,
         $authService,
-        $flashService,
+        $flashMessageService, // Use global service
         $logger
     );
 
     // Handle request
     $data = $moderationController->handleCommentsModeration();
 
-    // Get flash messages
-    $flashMessages = $moderationController->getFlashMessages();
+    // Get flash messages from global service
+    $flashMessages = $flashMessageService->getAllMessages();
 
     // Set page title
     $pageTitle = 'Comments Moderation - Admin Panel';
@@ -42,60 +51,25 @@ try {
 } catch (Exception $e) {
     // Handle critical errors
     if (isset($logger)) {
-        $logger->critical("Critical error in comments moderation page: " . $e->getMessage());
+        $logger->critical('Critical error in comments moderation page: ' . $e->getMessage());
     }
 
-    $data = [
-        'error' => 'System temporarily unavailable. Please try again later.',
-        'comments' => [],
-        'statistics' => [],
-        'filters' => []
-    ];
-    $flashMessages = [];
-}
+    // Use global FlashMessage service for errors
+    if (isset($flashMessageService)) {
+        $flashMessageService->addError('System temporarily unavailable. Please try again later.');
+    }
 
+    $data = ['error' => true];
+    $flashMessages = $flashMessageService->getAllMessages() ?? [];
+}
 ?>
 
-    <!-- Admin Dark Theme Styles -->
+    <!-- Admin Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
+    <link rel="stylesheet" href="/public/assets/css/admin-navigation.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=admin_moderation_dashboard" class="admin-nav-brand">
-                <i class="fas fa-gavel"></i>
-                <span>Moderation Center</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=admin_moderation_dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/index.php?page=moderate_projects" class="admin-nav-link">
-                    <i class="fas fa-clipboard-check"></i>
-                    <span>Projects</span>
-                </a>
-                <a href="/index.php?page=moderate_comments" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-comments"></i>
-                    <span>Comments</span>
-                    <?php if (($data['statistics']['pending_count'] ?? 0) > 0): ?>
-                        <span class="admin-badge admin-badge-warning" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem;">
-                            <?= $data['statistics']['pending_count'] ?>
-                        </span>
-                    <?php endif; ?>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Main Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -112,7 +86,7 @@ try {
                 <div class="admin-header-actions">
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <!-- Filter Dropdown -->
-                        <select id="statusFilter" class="admin-input admin-select" style="width: auto; min-width: 120px;">
+                        <label for="statusFilter"></label><select id="statusFilter" class="admin-input admin-select" style="width: auto; min-width: 120px;">
                             <option value="">All Status</option>
                             <option value="pending" <?= ($_GET['filter'] ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
                             <option value="approved" <?= ($_GET['filter'] ?? '') === 'approved' ? 'selected' : '' ?>>Approved</option>
@@ -121,8 +95,8 @@ try {
                         </select>
 
                         <!-- Search -->
-                        <input type="text" id="searchComments" class="admin-input" placeholder="Search comments..."
-                               data-search-target=".comment-item" style="width: 200px;">
+                        <label for="searchComments"></label><input type="text" id="searchComments" class="admin-input" placeholder="Search comments..."
+                                                                   data-search-target=".comment-item" style="width: 200px;">
 
                         <!-- Bulk Actions -->
                         <div class="admin-btn-group" style="display: none;" id="bulkActions">
@@ -211,7 +185,9 @@ try {
                                 <div class="admin-card-header" style="padding: 1rem 1.5rem;">
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                         <div style="display: flex; align-items: center; gap: 1rem; flex-grow: 1;">
-                                            <input type="checkbox" data-select-row value="<?= $comment['id'] ?>" style="margin: 0;">
+                                            <label>
+                                                <input type="checkbox" data-select-row value="<?= $comment['id'] ?>" style="margin: 0;">
+                                            </label>
 
                                             <div class="admin-table-avatar" style="background: var(--admin-info-bg); color: var(--admin-info);">
                                                 <?= strtoupper(substr($comment['author_name'] ?? 'A', 0, 1)) ?>
@@ -446,8 +422,8 @@ try {
             <div class="admin-card-body">
                 <div class="admin-form-group">
                     <label class="admin-label">Reason/Note</label>
-                    <textarea id="moderationReason" class="admin-input admin-textarea" rows="4"
-                              placeholder="Explain the reason for this moderation decision..."></textarea>
+                    <label for="moderationReason"></label><textarea id="moderationReason" class="admin-input admin-textarea" rows="4"
+                                                                    placeholder="Explain the reason for this moderation decision..."></textarea>
                 </div>
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button type="button" class="admin-btn admin-btn-secondary" data-modal-close>Cancel</button>

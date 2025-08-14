@@ -178,7 +178,7 @@
                 }
             });
 
-            const url = `/page/api/filter_articles.php?${params.toString()}`;
+            const url = `/page/api/system/filter_articles.php?${params.toString()}`;
             this.logger.debug('[NewsSearch] Search API request:', url);
 
             try {
@@ -267,43 +267,80 @@
          */
         updateContentDirect(data, filters) {
             try {
-                // Обновляем основной контейнер статей
-                const mainContent = document.querySelector('.news-main');
-                if (!mainContent) {
-                    throw new Error('News main container not found');
+                // ИСПРАВЛЕНО: Ищем различные возможные контейнеры для статей
+                let articlesContainer = document.querySelector('.articles-grid');
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.news-grid');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.articles-container');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.news-articles');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('main .container');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('#main-content');
+                }
+                if (!articlesContainer) {
+                    articlesContainer = document.querySelector('.main-content');
                 }
 
-                // Ищем контейнер для статей
-                let articlesContainer = mainContent.querySelector('.articles-grid');
-                if (!articlesContainer) {
-                    // Если нет grid, ищем любой контейнер статей
-                    articlesContainer = mainContent.querySelector('.articles-container, .news-articles');
-                }
+                console.log('[NewsSearch] Found articles container:', articlesContainer);
 
                 if (articlesContainer && data.articles_html) {
-                    articlesContainer.innerHTML = data.articles_html;
-                    this.logger.debug('[NewsSearch] Articles updated');
-                } else if (data.articles_html) {
-                    // Если контейнер не найден, обновляем весь main
-                    const searchSection = mainContent.querySelector('.search-filters');
-                    if (searchSection) {
-                        // Сохраняем поиск и заменяем остальное
-                        const afterSearch = searchSection.nextElementSibling;
-                        if (afterSearch) {
-                            afterSearch.outerHTML = data.articles_html;
-                        }
+                    // Создаем временный div для парсинга HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = data.articles_html;
+
+                    // Ищем статьи в полученном HTML
+                    const newArticles = tempDiv.querySelectorAll('.article-card, .news-item, .post, article, .card');
+
+                    if (newArticles.length > 0) {
+                        // Очищаем контейнер и добавляем новые статьи
+                        articlesContainer.innerHTML = data.articles_html;
+
+                        // Анимация появления
+                        const allArticles = articlesContainer.querySelectorAll('.article-card, .news-item, .post, article, .card');
+                        allArticles.forEach((article, index) => {
+                            article.style.opacity = '0';
+                            article.style.transform = 'translateY(20px)';
+                            setTimeout(() => {
+                                article.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                article.style.opacity = '1';
+                                article.style.transform = 'translateY(0)';
+                            }, index * 50);
+                        });
+                    } else {
+                        // Если не найдены отдельные статьи, заменяем весь контент
+                        articlesContainer.innerHTML = data.articles_html;
                     }
+                } else {
+                    console.warn('[NewsSearch] Articles container not found or no articles HTML');
                 }
 
-                // Обновляем пагинацию
-                const paginationContainer = mainContent.querySelector('.pagination-section, .pagination-wrapper');
+                // ИСПРАВЛЕНО: Обновляем пагинацию с различными возможными селекторами
+                let paginationContainer = document.querySelector('.pagination-section');
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.pagination-wrapper');
+                }
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.pagination');
+                }
+                if (!paginationContainer) {
+                    paginationContainer = document.querySelector('.page-navigation');
+                }
+
+                console.log('[NewsSearch] Found pagination container:', paginationContainer);
+
                 if (paginationContainer) {
-                    if (data.pagination_html && data.pagination_html.trim()) {
+                    if (data.pagination_html && data.pagination_html.trim() !== '') {
                         paginationContainer.innerHTML = data.pagination_html;
                     } else {
                         paginationContainer.innerHTML = '';
                     }
-                    this.logger.debug('[NewsSearch] Pagination updated');
                 }
 
                 // Обновляем URL

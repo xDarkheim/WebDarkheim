@@ -2,9 +2,7 @@
 
 /**
  * Moderation Dashboard - DARK ADMIN THEME
- * Central admin panel for moderation overview and quick actions
- *
- * @author GitHub Copilot
+ * Updated to use unified AdminNavigation component
  */
 
 declare(strict_types=1);
@@ -12,9 +10,15 @@ declare(strict_types=1);
 // Get global services from DI container
 global $container;
 
+use App\Application\Controllers\ModerationController;
+use App\Application\Core\ServiceProvider;
+use App\Application\Components\AdminNavigation;
+
+
+
 try {
     // Get ServiceProvider for accessing services
-    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
+    $serviceProvider = ServiceProvider::getInstance($container);
     
     // Get required services
     $authService = $serviceProvider->getAuth();
@@ -23,7 +27,7 @@ try {
     $database = $serviceProvider->getDatabase();
 
     // Create moderation controller
-    $moderationController = new \App\Application\Controllers\ModerationController(
+    $moderationController = new ModerationController(
         $database,
         $authService,
         $flashService,
@@ -39,10 +43,13 @@ try {
     // Set page title
     $pageTitle = 'Moderation Dashboard - Admin Panel';
 
+    // Create navigation - it will auto-inject database and show badges
+    $adminNavigation = new AdminNavigation($authService);
+
 } catch (Exception $e) {
     // Handle critical errors
     if (isset($logger)) {
-        $logger->critical("Critical error in moderation dashboard: " . $e->getMessage());
+        $logger->critical('Critical error in moderation dashboard: ' . $e->getMessage());
     }
     
     $data = [
@@ -53,6 +60,9 @@ try {
         'pending_items' => []
     ];
     $flashMessages = [];
+
+    // Create navigation even on error
+    $adminNavigation = new AdminNavigation($authService);
 }
 
 ?>
@@ -60,48 +70,8 @@ try {
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-gavel"></i>
-                <span>Moderation Center</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=admin_moderation_dashboard" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/index.php?page=moderate_projects" class="admin-nav-link">
-                    <i class="fas fa-clipboard-check"></i>
-                    <span>Projects</span>
-                    <?php if (($data['statistics']['pending_projects'] ?? 0) > 0): ?>
-                        <span class="admin-badge admin-badge-warning" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem;">
-                            <?= $data['statistics']['pending_projects'] ?>
-                        </span>
-                    <?php endif; ?>
-                </a>
-                <a href="/index.php?page=moderate_comments" class="admin-nav-link">
-                    <i class="fas fa-comments"></i>
-                    <span>Comments</span>
-                    <?php if (($data['statistics']['pending_comments'] ?? 0) > 0): ?>
-                        <span class="admin-badge admin-badge-warning" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem;">
-                            <?= $data['statistics']['pending_comments'] ?>
-                        </span>
-                    <?php endif; ?>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Main Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -461,19 +431,22 @@ try {
 
     <!-- Admin Scripts -->
     <script src="/public/assets/js/admin.js"></script>
+    <?= $adminNavigation->renderBadgeUpdateScript() ?>
     <script>
         // Initialize dashboard functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-refresh stats every 30 seconds
             setInterval(function() {
                 // Refresh moderation statistics
-                fetch('/index.php?page=api_moderation_stats')
+                fetch('/index.php?page=api_navigation_stats')
                     .then(response => response.json())
                     .then(data => {
-                        // Update badge counts
-                        updateModerationBadges(data);
+                        // Update badge counts in navigation
+                        if (window.navigationBadgeUpdater) {
+                            window.navigationBadgeUpdater.applyBadgeUpdates(data);
+                        }
                     })
-                    .catch(error => console.log('Stats refresh failed:', error));
+                    .catch(error => console.log('Navigation stats refresh failed:', error));
             }, 30000);
 
             // Add click tracking for moderation actions
@@ -483,18 +456,4 @@ try {
                 });
             });
         });
-
-        function updateModerationBadges(data) {
-            // Update navigation badges
-            const projectsBadge = document.querySelector('a[href*="moderate_projects"] .admin-badge');
-            const commentsBadge = document.querySelector('a[href*="moderate_comments"] .admin-badge');
-
-            if (projectsBadge && data.pending_projects > 0) {
-                projectsBadge.textContent = data.pending_projects;
-            }
-
-            if (commentsBadge && data.pending_comments > 0) {
-                commentsBadge.textContent = data.pending_comments;
-            }
-        }
     </script>

@@ -156,12 +156,7 @@ readonly class AuthController
                 try {
                     // Clear form data on success
                     if (session_status() === PHP_SESSION_ACTIVE) {
-                        if (isset($_SESSION['form_data_login_username'])) {
-                            unset($_SESSION['form_data_login_username']);
-                        }
-                        if (isset($_SESSION['form_data_login'])) {
-                            unset($_SESSION['form_data_login']);
-                        }
+                        unset($_SESSION['form_data_login_username'], $_SESSION['form_data_login']);
                     }
 
                     // Handle remember me functionality
@@ -367,28 +362,33 @@ readonly class AuthController
 
                 // Unset common auth flags
                 $_SESSION = [];
-                unset(
-                    $_SESSION['user_id'],
-                    $_SESSION['username'],
-                    $_SESSION['email'],
-                    $_SESSION['user_role'],
-                    $_SESSION['role'],
-                    $_SESSION['is_admin'],
-                    $_SESSION['user_authenticated'],
-                    $_SESSION['current_user'],
-                    $_SESSION['auth_user']
-                );
+                // Remove individual session keys if they exist
+                $sessionKeys = [
+                    'user_id', 'username', 'email', 'user_role',
+                    'role', 'is_admin', 'user_authenticated',
+                    'current_user', 'auth_user'
+                ];
+
+                foreach ($sessionKeys as $key) {
+                    if (isset($_SESSION[$key])) {
+                        unset($_SESSION[$key]);
+                    }
+                }
 
                 // Remove PHP session cookie
                 $params = session_get_cookie_params();
                 setcookie(session_name(), '', [
                     'expires' => time() - 42000,
-                    'path' => $params['path'] ?? '/',
-                    'domain' => $params['domain'] ?? '',
+                    'path' => $params['path'],
+                    'domain' => $params['domain'],
                     'secure' => !empty($_SERVER['HTTPS']),
                     'httponly' => true,
-                    'samesite' => $params['samesite'] ?? 'Lax'
+                    'samesite' => $params['samesite']
                 ]);
+
+                // Clear the session completely first
+                session_unset();
+                $_SESSION = [];
 
                 // Regenerate session ID for safety
                 @session_regenerate_id(true);

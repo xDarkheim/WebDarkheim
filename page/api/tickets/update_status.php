@@ -1,70 +1,41 @@
 <?php
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-/**
- * Update Ticket Status API
- * Handles status updates for support tickets (admin/employee only)
- */
+use App\Application\Controllers\SupportTicketController;
+use App\Infrastructure\Lib\Database;
 
-declare(strict_types=1);
-
-// Include bootstrap
-require_once __DIR__ . '/../../../includes/bootstrap.php';
-
-// Set JSON response header
 header('Content-Type: application/json');
 
-// Get global services
-global $container;
+// Проверяем авторизацию
+if (!isset($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Требуется авторизация']);
+    exit;
+}
+
+// Проверяем, является ли пользователь сотрудником
+$userRole = $_SESSION['user']['role'] ?? '';
+if (!in_array($userRole, ['admin', 'employee'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Требуется доступ сотрудника']);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Метод не разрешен']);
+    exit;
+}
 
 try {
-    // Get ServiceProvider
-    $serviceProvider = \App\Application\Core\ServiceProvider::getInstance($container);
-    
-    // Get required services
-    $authService = $serviceProvider->getAuth();
-    $database = $serviceProvider->getDatabase();
-    $flashService = $serviceProvider->getFlashMessage();
-    $logger = $serviceProvider->getLogger();
-    
-    // Only allow POST requests
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Method not allowed'
-        ]);
-        exit;
-    }
-    
-    // Create ticket controller
-    $ticketController = new \App\Application\Controllers\SupportTicketController(
-        $database,
-        $authService,
-        $flashService,
-        $logger
-    );
-    
-    // Handle status update
-    $response = $ticketController->updateTicketStatus();
-    
-    // Set appropriate HTTP status code
-    if ($response['success']) {
-        http_response_code(200); // OK
-    } else {
-        http_response_code(400); // Bad Request
-    }
-    
-    echo json_encode($response);
-    
+    $database = new Database();
+    $controller = new SupportTicketController($database);
+    $result = $controller->updateTicket();
+
+    echo json_encode($result);
+
 } catch (Exception $e) {
-    // Handle critical errors
-    if (isset($logger)) {
-        $logger->critical("Critical error in update status API: " . $e->getMessage());
-    }
-    
+    error_log("API Error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Internal server error'
-    ]);
+    echo json_encode(['success' => false, 'error' => 'Внутренняя ошибка сервера']);
 }

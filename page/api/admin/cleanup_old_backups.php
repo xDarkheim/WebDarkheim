@@ -5,21 +5,19 @@
  *
  * This API allows admins to clean up old backup files.
  * It supports automatic deletion of backups older than a specified threshold.
- * It returns a success or error message based on the operation result.
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
 declare(strict_types=1);
 
 use App\Application\Controllers\DatabaseBackupController;
-use App\Infrastructure\Lib\FlashMessageService;
 
 // Load global services from bootstrap.php
-require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Use global services
-global $auth;
+// Use global services from bootstrap.php
+global $database_handler, $serviceProvider, $flashMessageService;
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -29,51 +27,29 @@ if (session_status() == PHP_SESSION_NONE) {
 header('Content-Type: application/json');
 
 try {
-    // Initialize FlashMessageService properly
-    $flashService = new FlashMessageService();
+    // Get AuthenticationService
+    $authService = $serviceProvider->getAuth();
 
     // Check authentication and admin rights
-    if (!$auth || !$auth->isAuthenticated() || !$auth->hasRole('admin')) {
-        $flashService->addError('Access denied. Admin privileges required.');
+    if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
+        $flashMessageService->addError('Access denied. Admin privileges required.');
         http_response_code(403);
         echo json_encode([
             'success' => false,
-            'error' => 'Access denied. Admin privileges required.'
+            'error' => 'Access denied. Admin privileges required.',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
         exit();
     }
 
     // Check request method
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $flashService->addError('Method not allowed. POST required.');
+        $flashMessageService->addError('Method not allowed. POST required.');
         http_response_code(405);
         echo json_encode([
             'success' => false,
-            'error' => 'Method not allowed. POST required.'
-        ]);
-        exit();
-    }
-
-    // Get request data
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-
-    if (!$data || !isset($data['action'])) {
-        $flashService->addError('Invalid request data.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid request data.'
-        ]);
-        exit();
-    }
-
-    if ($data['action'] !== 'cleanup_old_backups') {
-        $flashService->addError('Invalid action.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid action.'
+            'error' => 'Method not allowed. POST required.',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
         exit();
     }
@@ -85,37 +61,40 @@ try {
     $result = $backupController->cleanupOldBackups();
 
     if ($result['success']) {
-        // Set flash message for success using FlashMessageService
-        $flashService->addSuccess($result['message'] ?? 'Old backup files have been cleaned up successfully.');
+        $filesDeleted = $result['files_deleted'] ?? 0;
+        $totalDeleted = $result['total_deleted'] ?? 0;
+
+        $flashMessageService->addSuccess("Cleanup completed! Deleted {$filesDeleted} old backup files, freed " .
+            ($result['size_freed'] ?? '0 B') . " of disk space.");
 
         echo json_encode([
             'success' => true,
-            'message' => $result['message'] ?? 'Old backups cleaned up successfully.',
-            'deleted_count' => $result['deleted_count'] ?? 0
+            'message' => 'Old backups cleaned up successfully',
+            'files_deleted' => $filesDeleted,
+            'total_deleted' => $totalDeleted,
+            'size_freed' => $result['size_freed'] ?? '0 B',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
     } else {
-        // Set flash message for error using FlashMessageService
-        $flashService->addError('Failed to cleanup old backup files: ' . ($result['error'] ?? 'Unknown error'));
+        $errorMessage = $result['error'] ?? 'Unknown error occurred during cleanup';
+        $flashMessageService->addError('Failed to cleanup old backups: ' . $errorMessage);
 
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => $result['error'] ?? 'Failed to cleanup old backups.'
+            'error' => $errorMessage,
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
     }
 
 } catch (Exception $e) {
-    error_log("Cleanup old backups API error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-
-    // Set flash message for error using FlashMessageService
-    if (isset($flashService)) {
-        $flashService->addError('Internal server error occurred during cleanup operation.');
-    }
+    error_log("Cleanup backups API error: " . $e->getMessage());
+    $flashMessageService->addError('System error occurred during cleanup: ' . $e->getMessage());
 
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Internal server error occurred.'
+        'error' => 'System error occurred during cleanup',
+        'flash_messages' => $flashMessageService->getAllMessages()
     ]);
 }

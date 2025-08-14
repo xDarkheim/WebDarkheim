@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService, $database_handler;
 
 try {
@@ -31,6 +33,9 @@ if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     header("Location: /index.php?page=dashboard");
     exit();
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 $pageTitle = 'Edit Project';
 $current_user_id = $authService->getCurrentUserId();
@@ -79,99 +84,9 @@ $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .image-preview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .image-preview-item {
-            position: relative;
-            border-radius: var(--admin-border-radius);
-            overflow: hidden;
-            border: 1px solid var(--admin-border);
-            background: var(--admin-bg-secondary);
-        }
-        .image-preview-item img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-        .image-preview-info {
-            padding: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--admin-text-muted);
-            background: var(--admin-bg-tertiary);
-        }
-        .remove-image-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: var(--admin-error);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-        }
-        .remove-image-btn:hover {
-            background: var(--admin-error-light);
-        }
-        .tech-input-container {
-            position: relative;
-        }
-        .tech-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--admin-bg-card);
-            border: 1px solid var(--admin-border);
-            border-top: none;
-            border-radius: 0 0 var(--admin-border-radius) var(--admin-border-radius);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10;
-            display: none;
-        }
-        .tech-suggestion {
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            color: var(--admin-text-primary);
-            font-size: 0.875rem;
-        }
-        .tech-suggestion:hover {
-            background: var(--admin-bg-secondary);
-        }
-    </style>
 
-<div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-briefcase"></i>
-                Portfolio Management
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i> Portfolio
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -208,19 +123,7 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="admin-flash-messages">
-            <?php foreach ($flashMessages as $type => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
-                        <div><?= htmlspecialchars($message['text']) ?></div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<!-- Flash messages handled by global toast system -->
 
     <!-- Status Alerts -->
     <?php if ($projectData['status'] === 'pending'): ?>
@@ -601,4 +504,3 @@ function removeImage(imageName) {
     }
 }
 </script>
-

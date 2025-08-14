@@ -9,6 +9,8 @@
 
 declare(strict_types=1);
 
+use App\Application\Components\AdminNavigation;
+
 // Use global services from the DI architecture
 global $flashMessageService, $database_handler, $container, $serviceProvider;
 
@@ -33,6 +35,9 @@ if (!in_array($currentUser['role'], ['client', 'employee', 'admin'])) {
     header('Location: /index.php?page=home');
     exit;
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 // Get meetings for current user
 try {
@@ -74,23 +79,8 @@ $pageTitle = 'Meetings & Consultations - Client Portal';
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<!-- Navigation -->
-<nav class="admin-nav">
-    <div class="admin-nav-container">
-        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
-            <i class="fas fa-calendar-alt"></i>
-            Meeting Portal
-        </a>
-        <div class="admin-nav-links">
-            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-            <a href="/index.php?page=user_meetings_schedule" class="admin-nav-link">
-                <i class="fas fa-plus"></i> Schedule Meeting
-            </a>
-        </div>
-    </div>
-</nav>
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
 
 <!-- Header -->
 <header class="admin-header">
@@ -114,19 +104,7 @@ $pageTitle = 'Meetings & Consultations - Client Portal';
 
 <div class="admin-layout-main">
     <div class="admin-content">
-        <!-- Flash Messages -->
-        <?php if (!empty($flashMessages)): ?>
-            <div class="admin-flash-messages">
-                <?php foreach ($flashMessages as $type => $messages): ?>
-                    <?php foreach ($messages as $message): ?>
-                        <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                            <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
-                            <div><?= htmlspecialchars($message['text']) ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+<!-- Flash messages handled by global toast system -->
 
         <!-- Upcoming Meetings -->
         <div class="admin-card">

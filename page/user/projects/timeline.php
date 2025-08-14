@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService;
 
 try {
@@ -28,6 +30,9 @@ if (!in_array($userRole, ['client', 'employee', 'admin'])) {
     header('Location: /index.php?page=home');
     exit;
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 $projectId = $_GET['id'] ?? null;
 if (!$projectId) {
@@ -62,133 +67,43 @@ $pageTitle = 'Project Timeline - ' . $project['project_name'];
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-    <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .timeline-container {
-            position: relative;
-            padding-left: 2rem;
-        }
-        .timeline-line {
-            position: absolute;
-            left: 1rem;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: linear-gradient(to bottom, var(--admin-primary), var(--admin-border));
-        }
-        .timeline-item {
-            position: relative;
-            margin-bottom: 2rem;
-            padding-left: 1rem;
-        }
-        .timeline-marker {
-            position: absolute;
-            left: -1.75rem;
-            top: 0.5rem;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.875rem;
-            border: 3px solid var(--admin-bg-primary);
-        }
-        .timeline-marker.completed { background: var(--admin-success); }
-        .timeline-marker.in_progress { background: var(--admin-warning); animation: pulse 2s infinite; }
-        .timeline-marker.pending { background: var(--admin-border); color: var(--admin-text-muted); }
-        .timeline-content {
-            background: var(--admin-bg-card);
-            border-radius: var(--admin-border-radius);
-            padding: 1.5rem;
-            border: 1px solid var(--admin-border);
-            transition: var(--admin-transition);
-        }
-        .timeline-content:hover {
-            transform: translateX(5px);
-            box-shadow: var(--admin-shadow-lg);
-        }
-        .timeline-date {
-            position: absolute;
-            right: 100%;
-            top: 0.5rem;
-            margin-right: 1rem;
-            font-size: 0.75rem;
-            color: var(--admin-text-muted);
-            white-space: nowrap;
-        }
-        .type-milestone { border-left: 4px solid var(--admin-primary); }
-        .type-task { border-left: 4px solid var(--admin-success); }
-        .type-meeting { border-left: 4px solid var(--admin-warning); }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-        @media (max-width: 768px) {
-            .timeline-date {
-                position: static;
-                margin-right: 0;
-                margin-bottom: 0.5rem;
-                display: block;
-            }
-        }
-    </style>
+<link rel="stylesheet" href="/public/assets/css/admin.css">
+
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
+
+<!-- Header -->
+<header class="admin-header">
+    <div class="admin-header-container">
+        <div class="admin-header-content">
+            <div class="admin-header-title">
+                <i class="admin-header-icon fas fa-timeline"></i>
+                <div class="admin-header-text">
+                    <h1>Project Timeline</h1>
+                    <p><?= htmlspecialchars($project['project_name']) ?> - Development Progress</p>
+                </div>
+            </div>
+            <div class="admin-header-actions">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary);">
+                            <?= $project['progress_percentage'] ?>%
+                        </div>
+                        <small style="color: var(--admin-text-muted);">Complete</small>
+                    </div>
+                    <a href="/index.php?page=user_projects_details&id=<?= htmlspecialchars($projectId) ?>" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-info-circle"></i> Project Details
+                    </a>
+                    <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Projects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
 
 <div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-timeline"></i>
-                Project Timeline
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_projects" class="admin-nav-link">
-                    <i class="fas fa-code"></i> Projects
-                </a>
-                <a href="/index.php?page=user_tickets" class="admin-nav-link">
-                    <i class="fas fa-ticket-alt"></i> Support
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Header -->
-    <header class="admin-header">
-        <div class="admin-header-container">
-            <div class="admin-header-content">
-                <div class="admin-header-title">
-                    <i class="admin-header-icon fas fa-timeline"></i>
-                    <div class="admin-header-text">
-                        <h1>Project Timeline</h1>
-                        <p><?= htmlspecialchars($project['project_name']) ?> - Development Progress</p>
-                    </div>
-                </div>
-                <div class="admin-header-actions">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-primary);">
-                                <?= $project['progress_percentage'] ?>%
-                            </div>
-                            <small style="color: var(--admin-text-muted);">Complete</small>
-                        </div>
-                        <a href="/index.php?page=user_projects_details&id=<?= htmlspecialchars($projectId) ?>" class="admin-btn admin-btn-secondary">
-                            <i class="fas fa-info-circle"></i> Project Details
-                        </a>
-                        <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Back to Projects
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
         <div class="admin-flash-messages">
@@ -234,7 +149,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                                 </div>
 
                                 <div class="timeline-content type-<?= $item['type'] ?>">
-                                    <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                                         <h6 style="color: var(--admin-text-primary); margin: 0; flex: 1;">
                                             <?= htmlspecialchars($item['title']) ?>
                                         </h6>

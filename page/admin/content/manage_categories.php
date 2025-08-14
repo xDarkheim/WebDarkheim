@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use App\Domain\Models\Category;
+use App\Application\Components\AdminNavigation;
 
 // Use global services from bootstrap.php
 global $flashMessageService, $database_handler, $serviceProvider;
@@ -49,6 +50,9 @@ if (!isset($database_handler)) {
 }
 
 $pageTitle = "Manage Categories";
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 // --- Helper function to generate slugs ---
 function generateSlug(string $text): string {
@@ -185,37 +189,7 @@ $monthly_categories = array_filter($categories, function($category) {
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
     <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-            
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link" style="background-color: var(--admin-primary-50); color: var(--admin-primary);">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">

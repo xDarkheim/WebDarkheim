@@ -6,19 +6,18 @@
  * This API allows admins to create manual database backups.
  * It supports creating a backup file and returning a success or error message.
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
 declare(strict_types=1);
 
 use App\Application\Controllers\DatabaseBackupController;
-use App\Infrastructure\Lib\FlashMessageService;
 
 // Load global services from bootstrap.php
-require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Use global services
-global $auth;
+// Use global services from bootstrap.php
+global $database_handler, $serviceProvider, $flashMessageService;
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -28,51 +27,29 @@ if (session_status() == PHP_SESSION_NONE) {
 header('Content-Type: application/json');
 
 try {
-    // Initialize FlashMessageService properly
-    $flashService = new FlashMessageService();
+    // Get AuthenticationService
+    $authService = $serviceProvider->getAuth();
 
     // Check authentication and admin rights
-    if (!$auth || !$auth->isAuthenticated() || !$auth->hasRole('admin')) {
-        $flashService->addError('Access denied. Admin privileges required.');
+    if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
+        $flashMessageService->addError('Access denied. Admin privileges required.');
         http_response_code(403);
         echo json_encode([
             'success' => false,
-            'error' => 'Access denied. Admin privileges required.'
+            'error' => 'Access denied. Admin privileges required.',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
         exit();
     }
 
     // Check request method
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $flashService->addError('Method not allowed. POST required.');
+        $flashMessageService->addError('Method not allowed. POST required.');
         http_response_code(405);
         echo json_encode([
             'success' => false,
-            'error' => 'Method not allowed. POST required.'
-        ]);
-        exit();
-    }
-
-    // Get request data
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-
-    if (!$data || !isset($data['action'])) {
-        $flashService->addError('Invalid request data.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid request data.'
-        ]);
-        exit();
-    }
-
-    if ($data['action'] !== 'create_manual_backup') {
-        $flashService->addError('Invalid action.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid action.'
+            'error' => 'Method not allowed. POST required.',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
         exit();
     }
@@ -80,42 +57,40 @@ try {
     // Initialize backup controller
     $backupController = new DatabaseBackupController();
 
-    // Create manual backup
-    $result = $backupController->performBackup();
+    // Create manual backup using existing method
+    $result = $backupController->createFullBackup();
 
     if ($result['success']) {
-        // Set flash message for success using FlashMessageService
-        $flashService->addSuccess('Manual backup created successfully: ' . ($result['filename'] ?? 'backup file'));
+        $flashMessageService->addSuccess('Manual backup created successfully! Backup file: ' . ($result['filename'] ?? 'backup.sql.gz'));
 
         echo json_encode([
             'success' => true,
-            'message' => $result['message'] ?? 'Manual backup created successfully.',
+            'message' => 'Manual backup created successfully',
             'filename' => $result['filename'] ?? null,
-            'size' => $result['size'] ?? null
+            'size' => $result['size'] ?? null,
+            'created_at' => $result['created_at'] ?? time(),
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
     } else {
-        // Set flash message for error using FlashMessageService
-        $flashService->addError('Failed to create manual backup: ' . ($result['error'] ?? 'Unknown error'));
+        $errorMessage = $result['error'] ?? 'Unknown error occurred during backup creation';
+        $flashMessageService->addError('Failed to create manual backup: ' . $errorMessage);
 
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => $result['error'] ?? 'Failed to create backup.'
+            'error' => $errorMessage,
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
     }
 
 } catch (Exception $e) {
     error_log("Manual backup API error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-
-    // Set flash message for error using FlashMessageService
-    if (isset($flashService)) {
-        $flashService->addError('Internal server error occurred during manual backup.');
-    }
+    $flashMessageService->addError('System error occurred while creating backup: ' . $e->getMessage());
 
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Internal server error occurred.'
+        'error' => 'System error occurred while creating backup',
+        'flash_messages' => $flashMessageService->getAllMessages()
     ]);
 }

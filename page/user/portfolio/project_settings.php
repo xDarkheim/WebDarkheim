@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService, $database_handler;
 
 try {
@@ -31,6 +33,9 @@ if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
     header("Location: /index.php?page=dashboard");
     exit();
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 $pageTitle = 'Portfolio Settings';
 $current_user_id = $authService->getCurrentUserId();
@@ -116,65 +121,13 @@ if ($profileData) {
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
-    <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <style>
-        .settings-nav {
-            position: sticky;
-            top: 2rem;
-        }
-        .settings-nav .admin-card-body {
-            padding: 0;
-        }
-        .settings-nav-item {
-            display: block;
-            padding: 0.75rem 1rem;
-            color: var(--admin-text-secondary);
-            text-decoration: none;
-            border-bottom: 1px solid var(--admin-border);
-            transition: var(--admin-transition);
-        }
-        .settings-nav-item:last-child {
-            border-bottom: none;
-        }
-        .settings-nav-item:hover,
-        .settings-nav-item.active {
-            background: var(--admin-bg-secondary);
-            color: var(--admin-text-primary);
-        }
-        .settings-nav-item i {
-            margin-right: 0.5rem;
-            width: 16px;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-    </style>
+<link rel="stylesheet" href="/public/assets/css/admin.css">
 
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
+
+<!-- Header -->
 <div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-briefcase"></i>
-                Portfolio Management
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i> Portfolio
-                </a>
-                <a href="/index.php?page=user_profile" class="admin-nav-link">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-            </div>
-        </div>
-    </nav>
-
     <!-- Header -->
     <header class="admin-header">
         <div class="admin-header-container">
@@ -577,4 +530,3 @@ function copyToClipboard() {
     }
 }
 </script>
-

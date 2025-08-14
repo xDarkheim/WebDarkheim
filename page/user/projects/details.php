@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService, $database_handler;
 
 try {
@@ -30,6 +32,9 @@ if (!in_array($userRole, ['client', 'employee', 'admin'])) {
     header('Location: /index.php?page=home');
     exit;
 }
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
 
 $projectId = $_GET['id'] ?? null;
 if (!$projectId) {
@@ -69,118 +74,38 @@ $project = [
 $pageTitle = 'Project Details - ' . $project['project_name'];
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?></title>
+
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .progress-bar-custom {
-            height: 8px;
-            border-radius: 10px;
-            background: var(--admin-bg-secondary);
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--admin-primary) 0%, var(--admin-primary-light) 100%);
-            transition: width 0.5s ease;
-        }
-        .milestone-item {
-            position: relative;
-            padding-left: 2rem;
-            padding-bottom: 1.5rem;
-        }
-        .milestone-item:last-child {
-            padding-bottom: 0;
-        }
-        .milestone-item::before {
-            content: '';
-            position: absolute;
-            left: 0.6rem;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--admin-border);
-        }
-        .milestone-item:last-child::before {
-            display: none;
-        }
-        .milestone-marker {
-            position: absolute;
-            left: 0;
-            top: 0.5rem;
-            width: 1.25rem;
-            height: 1.25rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.7rem;
-        }
-        .milestone-completed { background: var(--admin-success); }
-        .milestone-in-progress { background: var(--admin-warning); }
-        .milestone-pending { background: var(--admin-border); }
-        .tech-badge {
-            background: var(--admin-primary-bg);
-            color: var(--admin-primary-light);
-            border: 1px solid var(--admin-primary);
-        }
-    </style>
-</head>
-<body class="admin-panel">
+
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
+
+<!-- Header -->
+<header class="admin-header">
+    <div class="admin-header-container">
+        <div class="admin-header-content">
+            <div class="admin-header-title">
+                <i class="admin-header-icon fas fa-project-diagram"></i>
+                <div class="admin-header-text">
+                    <h1><?= htmlspecialchars($project['project_name']) ?></h1>
+                    <p>Detailed project information and progress tracking</p>
+                </div>
+            </div>
+            <div class="admin-header-actions">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="admin-badge <?= getStatusBadgeClass($project['status']) ?>">
+                        <?= ucfirst(str_replace('_', ' ', $project['status'])) ?>
+                    </span>
+                    <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Projects
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
 
 <div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-project-diagram"></i>
-                Project Details
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_projects" class="admin-nav-link">
-                    <i class="fas fa-code"></i> Projects
-                </a>
-                <a href="/index.php?page=user_tickets" class="admin-nav-link">
-                    <i class="fas fa-ticket-alt"></i> Support
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Header -->
-    <header class="admin-header">
-        <div class="admin-header-container">
-            <div class="admin-header-content">
-                <div class="admin-header-title">
-                    <i class="admin-header-icon fas fa-project-diagram"></i>
-                    <div class="admin-header-text">
-                        <h1><?= htmlspecialchars($project['project_name']) ?></h1>
-                        <p>Detailed project information and progress tracking</p>
-                    </div>
-                </div>
-                <div class="admin-header-actions">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <span class="admin-badge <?= getStatusBadgeClass($project['status']) ?>">
-                            <?= ucfirst(str_replace('_', ' ', $project['status'])) ?>
-                        </span>
-                        <a href="/index.php?page=user_projects" class="admin-btn admin-btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Back to Projects
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <!-- Flash Messages -->
     <?php if (!empty($flashMessages)): ?>
         <div class="admin-flash-messages">
@@ -447,8 +372,6 @@ $flashMessages = $flashMessageService->getAllMessages();
 </div>
 
 <script src="/public/assets/js/admin.js"></script>
-</body>
-</html>
 
 <?php
 function getStatusBadgeClass($status): string

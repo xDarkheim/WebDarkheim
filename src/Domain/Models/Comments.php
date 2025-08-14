@@ -249,17 +249,77 @@ class Comments
         }
 
         try {
-            $sql = "SELECT thread_level FROM comments WHERE id = :parent_id LIMIT 1";
+            $sql = "SELECT thread_level FROM comments WHERE id = :parent_id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':parent_id' => $parentId]);
 
-            $parent = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $parent ? (int)$parent['thread_level'] + 1 : 0;
+            $parentLevel = $stmt->fetchColumn();
+            return $parentLevel !== false ? (int)$parentLevel + 1 : 0;
 
         } catch (PDOException $e) {
             error_log("Error calculating thread level: " . $e->getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Find comment by ID with user information
+     */
+    public function findByIdWithUser(int $id): ?array
+    {
+        try {
+            $sql = "SELECT c.*, u.username, u.email as user_email
+                    FROM comments c 
+                    LEFT JOIN users u ON c.user_id = u.id
+                    WHERE c.id = :id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+
+        } catch (PDOException $e) {
+            error_log("Error finding comment by ID with user: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Find comment by ID
+     */
+    public function findById(int $id): ?array
+    {
+        try {
+            $sql = "SELECT * FROM comments WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+
+        } catch (PDOException $e) {
+            error_log("Error finding comment by ID: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Static method to get comment by ID
+     */
+    public static function getById(DatabaseInterface $database_handler, int $id): ?array
+    {
+        $instance = new self($database_handler);
+        return $instance->findById($id);
+    }
+
+    /**
+     * Static method to delete comment by ID
+     */
+    public static function deleteById(DatabaseInterface $database_handler, int $id): bool
+    {
+        $instance = new self($database_handler);
+        return $instance->deleteComment($id);
     }
 
     /**

@@ -64,37 +64,37 @@ return [
         'profile_edit' => ['file' => 'user/profile/profile_edit.php', 'title' => 'Edit Profile', 'auth' => true],
         'user_profile_settings' => ['file' => 'user/profile/settings.php', 'title' => 'Profile Settings', 'auth' => true],
 
+        // User portfolio management
+        'user_portfolio' => ['file' => 'user/portfolio/index.php', 'title' => 'My Portfolio', 'auth' => true],
+        'portfolio_create' => ['file' => 'user/portfolio/add_project.php', 'title' => 'Create Project', 'auth' => true],
+        'user_portfolio_edit' => ['file' => 'user/portfolio/edit_project.php', 'title' => 'Edit Project', 'auth' => true],
+        'portfolio_settings' => ['file' => 'user/portfolio/project_settings.php', 'title' => 'Portfolio Settings', 'auth' => true],
+
         // User content management pages (restricted by middleware)
         'create_article' => ['file' => 'user/content/create_article.php', 'title' => 'Create Article', 'auth' => true],
         'edit_article' => ['file' => 'user/content/edit_article.php', 'title' => 'Edit Article', 'auth' => true],
         'manage_articles' => ['file' => 'user/content/manage_articles.php', 'title' => 'Manage Articles', 'auth' => true],
 
-        // PHASE 8: Client Portal - Support Tickets System
-        'user_tickets' => ['file' => 'user/tickets/index.php', 'title' => 'Support Tickets', 'auth' => true],
-        'user_tickets_create' => ['file' => 'user/tickets/create.php', 'title' => 'Create Support Ticket', 'auth' => true],
-        'user_tickets_view' => ['file' => 'user/tickets/view.php', 'title' => 'View Support Ticket', 'auth' => true],
+        // PHASE 8: Client Portal - Support Tickets
+        'user_tickets' => ['file' => 'user/ticket/tickets.php', 'title' => 'Support Tickets', 'auth' => true],
+        'user_tickets_create' => ['file' => 'user/ticket/tickets_create.php', 'title' => 'Create Ticket', 'auth' => true],
+        'user_tickets_view' => ['file' => 'user/ticket/tickets_view.php', 'title' => 'View Ticket', 'auth' => true],
 
-        // PHASE 8: Client Portfolio System
-        'user_portfolio' => ['file' => 'user/portfolio/index.php', 'title' => 'My Portfolio', 'auth' => true],
-        'portfolio_create' => ['file' => 'user/portfolio/add_project.php', 'title' => 'Add Portfolio Project', 'auth' => true],
-        'user_portfolio_edit' => ['file' => 'user/portfolio/edit_project.php', 'title' => 'Edit Portfolio Project', 'auth' => true],
-        'user_portfolio_settings' => ['file' => 'user/portfolio/project_settings.php', 'title' => 'Portfolio Settings', 'auth' => true],
-
-        // PHASE 8: Client Portal - Studio Projects for Clients
-        'user_projects' => ['file' => 'user/projects/index.php', 'title' => 'Studio Projects', 'auth' => true],
+        // PHASE 8: Client Portal - Projects Management  
+        'user_projects' => ['file' => 'user/projects/index.php', 'title' => 'My Projects', 'auth' => true],
         'user_projects_details' => ['file' => 'user/projects/details.php', 'title' => 'Project Details', 'auth' => true],
         'user_projects_timeline' => ['file' => 'user/projects/timeline.php', 'title' => 'Project Timeline', 'auth' => true],
 
-        // PHASE 8: Client Portal - Invoices and Financial Management
-        'user_invoices' => ['file' => 'user/invoices/index.php', 'title' => 'Invoices & Billing', 'auth' => true],
+        // PHASE 8: Client Portal - Invoices
+        'user_invoices' => ['file' => 'user/invoices/index.php', 'title' => 'Invoices', 'auth' => true],
         'user_invoices_download' => ['file' => 'user/invoices/download.php', 'title' => 'Download Invoice', 'auth' => true],
 
-        // PHASE 8: Client Portal - Document Management
-        'user_documents' => ['file' => 'user/documents/index.php', 'title' => 'Project Documents', 'auth' => true],
+        // PHASE 8: Client Portal - Documents
+        'user_documents' => ['file' => 'user/documents/index.php', 'title' => 'Documents', 'auth' => true],
         'user_documents_download' => ['file' => 'user/documents/download.php', 'title' => 'Download Document', 'auth' => true],
 
-        // PHASE 8: Client Portal - Meeting Management
-        'user_meetings' => ['file' => 'user/meetings/index.php', 'title' => 'Meetings & Consultations', 'auth' => true],
+        // PHASE 8: Client Portal - Meetings
+        'user_meetings' => ['file' => 'user/meetings/index.php', 'title' => 'Meetings', 'auth' => true],
         'user_meetings_schedule' => ['file' => 'user/meetings/schedule.php', 'title' => 'Schedule Meeting', 'auth' => true],
 
         // Admin pages - updated paths after reorganization
@@ -141,9 +141,11 @@ return [
         'api_notification_preferences' => ['controller' => 'App\\Application\\Controllers\\NotificationController', 'method' => 'updatePreferences'],
 
         // PHASE 8: Support Tickets API endpoints
-        'api_tickets_create' => ['controller' => 'App\\Application\\Controllers\\SupportTicketController', 'method' => 'createTicket'],
-        'api_tickets_update' => ['controller' => 'App\\Application\\Controllers\\SupportTicketController', 'method' => 'updateTicket'],
-        'api_tickets_reply' => ['controller' => 'App\\Application\\Controllers\\SupportTicketController', 'method' => 'replyToTicket'],
+        'api_tickets_create' => ['controller' => 'App\\Application\\Controllers\\TicketController', 'method' => 'create'],
+        'api_tickets_add_message' => ['controller' => 'App\\Application\\Controllers\\TicketController', 'method' => 'addMessage'],
+        'api_tickets_update_status' => ['controller' => 'App\\Application\\Controllers\\TicketController', 'method' => 'updateStatus'],
+        'api_tickets_assign' => ['controller' => 'App\\Application\\Controllers\\TicketController', 'method' => 'assign'],
+        'api_tickets_get_stats' => ['controller' => 'App\\Application\\Controllers\\TicketController', 'method' => 'getStats'],
 
         // System pages
         '404' => ['file' => 'system/404.php', 'title' => 'Page Not Found'],

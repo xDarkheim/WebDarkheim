@@ -3,178 +3,108 @@
 /**
  * Backup Management API
  *
- * This API provides a simple interface for managing database backups.
- * It supports creating, deleting, and downloading backups.
+ * This API provides interface for managing database backups.
+ * It supports deleting individual backup files with security checks.
  *
- * @author Dmytro Hovenko
+ * @author GitHub Copilot
  */
 
 declare(strict_types=1);
 
 use App\Application\Controllers\DatabaseBackupController;
-use App\Infrastructure\Lib\FlashMessageService;
 
-header('Content-Type: application/json');
-header('Cache-Control: no-cache, must-revalidate');
+// Load global services from bootstrap.php
+require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
-// Start a session if not already started
+// Use global services from bootstrap.php
+global $database_handler, $serviceProvider, $flashMessageService;
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Set JSON response header
+header('Content-Type: application/json');
+
 try {
-    // Load bootstrap
-    require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
-
-    // Use global services from bootstrap.php
-    global $auth;
-
-    // Initialize FlashMessageService properly
-    $flashService = new FlashMessageService();
+    // Get AuthenticationService
+    $authService = $serviceProvider->getAuth();
 
     // Check authentication and admin rights
-    if (!$auth || !$auth->isAuthenticated() || !$auth->hasRole('admin')) {
-        $flashService->addError('Access denied. Admin privileges required.');
+    if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
+        $flashMessageService->addError('Access denied. Admin privileges required.');
         http_response_code(403);
         echo json_encode([
             'success' => false,
-            'error' => 'Access denied. Admin privileges required.'
+            'error' => 'Access denied. Admin privileges required.',
+            'flash_messages' => $flashMessageService->getAllMessages()
         ]);
         exit();
     }
 
-    // Only allow POST requests
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $flashService->addError('Method not allowed. Only POST requests are accepted.');
-        http_response_code(405);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Method not allowed. Only POST requests are accepted.'
-        ]);
-        exit();
-    }
+    // Handle DELETE requests for file deletion
+    if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        // Get JSON input
+        $input = json_decode(file_get_contents('php://input'), true);
 
-    // Get and decode JSON input
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $flashService->addError('Invalid JSON data.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid JSON data.'
-        ]);
-        exit();
-    }
-
-    // Validate required fields
-    if (!isset($data['action']) || !isset($data['filename'])) {
-        $flashService->addError('Missing required fields: action and filename.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Missing required fields: action and filename.'
-        ]);
-        exit();
-    }
-
-    $action = $data['action'];
-    $filename = $data['filename'];
-
-    // Validate filename
-    if (empty($filename) || !is_string($filename)) {
-        $flashService->addError('Invalid filename provided.');
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Invalid filename provided.'
-        ]);
-        exit();
-    }
-
-    // Initialize backup controller
-    $backupController = new DatabaseBackupController();
-
-    switch ($action) {
-        case 'delete':
-            $result = $backupController->deleteBackup($filename);
-
-            if ($result) {
-                // Set flash message for success using FlashMessageService
-                $flashService->addSuccess("Backup file '$filename' has been deleted successfully.");
-
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Backup deleted successfully',
-                    'filename' => $filename
-                ]);
-            } else {
-                // Set flash message for error using FlashMessageService
-                $flashService->addError("Failed to delete backup file '$filename'. File may not exist or is not accessible.");
-
-                http_response_code(500);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Failed to delete backup file'
-                ]);
-            }
-            break;
-
-        case 'download':
-            // For download, we need to handle it differently since it's not a JSON response
-            $backups = $backupController->getBackupsList();
-            $backupFound = false;
-            $backupPath = '';
-
-            foreach ($backups as $backup) {
-                if ($backup['filename'] === $filename) {
-                    $backupPath = $backup['path'];
-                    $backupFound = true;
-                    break;
-                }
-            }
-
-            if (!$backupFound || !file_exists($backupPath)) {
-                $flashService->addError('Backup file not found');
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Backup file not found'
-                ]);
-                break;
-            }
-
-            // For download, redirect to a download handler
-            echo json_encode([
-                'success' => true,
-                'action' => 'download',
-                'download_url' => '/page/api/download_backup.php?filename=' . urlencode($filename)
-            ]);
-            break;
-
-        default:
-            $flashService->addError('Invalid action specified.');
+        if (!$input || !isset($input['filename'])) {
+            $flashMessageService->addError('Invalid request data. Filename required.');
             http_response_code(400);
             echo json_encode([
                 'success' => false,
-                'error' => 'Invalid action specified.'
+                'error' => 'Invalid request data. Filename required.',
+                'flash_messages' => $flashMessageService->getAllMessages()
             ]);
-            break;
+            exit();
+        }
+
+        $filename = $input['filename'];
+
+        // Initialize backup controller
+        $backupController = new DatabaseBackupController();
+
+        // Delete backup file using existing method
+        $result = $backupController->deleteBackup($filename);
+
+        if ($result) {
+            $flashMessageService->addSuccess('Backup file deleted successfully: ' . $filename);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Backup file deleted successfully',
+                'filename' => $filename,
+                'flash_messages' => $flashMessageService->getAllMessages()
+            ]);
+        } else {
+            $flashMessageService->addError('Failed to delete backup file: Unknown error occurred');
+
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Unknown error occurred during deletion',
+                'flash_messages' => $flashMessageService->getAllMessages()
+            ]);
+        }
+
+    } else {
+        // Method not allowed
+        $flashMessageService->addError('Method not allowed. Only DELETE requests supported.');
+        http_response_code(405);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Method not allowed. Only DELETE requests supported.',
+            'flash_messages' => $flashMessageService->getAllMessages()
+        ]);
     }
 
 } catch (Exception $e) {
     error_log("Backup management API error: " . $e->getMessage());
-    error_log("Stack trace: " . $e->getTraceAsString());
-
-    // Set flash message for error using FlashMessageService
-    if (isset($flashService)) {
-        $flashService->addError('Internal server error occurred during backup operation.');
-    }
+    $flashMessageService->addError('System error occurred: ' . $e->getMessage());
 
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'error' => 'Internal server error occurred.'
+        'error' => 'System error occurred during backup management',
+        'flash_messages' => $flashMessageService->getAllMessages()
     ]);
 }

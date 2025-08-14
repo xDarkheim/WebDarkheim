@@ -1725,6 +1725,27 @@
   .news-isolated .search-input {
     min-width: auto;
   }
+
+  .news-isolated .no-articles-container {
+    min-height: 300px;
+    padding: var(--spacing-xl);
+  }
+
+  .news-isolated .no-articles-content {
+    padding: var(--spacing-xl);
+  }
+
+  .news-isolated .no-articles-icon {
+    font-size: 3rem;
+  }
+
+  .news-isolated .no-articles-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .news-isolated .no-articles-message {
+    font-size: var(--font-size-base);
+  }
 }
 
 @media (max-width: 480px) {
@@ -2011,360 +2032,128 @@
    NO ARTICLES COMPONENT
    ========================================================================== */
 
-.news-isolated .no-articles {
-  text-align: center;
+.news-isolated .no-articles-container {
+  grid-column: 1 / -1; /* Занимает всю ширину сетки */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
   padding: var(--spacing-3xl);
+}
+
+.news-isolated .no-articles-content {
+  text-align: center;
+  max-width: 480px;
   background: var(--color-dark-surface);
-  border: 2px dashed var(--color-dark-border);
+  border: 1px solid var(--news-border-subtle);
   border-radius: var(--news-card-border-radius);
-  margin: var(--spacing-xl) 0;
-}
-
-.news-isolated .no-articles i {
-  font-size: var(--font-size-4xl);
-  color: var(--color-accent);
-  margin-bottom: var(--spacing-xl);
-  opacity: 0.6;
-}
-
-.news-isolated .no-articles h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.news-isolated .no-articles p {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin: 0;
-  line-height: var(--line-height-relaxed);
-}
-
-/* ==========================================================================
-   ARTICLE CARD IMAGES - PLACEHOLDER И РЕАЛЬНЫЕ ИЗОБРАЖЕНИЯ
-   ========================================================================== */
-
-.news-isolated .article-card-image {
-  width: 100%;
-  height: 200px;
+  padding: var(--spacing-3xl);
+  box-shadow: var(--news-card-shadow);
   position: relative;
   overflow: hidden;
-  background: var(--gradient-tech);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--news-transition);
 }
 
-/* Placeholder для изображений */
-.news-isolated .article-card-image::before {
-  content: '\f1c5'; /* Font Awesome newspaper icon */
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
-  font-size: var(--font-size-3xl);
-  color: rgba(255, 255, 255, 0.3);
-  z-index: 1;
-  position: relative;
-}
-
-/* Реальное изображение статьи */
-.news-isolated .article-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--news-transition);
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-}
-
-.news-isolated .article-card:hover .article-card-image img {
-  transform: scale(1.05);
-}
-
-/* Градиентный overlay для лучшего контраста */
-.news-isolated .article-card-image::after {
+/* Градиентный фон */
+.news-isolated .no-articles-content::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(139, 92, 246, 0.1) 50%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-  z-index: 3;
-  opacity: 0;
-  transition: opacity var(--news-transition);
+  background: var(--news-gradient-overlay);
+  z-index: 1;
 }
 
-.news-isolated .article-card:hover .article-card-image::after {
-  opacity: 1;
+.news-isolated .no-articles-content > * {
+  position: relative;
+  z-index: 2;
 }
 
-/* ==========================================================================
-   SIDEBAR СТИЛИ - ДОПОЛНИТЕЛЬНЫЕ СТИЛИ
-   ========================================================================== */
-
-.news-isolated .sidebar-widget {
-  background: var(--color-dark-surface);
-  border: 1px solid var(--news-border-subtle);
-  border-radius: var(--news-card-border-radius);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.news-isolated .widget-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  border-bottom: 2px solid var(--color-accent);
-  padding-bottom: var(--spacing-sm);
-}
-
-.news-isolated .widget-title i {
+.news-isolated .no-articles-icon {
+  font-size: 4rem;
   color: var(--color-accent);
-  font-size: var(--font-size-md);
-}
-
-.news-isolated .widget-content {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
-  margin: 0;
-}
-
-/* ==========================================================================
-   CATEGORY FILTER SIDEBAR
-   ========================================================================== */
-
-.news-isolated .category-filter {
-  background: var(--color-dark-surface);
-  border: 1px solid var(--news-border-subtle);
-  border-radius: var(--news-card-border-radius);
-  padding: var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
+  opacity: 0.7;
 }
 
-.news-isolated .category-filter-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  border-bottom: 2px solid var(--color-accent);
-  padding-bottom: var(--spacing-sm);
+.news-isolated .no-articles-icon i {
+  font-size: inherit;
 }
 
-.news-isolated .category-filter-title i {
-  color: var(--color-accent);
-  font-size: var(--font-size-md);
-}
-
-.news-isolated .category-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.news-isolated .category-item {
-  margin-bottom: var(--spacing-sm);
-}
-
-.news-isolated .category-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md);
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  border-radius: var(--border-radius-lg);
-  transition: var(--news-transition);
-  font-weight: var(--font-weight-medium);
-  background: transparent;
-  border: 1px solid transparent;
-}
-
-.news-isolated .category-link:hover {
-  background: var(--color-dark-elevated);
-  color: var(--color-text-primary);
-  border-color: var(--color-accent);
-  text-decoration: none;
-  transform: translateX(4px);
-}
-
-.news-isolated .category-link.active {
-  background: var(--color-accent);
-  color: var(--color-white);
-  border-color: var(--color-accent);
-}
-
-.news-isolated .category-name {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.news-isolated .category-count {
-  background: var(--color-dark-bg);
-  color: var(--color-text-muted);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  min-width: 24px;
-  text-align: center;
-}
-
-.news-isolated .category-link.active .category-count {
-  background: var(--color-white);
-  color: var(--color-accent);
-}
-
-/* ==========================================================================
-   ARTICLES GRID УЛУЧШЕНИЯ
-   ========================================================================== */
-
-.news-isolated .articles-section {
-  margin-bottom: var(--spacing-2xl);
-}
-
-.news-isolated .articles-header {
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-lg);
-  border-bottom: 2px solid var(--color-dark-border);
-}
-
-.news-isolated .section-title {
+.news-isolated .no-articles-title {
+  font-family: var(--font-heading);
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  line-height: var(--line-height-tight);
 }
 
-.news-isolated .section-title i {
-  color: var(--color-accent);
-  font-size: var(--font-size-xl);
-}
-
-.news-isolated .article-count {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-normal);
-  color: var(--color-text-muted);
-}
-
-/* ==========================================================================
-   NO ARTICLES COMPONENT
-   ========================================================================== */
-
-.news-isolated .no-articles {
-  text-align: center;
-  padding: var(--spacing-3xl);
-  background: var(--color-dark-surface);
-  border: 2px dashed var(--color-dark-border);
-  border-radius: var(--news-card-border-radius);
-  margin: var(--spacing-xl) 0;
-}
-
-.news-isolated .no-articles i {
-  font-size: var(--font-size-4xl);
-  color: var(--color-accent);
-  margin-bottom: var(--spacing-xl);
-  opacity: 0.6;
-}
-
-.news-isolated .no-articles h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-}
-
-.news-isolated .no-articles p {
-  font-size: var(--font-size-base);
+.news-isolated .no-articles-message {
+  font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
-  margin: 0;
   line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-xl);
 }
 
-/* ==========================================================================
-   ARTICLE CARD IMAGES - PLACEHOLDER И РЕАЛЬНЫЕ ИЗОБРАЖЕНИЯ
-   ========================================================================== */
+.news-isolated .no-articles-message strong {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-semibold);
+}
 
-.news-isolated .article-card-image {
-  width: 100%;
-  height: 200px;
-  position: relative;
-  overflow: hidden;
-  background: var(--gradient-tech);
-  display: flex;
+.news-isolated .no-articles-actions {
+  margin-top: var(--spacing-xl);
+}
+
+.news-isolated .no-articles-actions .btn {
+  background: var(--color-accent);
+  color: var(--color-white);
+  border-color: var(--color-accent);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--spacing-sm);
+  border-radius: var(--border-radius-lg);
   transition: var(--news-transition);
 }
 
-/* Placeholder для изображений */
-.news-isolated .article-card-image::before {
-  content: '\f1c5'; /* Font Awesome newspaper icon */
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
-  font-size: var(--font-size-3xl);
-  color: rgba(255, 255, 255, 0.3);
-  z-index: 1;
-  position: relative;
+.news-isolated .no-articles-actions .btn:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Реальное изображение статьи */
-.news-isolated .article-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--news-transition);
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
+.news-isolated .no-articles-actions .btn i {
+  font-size: var(--font-size-sm);
 }
 
-.news-isolated .article-card:hover .article-card-image img {
-  transform: scale(1.05);
-}
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
 
-/* Градиентный overlay для лучшего контраста */
-.news-isolated .article-card-image::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(139, 92, 246, 0.1) 50%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-  z-index: 3;
-  opacity: 0;
-  transition: opacity var(--news-transition);
-}
+@media (max-width: 768px) {
+  .news-isolated .no-articles-container {
+    min-height: 300px;
+    padding: var(--spacing-xl);
+  }
 
-.news-isolated .article-card:hover .article-card-image::after {
-  opacity: 1;
+  .news-isolated .no-articles-content {
+    padding: var(--spacing-xl);
+  }
+
+  .news-isolated .no-articles-icon {
+    font-size: 3rem;
+  }
+
+  .news-isolated .no-articles-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .news-isolated .no-articles-message {
+    font-size: var(--font-size-base);
+  }
 }

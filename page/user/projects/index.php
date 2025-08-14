@@ -9,6 +9,8 @@ declare(strict_types=1);
 // Use global services from the DI architecture
 global $flashMessageService, $database_handler, $container, $serviceProvider;
 
+use App\Application\Components\AdminNavigation;
+
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
@@ -51,6 +53,9 @@ try {
     $projects = [];
 }
 
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
 $pageTitle = 'Studio Projects';
@@ -58,79 +63,9 @@ $pageTitle = 'Studio Projects';
 ?>
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .project-card {
-            transition: var(--admin-transition);
-            overflow: hidden;
-        }
-        .project-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--admin-shadow-lg);
-        }
-        .progress-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            position: relative;
-            margin: 0 auto;
-        }
-        .progress-ring {
-            transform: rotate(-90deg);
-        }
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--admin-text-primary);
-        }
-        .project-type-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--admin-text-muted);
-        }
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.3;
-        }
-    </style>
 
-<div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-code"></i>
-                Studio Projects
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_tickets" class="admin-nav-link">
-                    <i class="fas fa-ticket-alt"></i> Support
-                </a>
-                <a href="/index.php?page=user_invoices" class="admin-nav-link">
-                    <i class="fas fa-file-invoice"></i> Invoices
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">

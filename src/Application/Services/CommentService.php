@@ -164,7 +164,7 @@ class CommentService
 
             // Check permissions
             $user = User::findById($this->db_handler, $userId);
-            if (!$user || ($comment['user_id'] != $userId && !in_array($user->getRole(), ['admin', 'employee']))) {
+            if (!$user || ($comment['user_id'] != $userId && !in_array($user['role'] ?? 'user', ['admin', 'employee']))) {
                 return ['success' => false, 'error' => 'Permission denied'];
             }
 
@@ -252,7 +252,7 @@ class CommentService
 
         try {
             $user = User::findById($this->db_handler, $userId);
-            if ($user && in_array($user->getRole(), ['admin', 'employee'])) {
+            if ($user && in_array($user['role'], ['admin', 'employee'])) {
                 return 'approved'; // Staff comments auto-approved
             }
         } catch (Exception $e) {

@@ -12,6 +12,8 @@ require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
 global $serviceProvider, $flashMessageService;
 
+use App\Application\Components\AdminNavigation;
+
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
@@ -36,44 +38,18 @@ if (!in_array($userRole, ['admin', 'employee'])) {
 $pageTitle = 'Edit Article';
 $articleId = $_GET['id'] ?? null;
 
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
 ?>
 
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
 
-            <div class="admin-nav-links">
-                <a href="/index.php?page=manage_articles" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-newspaper"></i>
-                    <span>Articles</span>
-                </a>
-                <a href="/index.php?page=manage_categories" class="admin-nav-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/index.php?page=manage_users" class="admin-nav-link">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                <a href="/index.php?page=site_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">

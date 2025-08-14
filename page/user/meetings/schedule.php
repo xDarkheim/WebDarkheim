@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
 
+use App\Application\Components\AdminNavigation;
+
 global $serviceProvider, $flashMessageService;
 
 try {
@@ -29,28 +31,16 @@ if (!in_array($userRole, ['client', 'employee', 'admin'])) {
     exit;
 }
 
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
 $pageTitle = 'Schedule Meeting';
 ?>
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<!-- Navigation -->
-<nav class="admin-nav">
-    <div class="admin-nav-container">
-        <a href="/index.php?page=user_dashboard" class="admin-nav-brand">
-            <i class="fas fa-calendar-alt"></i>
-            Meeting Portal
-        </a>
-        <div class="admin-nav-links">
-            <a href="/index.php?page=user_dashboard" class="admin-nav-link">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-            <a href="/index.php?page=user_meetings" class="admin-nav-link">
-                <i class="fas fa-calendar"></i> All Meetings
-            </a>
-        </div>
-    </div>
-</nav>
+<!-- Unified Navigation -->
+<?= $adminNavigation->render() ?>
 
 <!-- Header -->
 <header class="admin-header">

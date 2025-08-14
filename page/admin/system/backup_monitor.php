@@ -9,12 +9,14 @@
 
 declare(strict_types=1);
 
+// Include required components
+use App\Application\Components\AdminNavigation;
 use App\Application\Controllers\DatabaseBackupController;
 use App\Infrastructure\Components\MessageComponent;
 use App\Infrastructure\Lib\FlashMessageService;
 
 // Use global services from bootstrap.php
-global $database_handler, $serviceProvider, $flashMessageService;
+global $flashMessageService, $database_handler, $serviceProvider;
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -40,6 +42,9 @@ if (!isset($database_handler)) {
     error_log("Critical: Required services not available in backup_monitor.php");
     die("A critical system error occurred. Please try again later.");
 }
+
+// Create unified navigation after authentication check
+$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
 
 $page_title = "Database Backup Monitor";
 
@@ -116,34 +121,8 @@ $flashMessages = $flashMessageService->getAllMessages();
     <!-- Admin Dark Theme Styles -->
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-shield-alt"></i>
-                <span>Admin Panel</span>
-            </a>
-
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/index.php?page=system_monitor" class="admin-nav-link">
-                    <i class="fas fa-chart-line"></i>
-                    <span>System Monitor</span>
-                </a>
-                <a href="/index.php?page=backup_monitor" class="admin-nav-link" style="background-color: var(--admin-primary-bg); color: var(--admin-primary-light); border-color: var(--admin-primary-border);">
-                    <i class="fas fa-database"></i>
-                    <span>Backup Monitor</span>
-                </a>
-                <a href="/index.php?page=admin_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i>
-                    <span>Settings</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -169,21 +148,8 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-    <div class="admin-flash-messages">
-        <?php foreach ($flashMessages as $type => $messages): ?>
-            <?php foreach ($messages as $message): ?>
-            <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                <i class="fas fa-<?= $type === 'error' ? 'exclamation-circle' : ($type === 'success' ? 'check-circle' : ($type === 'warning' ? 'exclamation-triangle' : 'info-circle')) ?>"></i>
-                <div>
-                    <?= $message['is_html'] ? $message['text'] : htmlspecialchars($message['text']) ?>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
+    <!-- Flash Messages - Let global toast system handle all messages -->
+    <div id="flash-messages-data" data-php-messages="<?= htmlspecialchars(json_encode($flashMessages)) ?>" style="display: none;"></div>
 
     <!-- Main Content -->
     <main>
@@ -487,39 +453,262 @@ $flashMessages = $flashMessageService->getAllMessages();
     <!-- Admin Scripts -->
     <script src="/public/assets/js/admin.js"></script>
     <script>
-        // Manual backup functionality
-        function createManualBackup() {
-            if (confirm('Create a manual backup now? This may take a few moments.')) {
-                window.adminPanel.showFlashMessage('info', 'Creating backup... Please wait.');
-                // TODO: Implement AJAX call to create manual backup
-                setTimeout(() => {
-                    window.adminPanel.showFlashMessage('success', 'Manual backup created successfully!');
-                }, 2000);
-            }
-        }
-
-        // Cleanup functionality
-        function cleanupOldBackups() {
-            if (confirm('Clean up old backup files? This action cannot be undone.')) {
-                window.adminPanel.showFlashMessage('info', 'Cleaning up old backups... Please wait.');
-                // TODO: Implement AJAX call to cleanup old backups
-                setTimeout(() => {
-                    window.adminPanel.showFlashMessage('success', 'Old backup files cleaned up successfully!');
-                }, 2000);
-            }
-        }
-
-        // Download and delete functionality
+        // Initialize page when DOM and admin panel are ready
         document.addEventListener('DOMContentLoaded', function() {
+            // Wait for admin panel to be available
+            const initializeWhenReady = () => {
+                if (window.adminPanel) {
+                    // Process PHP flash messages through global toast system
+                    const flashData = document.getElementById('flash-messages-data');
+                    if (flashData && flashData.dataset.phpMessages) {
+                        try {
+                            const messages = JSON.parse(flashData.dataset.phpMessages);
+                            if (window.showToast && Object.keys(messages).length > 0) {
+                                Object.keys(messages).forEach(type => {
+                                    if (Array.isArray(messages[type])) {
+                                        messages[type].forEach(message => {
+                                            const text = message.text || message;
+                                            window.showToast(text, type);
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.warn('Failed to parse PHP flash messages:', error);
+                        }
+                    }
+
+                    // Initialize button handlers
+                    initializeBackupHandlers();
+                } else {
+                    // Retry in 100ms if admin panel not ready
+                    setTimeout(initializeWhenReady, 100);
+                }
+            };
+
+            initializeWhenReady();
+        });
+
+        // Initialize backup-specific handlers
+        function initializeBackupHandlers() {
+            // Manual backup button handlers
+            const manualBackupBtn = document.getElementById('manual-backup-btn');
+            const cleanupBtn = document.getElementById('cleanup-old-btn');
+
+            if (manualBackupBtn) {
+                manualBackupBtn.addEventListener('click', createManualBackup);
+            }
+
+            if (cleanupBtn) {
+                cleanupBtn.addEventListener('click', cleanupOldBackups);
+            }
+
             // Download buttons
             document.querySelectorAll('[data-action="download"]').forEach(button => {
                 button.addEventListener('click', function() {
                     const filename = this.getAttribute('data-filename');
-                    window.adminPanel.showFlashMessage('info', `Downloading ${filename}...`);
-                    // TODO: Implement download functionality
+                    downloadBackup(filename);
                 });
             });
 
             // Delete buttons are handled by admin.js confirm system
-        });
+            document.querySelectorAll('[data-action="delete"]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (e.target.closest('[data-confirm]')) {
+                        // Let admin.js handle the confirmation, then delete
+                        const filename = this.getAttribute('data-filename');
+                        setTimeout(() => {
+                            deleteBackup(filename);
+                        }, 100);
+                    }
+                });
+            });
+        }
+
+        // Manual backup functionality using API
+        async function createManualBackup() {
+            if (!confirm('Create a manual backup now? This may take a few moments.')) {
+                return;
+            }
+
+            try {
+                if (window.showToast) {
+                    window.showToast('Creating manual backup... Please wait.', 'info');
+                }
+
+                const response = await fetch('https://darkheim.net/page/api/admin/manual_backup.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                // Handle flash messages from API response
+                if (data.flash_messages && window.showToast) {
+                    Object.keys(data.flash_messages).forEach(type => {
+                        const messages = data.flash_messages[type];
+                        if (Array.isArray(messages)) {
+                            messages.forEach(message => {
+                                const text = message.text || message;
+                                window.showToast(text, type);
+                            });
+                        }
+                    });
+                }
+
+                if (data.success) {
+                    // Refresh page after successful backup
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    if (window.showToast && data.message) {
+                        window.showToast(data.message, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Manual backup error:', error);
+                if (window.showToast) {
+                    window.showToast('Failed to create manual backup: Network error', 'error');
+                }
+            }
+        }
+
+        // Cleanup functionality using API
+        async function cleanupOldBackups() {
+            if (!confirm('Clean up old backup files? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                if (window.showToast) {
+                    window.showToast('Cleaning up old backups... Please wait.', 'info');
+                }
+
+                const response = await fetch('https://darkheim.net/page/api/admin/cleanup_old_backups.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                // Handle flash messages from API response
+                if (data.flash_messages && window.showToast) {
+                    Object.keys(data.flash_messages).forEach(type => {
+                        const messages = data.flash_messages[type];
+                        if (Array.isArray(messages)) {
+                            messages.forEach(message => {
+                                const text = message.text || message;
+                                window.showToast(text, type);
+                            });
+                        }
+                    });
+                }
+
+                if (data.success) {
+                    // Refresh page after successful cleanup
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    if (window.showToast && data.message) {
+                        window.showToast(data.message, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Cleanup error:', error);
+                if (window.showToast) {
+                    window.showToast('Failed to cleanup old backups: Network error', 'error');
+                }
+            }
+        }
+
+        // Download backup functionality using API
+        async function downloadBackup(filename) {
+            try {
+                if (window.showToast) {
+                    window.showToast(`Preparing download for ${filename}...`, 'info');
+                }
+
+                // Create download link using API
+                const downloadUrl = `https://darkheim.net/page/api/admin/download_backup.php?filename=${encodeURIComponent(filename)}`;
+
+                // Create temporary link and trigger download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                if (window.showToast) {
+                    window.showToast(`Download started: ${filename}`, 'success');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                if (window.showToast) {
+                    window.showToast(`Failed to download ${filename}`, 'error');
+                }
+            }
+        }
+
+        // Delete backup functionality using API
+        async function deleteBackup(filename) {
+            try {
+                const response = await fetch('https://darkheim.net/page/api/admin/backup_management.php', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ filename: filename })
+                });
+
+                const data = await response.json();
+
+                // Handle flash messages from API response
+                if (data.flash_messages && window.showToast) {
+                    Object.keys(data.flash_messages).forEach(type => {
+                        const messages = data.flash_messages[type];
+                        if (Array.isArray(messages)) {
+                            messages.forEach(message => {
+                                const text = message.text || message;
+                                window.showToast(text, type);
+                            });
+                        }
+                    });
+                }
+
+                if (data.success) {
+                    // Remove row from table instead of full page reload
+                    const row = document.querySelector(`[data-filename="${filename}"]`).closest('tr');
+                    if (row) {
+                        row.remove();
+
+                        // Check if table is now empty
+                        const tbody = document.querySelector('.admin-table tbody');
+                        if (tbody && tbody.children.length === 0) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        }
+                    }
+                } else {
+                    if (window.showToast && data.message) {
+                        window.showToast(data.message, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                if (window.showToast) {
+                    window.showToast(`Failed to delete ${filename}: Network error`, 'error');
+                }
+            }
+        }
     </script>

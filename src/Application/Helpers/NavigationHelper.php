@@ -95,9 +95,20 @@ class NavigationHelper
     {
         if ($isAuthenticated) {
             return [
-                ['key' => 'dashboard', 'url' => '/index.php?page=dashboard', 'text' => 'Dashboard'],
-                ['key' => 'profile', 'url' => '/index.php?page=profile', 'text' => 'Profile'],
-                ['key' => 'logout', 'url' => '/index.php?page=logout', 'text' => 'Logout'],
+                [
+                    'key' => 'user-menu',
+                    'url' => '#',
+                    'text' => 'User Menu',
+                    'class' => 'user-dropdown-trigger',
+                    'dropdown' => [
+                        ['key' => 'dashboard', 'url' => '/index.php?page=dashboard', 'text' => 'Dashboard'],
+                        ['key' => 'user_profile', 'url' => '/index.php?page=user_profile', 'text' => 'My Profile'],
+                        ['key' => 'user_portfolio', 'url' => '/index.php?page=user_portfolio', 'text' => 'My Portfolio'],
+                        ['key' => 'user_tickets', 'url' => '/index.php?page=user_tickets', 'text' => 'Support Tickets'],
+                        ['key' => 'user_profile_settings', 'url' => '/index.php?page=user_profile_settings', 'text' => 'Settings'],
+                        ['key' => 'logout', 'url' => '/index.php?page=api_auth_logout', 'text' => 'Logout', 'class' => 'logout-link']
+                    ]
+                ]
             ];
         }
 

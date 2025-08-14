@@ -7,8 +7,12 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 3) . '/includes/bootstrap.php';
+// Include profile completion helper
+require_once dirname(__DIR__, 3) . '/includes/profile_completion_helper.php';
 
 global $serviceProvider, $flashMessageService, $database_handler;
+
+use App\Application\Components\AdminNavigation;
 
 try {
     $authService = $serviceProvider->getAuth();
@@ -27,18 +31,14 @@ if (!$authService->isAuthenticated()) {
 $currentUser = $authService->getCurrentUser();
 $userId = $authService->getCurrentUserId();
 
-// Get client profile data if exists
-$clientProfile = null;
-try {
-    $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
-    $stmt = $database_handler->getConnection()->prepare($sql);
-    $stmt->execute([$userId]);
-    $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    error_log("Error fetching client profile: " . $e->getMessage());
-}
-
 $pageTitle = 'My Profile';
+
+// Create unified navigation
+$adminNavigation = new AdminNavigation($authService);
+
+// Calculate profile completion using unified helper function
+$clientProfile = getClientProfileData($database_handler, $userId);
+$completion = calculateProfileCompletion($currentUser, $clientProfile);
 
 // Get flash messages
 $flashMessages = $flashMessageService->getAllMessages();
@@ -46,27 +46,8 @@ $flashMessages = $flashMessageService->getAllMessages();
 
     <link rel="stylesheet" href="/public/assets/css/admin.css">
 
-<div class="admin-container">
-    <!-- Navigation -->
-    <nav class="admin-nav">
-        <div class="admin-nav-container">
-            <a href="/index.php?page=dashboard" class="admin-nav-brand">
-                <i class="fas fa-user-circle"></i>
-                Client Portal
-            </a>
-            <div class="admin-nav-links">
-                <a href="/index.php?page=dashboard" class="admin-nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="/index.php?page=user_portfolio" class="admin-nav-link">
-                    <i class="fas fa-briefcase"></i> Portfolio
-                </a>
-                <a href="/index.php?page=user_profile_settings" class="admin-nav-link">
-                    <i class="fas fa-cogs"></i> Settings
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Unified Navigation -->
+    <?= $adminNavigation->render() ?>
 
     <!-- Header -->
     <header class="admin-header">
@@ -83,7 +64,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                     <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-primary">
                         <i class="fas fa-edit"></i> Edit Profile
                     </a>
-                    <a href="/index.php?page=user_profile_settings" class="admin-btn admin-btn-secondary">
+                    <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-secondary">
                         <i class="fas fa-cogs"></i> Settings
                     </a>
                 </div>
@@ -91,19 +72,7 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages -->
-    <?php if (!empty($flashMessages)): ?>
-        <div class="admin-flash-messages">
-            <?php foreach ($flashMessages as $type => $messages): ?>
-                <?php foreach ($messages as $message): ?>
-                    <div class="admin-flash-message admin-flash-<?= $type === 'error' ? 'error' : $type ?>">
-                        <i class="fas fa-<?= $type === 'success' ? 'check-circle' : ($type === 'error' ? 'exclamation-circle' : 'info-circle') ?>"></i>
-                        <div><?= htmlspecialchars($message['text']) ?></div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+<!-- Flash messages handled by global toast system -->
 
     <!-- Main Content -->
     <div class="admin-layout-main">
@@ -278,7 +247,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                         <a href="/index.php?page=user_portfolio" class="admin-btn admin-btn-success admin-btn-sm">
                             <i class="fas fa-briefcase"></i> View Portfolio
                         </a>
-                        <a href="/index.php?page=user_profile_settings" class="admin-btn admin-btn-secondary admin-btn-sm">
+                        <a href="/index.php?page=profile_edit" class="admin-btn admin-btn-secondary admin-btn-sm">
                             <i class="fas fa-cogs"></i> Account Settings
                         </a>
                     </div>
@@ -312,19 +281,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                         </div>
                         <div style="text-align: center;">
                             <div style="font-size: 1.5rem; font-weight: 700; color: var(--admin-success); margin-bottom: 0.25rem;">
-                                <?php
-                                // Get completion percentage
-                                if ($clientProfile) {
-                                    $fields = ['company_name', 'position', 'bio', 'location', 'website'];
-                                    $completed = 0;
-                                    foreach ($fields as $field) {
-                                        if (!empty($clientProfile[$field])) $completed++;
-                                    }
-                                    echo round(($completed / count($fields)) * 100);
-                                } else {
-                                    echo '0';
-                                }
-                                ?>%
+                                <?= $completion['percentage'] ?>%
                             </div>
                             <small style="color: var(--admin-text-muted);">Complete</small>
                         </div>
