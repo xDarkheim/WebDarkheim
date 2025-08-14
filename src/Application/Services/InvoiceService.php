@@ -1,197 +1,109 @@
 <?php
 
 /**
- * Invoice Service
- * Business logic for invoice operations
+ * Invoice Service - PHASE 8 Client Portal
+ * Handles invoice operations and billing information using Invoice model
  *
  * @author Darkheim Studio
- * @version 1.0.0
  */
 
 declare(strict_types=1);
 
 namespace App\Application\Services;
 
-use App\Domain\Models\Invoice;
 use App\Domain\Interfaces\DatabaseInterface;
 use App\Domain\Interfaces\LoggerInterface;
+use App\Domain\Models\Invoice;
 use Exception;
 
 class InvoiceService
 {
-    private Invoice $invoiceModel;
+    private DatabaseInterface $database;
     private LoggerInterface $logger;
+    private Invoice $invoiceModel;
 
     public function __construct(DatabaseInterface $database, LoggerInterface $logger)
     {
-        $this->invoiceModel = new Invoice($database);
+        $this->database = $database;
         $this->logger = $logger;
+        $this->invoiceModel = new Invoice($database);
     }
 
     /**
-     * Get client invoices with filtering and pagination
+     * Get client invoices with filters (using Invoice model)
      */
-    public function getClientInvoices(int $clientUserId, array $filters = []): array
+    public function getClientInvoices(int $userId, array $filters = []): array
     {
         try {
-            $invoices = $this->invoiceModel->getClientInvoices($clientUserId, $filters);
+            $invoices = $this->invoiceModel->getClientInvoices($userId, $filters);
 
-            // Format data for display
-            foreach ($invoices as &$invoice) {
-                $invoice['status_badge_class'] = $this->getStatusBadgeClass($invoice['status']);
-                $invoice['formatted_total'] = $this->formatCurrency($invoice['total_amount'], $invoice['currency']);
-                $invoice['formatted_balance'] = $this->formatCurrency($invoice['balance_remaining'], $invoice['currency']);
-                $invoice['is_overdue'] = $this->isInvoiceOverdue($invoice);
-                $invoice['days_until_due'] = $this->getDaysUntilDue($invoice['due_date']);
-            }
+            // Format the data for display
+            return array_map([$this, 'formatInvoiceData'], $invoices);
 
-            return $invoices;
         } catch (Exception $e) {
-            $this->logger->error('Error getting client invoices: ' . $e->getMessage());
+            $this->logger->error('Failed to get client invoices', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'filters' => $filters
+            ]);
             return [];
         }
     }
 
     /**
-     * Get invoice details for client view
+     * Get client statistics (using Invoice model)
      */
-    public function getClientInvoiceDetails(int $invoiceId, int $clientUserId): ?array
+    public function getClientStatistics(int $userId): array
     {
         try {
-            $invoice = $this->invoiceModel->getInvoiceById($invoiceId, $clientUserId);
-
-            if (!$invoice) {
-                return null;
-            }
-
-            // Mark as viewed if status is 'sent'
-            if ($invoice['status'] === Invoice::STATUS_SENT) {
-                $this->invoiceModel->markAsViewed($invoiceId, $clientUserId);
-                $invoice['status'] = Invoice::STATUS_VIEWED;
-            }
-
-            // Format data for display
-            $invoice['status_badge_class'] = $this->getStatusBadgeClass($invoice['status']);
-            $invoice['formatted_subtotal'] = $this->formatCurrency($invoice['subtotal'], $invoice['currency']);
-            $invoice['formatted_tax_amount'] = $this->formatCurrency($invoice['tax_amount'], $invoice['currency']);
-            $invoice['formatted_discount'] = $this->formatCurrency($invoice['discount_amount'], $invoice['currency']);
-            $invoice['formatted_total'] = $this->formatCurrency($invoice['total_amount'], $invoice['currency']);
-            $invoice['formatted_balance'] = $this->formatCurrency($invoice['balance_remaining'], $invoice['currency']);
-            $invoice['formatted_paid'] = $this->formatCurrency($invoice['total_paid'], $invoice['currency']);
-            $invoice['is_overdue'] = $this->isInvoiceOverdue($invoice);
-            $invoice['days_until_due'] = $this->getDaysUntilDue($invoice['due_date']);
-            $invoice['is_fully_paid'] = $invoice['balance_remaining'] <= 0;
-
-            // Format items
-            foreach ($invoice['items'] as &$item) {
-                $item['formatted_unit_price'] = $this->formatCurrency($item['unit_price'], $invoice['currency']);
-                $item['formatted_line_total'] = $this->formatCurrency($item['line_total'], $invoice['currency']);
-            }
-
-            // Format payments
-            foreach ($invoice['payments'] as &$payment) {
-                $payment['formatted_amount'] = $this->formatCurrency($payment['amount'], $invoice['currency']);
-                $payment['formatted_date'] = date('M j, Y', strtotime($payment['payment_date']));
-            }
-
-            return $invoice;
-        } catch (Exception $e) {
-            $this->logger->error('Error getting invoice details: ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Get client invoice statistics
-     */
-    public function getClientStatistics(int $clientUserId): array
-    {
-        try {
-            $stats = $this->invoiceModel->getClientStatistics($clientUserId);
+            $stats = $this->invoiceModel->getClientStatistics($userId);
 
             if (empty($stats)) {
                 return $this->getEmptyStatistics();
             }
 
-            // Format currency values
-            $stats['formatted_total_billed'] = $this->formatCurrency($stats['total_billed']);
-            $stats['formatted_total_paid'] = $this->formatCurrency($stats['total_paid']);
-            $stats['formatted_total_outstanding'] = $this->formatCurrency($stats['total_outstanding']);
+            $totalBilled = (float)($stats['total_billed'] ?? 0);
+            $totalPaid = (float)($stats['total_paid'] ?? 0);
+            $totalOutstanding = (float)($stats['total_outstanding'] ?? 0);
 
-            // Calculate percentages
-            if ($stats['total_invoices'] > 0) {
-                $stats['paid_percentage'] = round(($stats['paid_count'] / $stats['total_invoices']) * 100, 1);
-                $stats['outstanding_percentage'] = round((($stats['sent_count'] + $stats['viewed_count'] + $stats['overdue_count']) / $stats['total_invoices']) * 100, 1);
-            } else {
-                $stats['paid_percentage'] = 0;
-                $stats['outstanding_percentage'] = 0;
-            }
+            return [
+                'total_invoices' => (int)($stats['total_invoices'] ?? 0),
+                'paid_invoices' => (int)($stats['paid_count'] ?? 0),
+                'pending_invoices' => (int)(($stats['sent_count'] ?? 0) + ($stats['viewed_count'] ?? 0)),
+                'overdue_invoices' => (int)($stats['overdue_count'] ?? 0),
+                'total_paid' => $totalPaid,
+                'total_pending' => $totalOutstanding,
+                'total_amount' => $totalBilled,
+                'total_outstanding' => $totalOutstanding,
+                'formatted_total_paid' => '$' . number_format($totalPaid, 2),
+                'formatted_total_pending' => '$' . number_format($totalOutstanding, 2),
+                'formatted_total_billed' => '$' . number_format($totalBilled, 2),
+                'formatted_total_outstanding' => '$' . number_format($totalOutstanding, 2),
+                'overdue_count' => (int)($stats['overdue_count'] ?? 0)
+            ];
 
-            return $stats;
         } catch (Exception $e) {
-            $this->logger->error('Error getting client statistics: ' . $e->getMessage());
+            $this->logger->error('Failed to get client statistics', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+
             return $this->getEmptyStatistics();
         }
     }
 
     /**
-     * Get status badge CSS class
+     * Get status filters for dropdown
      */
-    private function getStatusBadgeClass(string $status): string
+    public function getStatusFilters(): array
     {
-        return match ($status) {
-            Invoice::STATUS_DRAFT => 'badge-secondary',
-            Invoice::STATUS_SENT => 'badge-info',
-            Invoice::STATUS_VIEWED => 'badge-primary',
-            Invoice::STATUS_PAID => 'badge-success',
-            Invoice::STATUS_OVERDUE => 'badge-danger',
-            Invoice::STATUS_CANCELLED => 'badge-warning',
-            default => 'badge-secondary'
-        };
-    }
-
-    /**
-     * Format currency amount
-     */
-    private function formatCurrency($amount, string $currency = 'USD'): string
-    {
-        // Convert to float if it's a string
-        $amount = is_string($amount) ? (float)$amount : $amount;
-
-        $symbols = [
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            'JPY' => '¥'
+        return [
+            'all' => 'All Invoices',
+            'sent' => 'Sent',
+            'viewed' => 'Viewed',
+            'paid' => 'Paid',
+            'overdue' => 'Overdue'
         ];
-
-        $symbol = $symbols[$currency] ?? '$';
-
-        return $symbol . number_format($amount, 2);
-    }
-
-    /**
-     * Check if invoice is overdue
-     */
-    private function isInvoiceOverdue(array $invoice): bool
-    {
-        if ($invoice['status'] === Invoice::STATUS_PAID || $invoice['status'] === Invoice::STATUS_CANCELLED) {
-            return false;
-        }
-
-        return strtotime($invoice['due_date']) < time();
-    }
-
-    /**
-     * Get days until due date
-     */
-    private function getDaysUntilDue(string $dueDate): int
-    {
-        $now = new \DateTime();
-        $due = new \DateTime($dueDate);
-        $interval = $now->diff($due);
-
-        return $interval->invert ? -$interval->days : $interval->days;
     }
 
     /**
@@ -201,51 +113,108 @@ class InvoiceService
     {
         return [
             'total_invoices' => 0,
-            'draft_count' => 0,
-            'sent_count' => 0,
-            'viewed_count' => 0,
-            'paid_count' => 0,
-            'overdue_count' => 0,
-            'cancelled_count' => 0,
-            'total_billed' => 0,
-            'total_paid' => 0,
-            'total_outstanding' => 0,
-            'formatted_total_billed' => '$0.00',
+            'paid_invoices' => 0,
+            'pending_invoices' => 0,
+            'overdue_invoices' => 0,
+            'total_paid' => 0.0,
+            'total_pending' => 0.0,
+            'total_amount' => 0.0,
+            'total_outstanding' => 0.0,
             'formatted_total_paid' => '$0.00',
+            'formatted_total_pending' => '$0.00',
+            'formatted_total_billed' => '$0.00',
             'formatted_total_outstanding' => '$0.00',
-            'paid_percentage' => 0,
-            'outstanding_percentage' => 0
+            'overdue_count' => 0
         ];
     }
 
     /**
-     * Get available status filters for UI
+     * Check if invoice system is available (check if tables exist)
      */
-    public function getStatusFilters(): array
+    public function isSystemAvailable(): bool
     {
-        return [
-            '' => 'All Invoices',
-            Invoice::STATUS_DRAFT => 'Draft',
-            Invoice::STATUS_SENT => 'Sent',
-            Invoice::STATUS_VIEWED => 'Viewed',
-            Invoice::STATUS_PAID => 'Paid',
-            Invoice::STATUS_OVERDUE => 'Overdue',
-            Invoice::STATUS_CANCELLED => 'Cancelled'
-        ];
+        try {
+            $stmt = $this->database->query("SHOW TABLES LIKE 'invoices'");
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            $this->logger->warning('Could not check invoice table availability', [
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 
     /**
-     * Get payment method labels
+     * Get invoice by ID (using Invoice model with user ownership check)
      */
-    public function getPaymentMethodLabels(): array
+    public function getInvoiceById(int $invoiceId, int $userId): ?array
     {
-        return [
-            Invoice::PAYMENT_BANK_TRANSFER => 'Bank Transfer',
-            Invoice::PAYMENT_PAYPAL => 'PayPal',
-            Invoice::PAYMENT_STRIPE => 'Credit Card',
-            Invoice::PAYMENT_CRYPTO => 'Cryptocurrency',
-            Invoice::PAYMENT_CASH => 'Cash',
-            Invoice::PAYMENT_OTHER => 'Other'
-        ];
+        try {
+            $invoice = $this->invoiceModel->getInvoiceById($invoiceId, $userId);
+
+            if (!$invoice) {
+                return null;
+            }
+
+            return $this->formatInvoiceData($invoice);
+
+        } catch (Exception $e) {
+            $this->logger->error('Failed to get invoice by ID', [
+                'invoice_id' => $invoiceId,
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Mark invoice as viewed by client (using Invoice model)
+     */
+    public function markInvoiceAsViewed(int $invoiceId, int $clientUserId): bool
+    {
+        try {
+            return $this->invoiceModel->markAsViewed($invoiceId, $clientUserId);
+        } catch (Exception $e) {
+            $this->logger->error('Failed to mark invoice as viewed', [
+                'invoice_id' => $invoiceId,
+                'user_id' => $clientUserId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Format invoice data for display
+     */
+    private function formatInvoiceData(array $invoice): array
+    {
+        $balanceRemaining = (float)($invoice['balance_remaining'] ?? 0);
+        $totalAmount = (float)($invoice['total_amount'] ?? 0);
+        $totalPaid = (float)($invoice['total_paid'] ?? 0);
+
+        // Calculate days until due
+        $dueDate = $invoice['due_date'] ?? null;
+        $daysUntilDue = 0;
+        $isOverdue = false;
+
+        if ($dueDate) {
+            $today = new \DateTime();
+            $due = new \DateTime($dueDate);
+            $diff = $today->diff($due);
+            $daysUntilDue = $diff->invert ? -$diff->days : $diff->days;
+            $isOverdue = ($daysUntilDue < 0 && $invoice['status'] !== 'paid');
+        }
+
+        // Format the invoice data
+        $invoice['formatted_total'] = '$' . number_format($totalAmount, 2);
+        $invoice['formatted_balance'] = '$' . number_format($balanceRemaining, 2);
+        $invoice['days_until_due'] = $daysUntilDue;
+        $invoice['is_overdue'] = $isOverdue;
+        $invoice['balance_remaining'] = $balanceRemaining;
+        $invoice['total_paid'] = $totalPaid;
+
+        return $invoice;
     }
 }

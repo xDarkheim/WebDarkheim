@@ -50,7 +50,7 @@ if (!in_array($current_user_role, ['client', 'employee', 'admin'])) {
 
 // Get invoices data with error handling (like dashboard)
 try {
-    // Get filters from request
+    // Get filters from request (define this first to ensure it's always available)
     $filters = [
         'status' => $_GET['status'] ?? '',
         'date_from' => $_GET['date_from'] ?? '',
@@ -58,18 +58,41 @@ try {
         'limit' => 50
     ];
 
-    // Get client invoices and statistics
-    $invoices = $invoiceService->getClientInvoices($current_user_id, $filters);
-    $statistics = $invoiceService->getClientStatistics($current_user_id);
-    $statusFilters = $invoiceService->getStatusFilters();
+    // Check if invoice system is available
+    $isInvoiceSystemAvailable = $invoiceService->isSystemAvailable();
+
+    if (!$isInvoiceSystemAvailable) {
+        // System not yet implemented - show development message
+        $invoices = [];
+        $statistics = $invoiceService->getEmptyStatistics();
+        $statusFilters = $invoiceService->getStatusFilters();
+        $systemMessage = "Invoice system is currently in development (Phase 8). This feature will be available soon.";
+    } else {
+        // Get client invoices and statistics using the filters
+        $invoices = $invoiceService->getClientInvoices($current_user_id, $filters);
+        $statistics = $invoiceService->getClientStatistics($current_user_id);
+        $statusFilters = $invoiceService->getStatusFilters();
+        $systemMessage = null;
+    }
 
 } catch (Exception $e) {
     $logger->error('Error loading invoices: ' . $e->getMessage());
 
+    // Ensure filters is always defined for the form
+    if (!isset($filters)) {
+        $filters = [
+            'status' => $_GET['status'] ?? '',
+            'date_from' => $_GET['date_from'] ?? '',
+            'date_to' => $_GET['date_to'] ?? '',
+            'limit' => 50
+        ];
+    }
+
     // Fallback empty data (like dashboard)
     $invoices = [];
     $statistics = $invoiceService->getEmptyStatistics();
-    $statusFilters = [];
+    $statusFilters = $invoiceService->getStatusFilters();
+    $systemMessage = "There was an error loading the invoice system. Please try again later.";
 }
 
 // Get flash messages (same pattern as dashboard)
@@ -127,6 +150,30 @@ $adminNavigation = new AdminNavigation($authService);
     <!-- Main Layout -->
     <div class="admin-layout-main">
         <main class="admin-content">
+
+            <!-- Development Notice -->
+            <?php if (isset($systemMessage)): ?>
+                <div class="admin-card" style="border-left: 4px solid var(--admin-warning); background: rgba(255, 193, 7, 0.1);">
+                    <div class="admin-card-body">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <i class="fas fa-construction" style="font-size: 2rem; color: var(--admin-warning);"></i>
+                            <div>
+                                <h3 style="color: var(--admin-text-primary); margin: 0 0 0.5rem 0;">
+                                    System in Development
+                                </h3>
+                                <p style="color: var(--admin-text-secondary); margin: 0;">
+                                    <?php echo htmlspecialchars($systemMessage); ?>
+                                </p>
+                                <p style="color: var(--admin-text-muted); margin: 0.5rem 0 0 0; font-size: 0.875rem;">
+                                    <i class="fas fa-info-circle"></i>
+                                    For immediate billing inquiries, please <a href="/index.php?page=contact" style="color: var(--admin-primary);">contact our support team</a>
+                                    or <a href="/index.php?page=user_tickets_create" style="color: var(--admin-primary);">create a support ticket</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <!-- Statistics Cards -->
             <?php if (!empty($statistics['total_invoices'])): ?>

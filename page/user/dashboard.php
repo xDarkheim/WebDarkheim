@@ -726,7 +726,8 @@ function getRecentInvoices($database, $userId, $limit = 3): array
                         </h3>
                     </div>
                     <div class="admin-card-body">
-                        <!-- Content Management Section -->
+                        <!-- Content Management Section (Admin Only) -->
+                        <?php if ($currentUser['role'] === 'admin'): ?>
                         <div style="margin-bottom: 2rem;">
                             <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
                                 <i class="fas fa-newspaper" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>
@@ -744,8 +745,9 @@ function getRecentInvoices($database, $userId, $limit = 3): array
                                 </a>
                             </div>
                         </div>
+                        <?php endif; ?>
 
-                        <!-- Moderation Section -->
+                        <!-- Moderation Section (Admin and Employee) -->
                         <div style="margin-bottom: 2rem;">
                             <h4 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1rem; font-weight: 600; display: flex; align-items: center;">
                                 <i class="fas fa-gavel" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>

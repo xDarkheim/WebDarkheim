@@ -259,7 +259,7 @@ class AdminPanel {
             const aValue = a.children[columnIndex]?.textContent.trim() || '';
             const bValue = b.children[columnIndex]?.textContent.trim() || '';
 
-            let comparison = 0;
+            let comparison;
             if (!isNaN(aValue) && !isNaN(bValue)) {
                 comparison = parseFloat(aValue) - parseFloat(bValue);
             } else {
@@ -379,6 +379,22 @@ class AdminPanel {
         }
     }
 
+    // Modal functionality
+    openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('admin-hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    closeModal(modal) {
+        if (modal) {
+            modal.classList.add('admin-hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
     // Tooltips
     initializeTooltips() {
         document.querySelectorAll('[data-tooltip]').forEach(element => {
@@ -457,31 +473,6 @@ class AdminPanel {
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-        }
-    }
-
-    // AJAX Helpers
-    async request(url, options = {}) {
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        };
-
-        const config = { ...defaultOptions, ...options };
-
-        try {
-            const response = await fetch(url, config);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Request failed:', error);
-            throw error;
         }
     }
 
@@ -700,7 +691,7 @@ class AdminPanel {
 
     // Milestone timeline functionality
     initializeMilestones() {
-        document.querySelectorAll('.milestone-item').forEach((item, index) => {
+        document.querySelectorAll('.milestone-item').forEach((item) => {
             const marker = item.querySelector('.milestone-marker');
             const status = item.dataset.status || 'pending';
 
@@ -823,6 +814,7 @@ class AdminPanel {
         this.initializeLogViewer();
         this.initializeSystemMetrics();
         this.initializeRealTimeUpdates();
+        this.initializeLogSearch();
     }
 
     // Log viewer functionality
@@ -898,22 +890,16 @@ class AdminPanel {
                     window.showToast(`Failed to load logs: ${data.error}`, 'error');
                 }
             } else if (data.logs && data.logs.length > 0) {
-                const logsHtml = data.logs.map(log =>
+                logContainer.innerHTML = data.logs.map(log =>
                     `<div class="log-entry ${log.level ? 'log-' + log.level.toLowerCase() : ''}">${this.escapeHtml(log.message)}</div>`
                 ).join('');
-                logContainer.innerHTML = logsHtml;
 
                 // Apply deprecated filter if active
                 if (this.hideDeprecated) {
                     this.applyDeprecatedFilter();
                 }
-
-                // Don't show success messages for regular log loading
-                // Only show messages for manual actions or errors
             } else {
                 logContainer.innerHTML = '<div style="color: var(--admin-text-muted); text-align: center; padding: 2rem;"><i class="fas fa-info-circle"></i> No logs found</div>';
-
-                // Don't show info messages for empty results - it's normal
             }
         } catch (error) {
             console.error('Error loading logs:', error);
@@ -958,6 +944,13 @@ class AdminPanel {
 
     // System metrics functionality
     initializeSystemMetrics() {
+        // Check if user has admin role before initializing metrics
+        const userRole = this.getUserRole();
+        if (userRole !== 'admin') {
+            console.log('System metrics disabled - user role:', userRole);
+            return;
+        }
+
         this.updateSystemMetrics();
 
         // Refresh metrics every 60 seconds
@@ -966,9 +959,47 @@ class AdminPanel {
         }, 60000);
     }
 
+    // Get user role from page or session data
+    getUserRole() {
+        // Try to get user role from a data attribute on body or html element
+        const bodyElement = document.body;
+        if (bodyElement && bodyElement.dataset.userRole) {
+            return bodyElement.dataset.userRole;
+        }
+
+        // Try to get from a meta tag
+        const roleMetaTag = document.querySelector('meta[name="user-role"]');
+        if (roleMetaTag) {
+            return roleMetaTag.getAttribute('content');
+        }
+
+        // Try to get from global JavaScript variable if it exists
+        if (typeof window.userRole !== 'undefined') {
+            return window.userRole;
+        }
+
+        // Default fallback - assume non-admin
+        return 'guest';
+    }
+
     async updateSystemMetrics() {
+        // Double-check admin role before making AJAX request
+        const userRole = this.getUserRole();
+        if (userRole !== 'admin') {
+            console.log('Skipping metrics update - insufficient permissions');
+            return;
+        }
+
         try {
             const response = await fetch('/index.php?page=system_monitor&action=ajax&type=status');
+
+            // Check if response is actually JSON and not an HTML error page
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.warn('System metrics endpoint returned non-JSON response, likely access denied');
+                return;
+            }
+
             const data = await response.json();
 
             // Handle flash messages using global toast system
@@ -1039,13 +1070,15 @@ class AdminPanel {
         // Update system info values
         const infoItems = document.querySelectorAll('.system-info-item');
         infoItems.forEach(item => {
-            const label = item.querySelector('.system-info-label').textContent;
+            const label = item.querySelector('.system-info-label')?.textContent || '';
             const valueEl = item.querySelector('.system-info-value');
 
-            if (label.includes('PHP Version') && data.performance) {
-                valueEl.textContent = data.performance.php_version || 'Unknown';
-            } else if (label.includes('Memory') && data.performance) {
-                valueEl.textContent = data.performance.memory_usage.current || 'Unknown';
+            if (valueEl) {
+                if (label.includes('PHP Version') && data.performance) {
+                    valueEl.textContent = data.performance.php_version || 'Unknown';
+                } else if (label.includes('Memory') && data.performance) {
+                    valueEl.textContent = data.performance.memory_usage?.current || 'Unknown';
+                }
             }
         });
     }

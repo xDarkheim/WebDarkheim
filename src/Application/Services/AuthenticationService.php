@@ -231,6 +231,12 @@ class AuthenticationService implements AuthenticationInterface
             return;
         }
 
+        // Check if role in session differs from database
+        if (($_SESSION['user_role'] ?? null) !== $user['role']) {
+            // Update session with correct role from database
+            $_SESSION['user_role'] = $user['role'];
+        }
+
         $this->currentUser = $user;
     }
 

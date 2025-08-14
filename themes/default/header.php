@@ -20,6 +20,9 @@
     <meta name="author" content="<?php echo htmlspecialchars($site_name); ?>">
     <meta name="robots" content="<?php echo htmlspecialchars($meta_robots); ?>">
 
+    <!-- User role for JavaScript access control -->
+    <meta name="user-role" content="<?php echo htmlspecialchars($_SESSION['user_role'] ?? 'guest'); ?>">
+
     <!-- Font Awesome Icons - Local Version -->
     <link rel="stylesheet" href="/themes/default/assets/fontawesome/css/all.min.css">
 
@@ -130,7 +133,7 @@
             <!-- Desktop Navigation -->
             <nav class="main-navigation" aria-label="Main navigation">
                 <div class="nav-wrapper">
-                    <?php echo $template_data['main_navigation_html'] ?? '<ul class="nav-list"><li class="nav-item"><a href="/index.php?page=home" class="nav-link">Home</a></li></ul>'; ?>
+                    <?php echo $template_data['main_navigation_html'] ?? '<ul class="nav-list"><li class="nav-item"><a href="/index.php?page=home" class="nav-link">Home</a></li></ul'; ?>
                 </div>
 
                 <!-- Auth Section -->
@@ -203,14 +206,32 @@
                                                 </svg>
                                                 <?php echo htmlspecialchars($item['text']); ?>
                                             </a>
-                                        <?php elseif ($item['text'] === 'Dashboard'): ?>
+                                        <?php elseif (strpos($item['text'], 'Dashboard') !== false): ?>
                                             <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <rect x="3" y="3" width="7" height="7"/>
-                                                    <rect x="14" y="3" width="7" height="7"/>
-                                                    <rect x="14" y="14" width="7" height="7"/>
-                                                    <rect x="3" y="14" width="7" height="7"/>
-                                                </svg>
+                                                <?php if (strpos($item['text'], 'Admin') !== false): ?>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                                    </svg>
+                                                <?php elseif (strpos($item['text'], 'Employee') !== false): ?>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                        <circle cx="9" cy="7" r="4"/>
+                                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                    </svg>
+                                                <?php elseif (strpos($item['text'], 'Client') !== false): ?>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                        <circle cx="12" cy="7" r="4"/>
+                                                    </svg>
+                                                <?php else: ?>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <rect x="3" y="3" width="7" height="7"/>
+                                                        <rect x="14" y="3" width="7" height="7"/>
+                                                        <rect x="14" y="14" width="7" height="7"/>
+                                                        <rect x="3" y="14" width="7" height="7"/>
+                                                    </svg>
+                                                <?php endif; ?>
                                                 <?php echo htmlspecialchars($item['text']); ?>
                                             </a>
                                         <?php elseif ($item['text'] === 'My Profile'): ?>
@@ -230,6 +251,14 @@
                                                 </svg>
                                                 <?php echo htmlspecialchars($item['text']); ?>
                                             </a>
+                                        <?php elseif ($item['text'] === 'My Projects'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
                                         <?php elseif ($item['text'] === 'Support Tickets'): ?>
                                             <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -237,7 +266,61 @@
                                                 </svg>
                                                 <?php echo htmlspecialchars($item['text']); ?>
                                             </a>
-                                        <?php elseif ($item['text'] === 'Settings'): ?>
+                                        <?php elseif ($item['text'] === 'Manage Articles'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                    <polyline points="14,2 14,8 20,8"/>
+                                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                                    <polyline points="10,9 9,9 8,9"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Manage Categories'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Moderation'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                                    <path d="M9 12l2 2 4-4"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Manage Users'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="9" cy="7" r="4"/>
+                                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'System Monitor'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                                    <line x1="8" y1="21" x2="16" y2="21"/>
+                                                    <line x1="12" y1="17" x2="12" y2="21"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php elseif ($item['text'] === 'Site Settings'): ?>
+                                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="12" cy="12" r="3"/>
+                                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+                                                </svg>
+                                                <?php echo htmlspecialchars($item['text']); ?>
+                                            </a>
+                                        <?php else: ?>
                                             <a href="<?php echo htmlspecialchars($item['url']); ?>" class="dropdown-item">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <circle cx="12" cy="12" r="3"/>

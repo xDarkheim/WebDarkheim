@@ -111,23 +111,23 @@ class AdminNavigation
                     'url' => '/index.php?page=dashboard',
                     'badge' => null
                 ],
-                'manage_articles' => [
-                    'title' => 'Articles',
-                    'icon' => 'fas fa-newspaper',
-                    'url' => '/index.php?page=manage_articles',
-                    'badge' => null
-                ],
-                'manage_categories' => [
-                    'title' => 'Categories',
-                    'icon' => 'fas fa-tags',
-                    'url' => '/index.php?page=manage_categories',
-                    'badge' => null
-                ],
                 'admin_moderation_dashboard' => [
                     'title' => 'Moderation',
                     'icon' => 'fas fa-shield-alt',
                     'url' => '/index.php?page=admin_moderation_dashboard',
                     'badge' => $this->getModerationBadgeCount()
+                ],
+                'moderate_projects' => [
+                    'title' => 'Projects',
+                    'icon' => 'fas fa-project-diagram',
+                    'url' => '/index.php?page=moderate_projects',
+                    'badge' => null
+                ],
+                'moderate_comments' => [
+                    'title' => 'Comments',
+                    'icon' => 'fas fa-comments',
+                    'url' => '/index.php?page=moderate_comments',
+                    'badge' => null
                 ]
             ];
         } elseif ($userRole === 'client') {
@@ -214,12 +214,20 @@ class AdminNavigation
         try {
             $userId = $this->currentUser['id'] ?? 0;
 
+            // Проверяем существование таблицы tickets
+            $tableCheck = $this->database->prepare("SHOW TABLES LIKE 'tickets'");
+            $tableCheck->execute();
+
+            if ($tableCheck->rowCount() === 0) {
+                // Таблица не существует, возвращаем null
+                return $this->badgeCounts['tickets'] ?? null;
+            }
+
             $stmt = $this->database->prepare("
                 SELECT COUNT(*) 
                 FROM tickets 
                 WHERE user_id = :user_id 
-                AND status IN ('open', 'pending') 
-                AND is_active = 1
+                AND status IN ('open', 'in_progress', 'waiting_client')
             ");
             $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
@@ -281,6 +289,9 @@ class AdminNavigation
         }
 
         $brandInfo = $this->getBrandInfo();
+        $userRole = $this->currentUser['role'] ?? 'guest';
+        $userName = ($this->currentUser['first_name'] ?? '') . ' ' . ($this->currentUser['last_name'] ?? '');
+        $userInitials = strtoupper(substr($this->currentUser['first_name'] ?? 'U', 0, 1) . substr($this->currentUser['last_name'] ?? 'S', 0, 1));
 
         $html = '<nav class="admin-nav">';
         $html .= '<div class="admin-nav-container">';
@@ -291,7 +302,7 @@ class AdminNavigation
         $html .= '<span>' . htmlspecialchars($brandInfo['name']) . '</span>';
         $html .= '</a>';
 
-        // Navigation items
+        // Desktop Navigation items
         $html .= '<div class="admin-nav-links">';
 
         foreach ($this->navigationItems as $page => $item) {
@@ -309,7 +320,7 @@ class AdminNavigation
                 $badgeClass = $item['badge'] > 9 ? 'admin-badge-error' : 'admin-badge-warning';
                 $badgeText = $item['badge'] > 99 ? '99+' : (string)$item['badge'];
 
-                $html .= '<span class="admin-badge ' . $badgeClass . '" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.6rem; font-weight: 600; border-radius: 0.75rem; line-height: 1.2; min-width: 1.2rem; text-align: center;">';
+                $html .= '<span class="admin-badge ' . $badgeClass . '">';
                 $html .= $badgeText;
                 $html .= '</span>';
             }
@@ -318,8 +329,69 @@ class AdminNavigation
         }
 
         $html .= '</div>'; // admin-nav-links
+
+        // Mobile Navigation Toggle
+        $html .= '<button class="admin-mobile-toggle" id="admin-mobile-toggle" aria-label="Toggle navigation menu" aria-expanded="false">';
+        $html .= '<div class="admin-hamburger">';
+        $html .= '<span class="admin-hamburger-line"></span>';
+        $html .= '<span class="admin-hamburger-line"></span>';
+        $html .= '<span class="admin-hamburger-line"></span>';
+        $html .= '</div>';
+        $html .= '</button>';
+
         $html .= '</div>'; // admin-nav-container
         $html .= '</nav>';
+
+        // Mobile Navigation Menu
+        $html .= '<div class="admin-nav-mobile" id="admin-nav-mobile" aria-label="Mobile navigation">';
+
+        // Mobile User Section
+        $html .= '<div class="admin-mobile-user-section">';
+        $html .= '<div class="admin-mobile-user-avatar">';
+        $html .= htmlspecialchars($userInitials);
+        $html .= '</div>';
+        $html .= '<div class="admin-mobile-user-name">' . htmlspecialchars(trim($userName)) . '</div>';
+        $html .= '<div class="admin-mobile-user-role">' . htmlspecialchars($userRole) . '</div>';
+        $html .= '<a href="/index.php?page=logout" class="admin-mobile-logout">';
+        $html .= '<i class="fas fa-sign-out-alt"></i>';
+        $html .= 'Sign Out';
+        $html .= '</a>';
+        $html .= '</div>';
+
+        // Mobile Navigation Links
+        $html .= '<ul class="admin-nav-mobile-list">';
+
+        foreach ($this->navigationItems as $page => $item) {
+            $isActive = $this->isActive($page);
+            $activeClass = $isActive ? ' active' : '';
+
+            $html .= '<li class="admin-nav-mobile-item">';
+            $html .= '<a href="' . htmlspecialchars($item['url']) . '" class="admin-nav-mobile-link' . $activeClass . '">';
+            $html .= '<i class="' . $item['icon'] . '"></i>';
+            $html .= '<span>' . htmlspecialchars($item['title']) . '</span>';
+
+            // Add badge for mobile if present
+            if ($item['badge'] && $item['badge'] > 0) {
+                $badgeClass = $item['badge'] > 9 ? 'admin-badge-error' : 'admin-badge-warning';
+                $badgeText = $item['badge'] > 99 ? '99+' : (string)$item['badge'];
+
+                $html .= '<span class="admin-badge ' . $badgeClass . '">';
+                $html .= $badgeText;
+                $html .= '</span>';
+            }
+
+            $html .= '</a>';
+            $html .= '</li>';
+        }
+
+        $html .= '</ul>';
+
+        // Mobile Navigation Footer
+        $html .= '<div class="admin-mobile-footer">';
+        $html .= '© ' . date('Y') . ' ' . htmlspecialchars($brandInfo['name']);
+        $html .= '</div>';
+
+        $html .= '</div>'; // admin-nav-mobile
 
         return $html;
     }

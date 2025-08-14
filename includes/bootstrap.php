@@ -190,6 +190,44 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
 
 $logger = \App\Infrastructure\Lib\Logger::getInstance();
 
+// Role-based access control - check page access permissions
+if (!$is_ajax && isset($_GET['page'])) {
+    try {
+        $currentPage = $_GET['page'];
+        $userRole = $_SESSION['user_role'] ?? 'guest';
+
+        // Skip access control for public pages
+        $publicPages = ['home', 'about', 'contact', 'projects', 'services', 'team', 'login', 'register', 'news', 'verify_email', 'reset_password', 'forgot_password'];
+
+        // Check access for non-public pages (skip API endpoints as they have their own validation)
+        if (strpos($currentPage, 'api_') !== 0 && !in_array($currentPage, $publicPages)) {
+            // Check access for non-public pages using NavigationHelper
+            if (!\App\Application\Helpers\NavigationHelper::canAccessPage($currentPage, $userRole)) {
+                $_SESSION['error_message'] = 'У вас нет прав доступа к этой странице.';
+
+                // Redirect based on user role
+                switch ($userRole) {
+                    case 'admin':
+                    case 'employee':
+                    case 'client':
+                        header('Location: /index.php?page=dashboard');
+                        break;
+                    case 'guest':
+                    default:
+                        header('Location: /index.php?page=home');
+                        break;
+                }
+                exit;
+            }
+        }
+    } catch (Exception $e) {
+        $logger->error('Role access control error: ' . $e->getMessage());
+        // Fallback to home page on error
+        header('Location: /index.php?page=home');
+        exit;
+    }
+}
+
 // Log bootstrap completion only for regular requests, not for AJAX
 if (!$is_ajax) {
     $logger->debug('Bootstrap completed successfully', [
