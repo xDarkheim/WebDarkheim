@@ -459,6 +459,129 @@ function getRecentInvoices($database, $userId, $limit = 3): array
     <main>
         <div class="admin-layout-main">
             <div class="admin-content">
+
+                <?php
+                // Check if user is new (no activity) and show welcome message
+                $isNewUser = (
+                        ($ticketStats['total'] ?? 0) === 0 &&
+                        ($portfolioStats['total_projects'] ?? 0) === 0 &&
+                        ($studioProjectsStats['total_projects'] ?? 0) === 0 &&
+                        ($invoicesStats['total'] ?? 0) === 0 &&
+                        empty($recentActivity) &&
+                        ($profileCompletion['percentage'] ?? 0) < 50
+                );
+                ?>
+
+                <?php if ($isNewUser): ?>
+                    <!-- Welcome Message for New Users -->
+                    <div class="admin-card admin-glow-primary" style="margin-bottom: 2rem;">
+                        <div class="admin-card-body">
+                            <div style="text-align: center; padding: 2rem;">
+                                <div style="background: var(--admin-primary-bg); border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto;">
+                                    <i class="fas fa-rocket" style="color: var(--admin-primary); font-size: 2rem;"></i>
+                                </div>
+                                <h2 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1.5rem;">
+                                    Welcome to Darkheim Development Studio!
+                                </h2>
+                                <p style="color: var(--admin-text-secondary); margin-bottom: 2rem; font-size: 1rem; line-height: 1.6;">
+                                    Hi <strong><?= htmlspecialchars($currentUser['username']) ?></strong>! 👋 We're excited to have you on board.
+                                    Your account is ready, and now it's time to explore what our platform has to offer.
+                                </p>
+
+                                <!-- Getting Started Steps -->
+                                <div style="background: var(--admin-bg-secondary); border-radius: var(--admin-border-radius); padding: 1.5rem; margin-bottom: 2rem; text-align: left;">
+                                    <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1.1rem; text-align: center;">
+                                        <i class="fas fa-list-check" style="color: var(--admin-primary); margin-right: 0.5rem;"></i>
+                                        Get Started in 3 Easy Steps
+                                    </h3>
+
+                                    <div style="display: grid; gap: 1rem;">
+                                        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                                            <div style="background: var(--admin-primary); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; flex-shrink: 0;">1</div>
+                                            <div>
+                                                <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.95rem;">Complete Your Profile</h4>
+                                                <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.85rem;">
+                                                    Add your personal information, skills, and contact details to help us serve you better.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                                            <div style="background: var(--admin-success); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; flex-shrink: 0;">2</div>
+                                            <div>
+                                                <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.95rem;">Explore Your Options</h4>
+                                                <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.85rem;">
+                                                    Browse our services, create portfolio projects, or reach out for custom development work.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                                            <div style="background: var(--admin-info); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; flex-shrink: 0;">3</div>
+                                            <div>
+                                                <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.95rem;">Connect With Us</h4>
+                                                <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.85rem;">
+                                                    Have questions? Create a support ticket or contact us directly. We're here to help!
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Action Buttons -->
+                                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                                    <a href="/index.php?page=user_profile" class="admin-btn admin-btn-primary">
+                                        <i class="fas fa-user-edit"></i>Complete Profile
+                                    </a>
+                                    <a href="/index.php?page=portfolio_create" class="admin-btn admin-btn-success">
+                                        <i class="fas fa-plus"></i>Add First Project
+                                    </a>
+                                    <a href="/index.php?page=user_tickets_create" class="admin-btn admin-btn-secondary">
+                                        <i class="fas fa-question-circle"></i>Ask a Question
+                                    </a>
+                                </div>
+
+                                <!-- Features Overview -->
+                                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--admin-border);">
+                                    <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem; font-size: 1.1rem;">
+                                        <i class="fas fa-star" style="color: var(--admin-warning); margin-right: 0.5rem;"></i>
+                                        What You Can Do Here
+                                    </h3>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
+                                        <div style="background: var(--admin-bg-secondary); padding: 1rem; border-radius: var(--admin-border-radius);">
+                                            <div style="color: var(--admin-primary); margin-bottom: 0.5rem;">
+                                                <i class="fas fa-briefcase" style="font-size: 1.25rem;"></i>
+                                            </div>
+                                            <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.9rem;">Portfolio Management</h4>
+                                            <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.8rem;">Showcase your projects and skills</p>
+                                        </div>
+                                        <div style="background: var(--admin-bg-secondary); padding: 1rem; border-radius: var(--admin-border-radius);">
+                                            <div style="color: var(--admin-success); margin-bottom: 0.5rem;">
+                                                <i class="fas fa-code" style="font-size: 1.25rem;"></i>
+                                            </div>
+                                            <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.9rem;">Studio Projects</h4>
+                                            <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.8rem;">Track development progress</p>
+                                        </div>
+                                        <div style="background: var(--admin-bg-secondary); padding: 1rem; border-radius: var(--admin-border-radius);">
+                                            <div style="color: var(--admin-info); margin-bottom: 0.5rem;">
+                                                <i class="fas fa-ticket-alt" style="font-size: 1.25rem;"></i>
+                                            </div>
+                                            <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.9rem;">Support System</h4>
+                                            <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.8rem;">Get help when you need it</p>
+                                        </div>
+                                        <div style="background: var(--admin-bg-secondary); padding: 1rem; border-radius: var(--admin-border-radius);">
+                                            <div style="color: var(--admin-warning); margin-bottom: 0.5rem;">
+                                                <i class="fas fa-file-invoice-dollar" style="font-size: 1.25rem;"></i>
+                                            </div>
+                                            <h4 style="margin: 0 0 0.25rem 0; color: var(--admin-text-primary); font-size: 0.9rem;">Invoice Management</h4>
+                                            <p style="margin: 0; color: var(--admin-text-muted); font-size: 0.8rem;">Track payments and billing</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <!-- Statistics Cards -->
                 <div class="admin-stats-grid">
                     <!-- Support Tickets -->
@@ -780,6 +903,20 @@ function getRecentInvoices($database, $userId, $limit = 3): array
     <!-- Admin Scripts -->
     <script src="/public/assets/js/admin.js"></script>
     <script>
+        // Prevent any network requests and handle errors gracefully
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('updateMetrics')) {
+                e.preventDefault();
+                console.log('Metrics update disabled for dashboard');
+                return false;
+            }
+        });
+
+        // Override any existing updateMetrics function
+        window.updateMetrics = function() {
+            console.log('Metrics update disabled - data loads from server');
+        };
+
         // Initialize dashboard functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-dismiss flash messages after 5 seconds
@@ -792,11 +929,31 @@ function getRecentInvoices($database, $userId, $limit = 3): array
                 });
             }, 5000);
 
-            // Add click tracking for dashboard actions
-            document.querySelectorAll('.admin-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    console.log('Dashboard action clicked:', this.textContent.trim());
-                });
+            // Initialize tooltips if admin.js provides tooltip functionality
+            if (window.adminPanel && window.adminPanel.initTooltips) {
+                window.adminPanel.initTooltips();
+            }
+
+            // Add smooth animations to stats cards (no network requests)
+            document.querySelectorAll('.admin-stat-card').forEach(function(card, index) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.3s ease';
+
+                setTimeout(function() {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
             });
+
+            // Disable any chart updates that might cause network requests
+            if (window.Chart) {
+                Chart.defaults.responsive = true;
+                Chart.defaults.maintainAspectRatio = false;
+                // Disable animations to prevent any update loops
+                Chart.defaults.animation = false;
+            }
+
+            console.log('Dashboard initialized without network requests');
         });
     </script>
