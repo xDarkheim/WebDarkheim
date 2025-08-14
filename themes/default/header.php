@@ -384,7 +384,19 @@
                             <a href="/index.php?page=register" class="mobile-nav-link mobile-auth-link mobile-auth-link--register">Get Started</a>
                         </div>
                     <?php else: ?>
-                        <?php foreach ($userDropdownItems as $item): ?>
+                        <?php
+                        // Показываем только основные элементы в мобильной версии
+                        $mobileUserItems = [];
+                        foreach ($userDropdownItems as $item) {
+                            // Показываем только Dashboard, Profile и Logout
+                            if (strpos($item['text'], 'Dashboard') !== false ||
+                                $item['text'] === 'My Profile' ||
+                                $item['text'] === 'Logout') {
+                                $mobileUserItems[] = $item;
+                            }
+                        }
+                        ?>
+                        <?php foreach ($mobileUserItems as $item): ?>
                             <div class="mobile-nav-item mobile-auth-item">
                                 <a href="<?php echo htmlspecialchars($item['url']); ?>"
                                    class="mobile-nav-link mobile-auth-link <?php echo $item['text'] === 'Logout' ? 'mobile-auth-link--logout' : 'mobile-auth-link--dashboard'; ?>">
