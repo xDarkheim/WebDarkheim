@@ -1,0 +1,763 @@
+/**
+ * Project-specific and portfolio styles
+ */
+
+/* Project-specific styles */
+.project-card {
+  overflow: hidden;
+  transition: none; /* Disable animations as requested */
+}
+
+.project-card:hover {
+  /* No hover effects as requested */
+}
+
+.progress-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  position: relative;
+  margin: 0 auto;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.progress-bar-custom {
+  height: 8px;
+  border-radius: 10px;
+  background: var(--admin-bg-secondary);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--admin-primary) 0%, var(--admin-primary-light) 100%);
+  transition: width 0.5s ease;
+}
+
+.project-type-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1;
+}
+
+/* Milestone styles */
+.milestone-item {
+  position: relative;
+  padding-left: 2rem;
+  padding-bottom: 1.5rem;
+}
+
+.milestone-item:last-child {
+  padding-bottom: 0;
+}
+
+.milestone-item::before {
+  content: '';
+  position: absolute;
+  left: 0.6rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--admin-border);
+}
+
+.milestone-item:last-child::before {
+  display: none;
+}
+
+.milestone-marker {
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+}
+
+.milestone-completed {
+  background: var(--admin-success);
+}
+
+.milestone-in-progress {
+  background: var(--admin-warning);
+}
+
+.milestone-pending {
+  background: var(--admin-border);
+}
+
+/* Tech badge styles */
+.tech-badge {
+  background: var(--admin-primary-bg);
+  color: var(--admin-primary-light);
+  border: 1px solid var(--admin-primary);
+}
+
+/* Empty state styles */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--admin-text-muted);
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.3;
+}
+
+/* Portfolio Settings Specific */
+.portfolio-visibility-options {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.portfolio-visibility-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem;
+  border: 2px solid var(--admin-border);
+  border-radius: var(--admin-border-radius);
+  background: var(--admin-bg-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.portfolio-visibility-option:hover {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-50);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.portfolio-visibility-option.selected {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-100);
+  box-shadow: 0 0 0 3px var(--admin-primary-200);
+}
+
+.portfolio-visibility-option input[type="radio"] {
+  margin: 0.25rem 1rem 0 0;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--admin-border);
+  border-radius: 50%;
+  background: var(--admin-bg-tertiary);
+  cursor: pointer;
+  position: relative;
+  appearance: none;
+  transition: all 0.2s ease;
+}
+
+.portfolio-visibility-option input[type="radio"]:checked {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary);
+}
+
+.portfolio-visibility-option input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: white;
+}
+
+.portfolio-visibility-option-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.portfolio-visibility-option-title {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.portfolio-visibility-option-title i {
+  margin-right: 0.75rem;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+}
+
+.portfolio-visibility-option-description {
+  color: var(--admin-text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Portfolio Link Display */
+.portfolio-link-display {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-top: 0.5rem;
+}
+
+.portfolio-link-input {
+  flex: 1;
+  font-family: var(--admin-font-mono);
+  font-size: 0.8125rem;
+  background: var(--admin-bg-primary);
+  border: 2px solid var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+.portfolio-link-input:focus {
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-primary-100);
+}
+
+.portfolio-link-copy {
+  flex-shrink: 0;
+  min-width: auto;
+  padding: 0.875rem 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.portfolio-link-copy:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Export Buttons */
+.export-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.export-buttons .admin-btn-sm {
+  min-width: 140px;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.export-buttons .admin-btn-sm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Portfolio Stats Grid */
+.portfolio-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.portfolio-stat-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--admin-bg-primary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--admin-border);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.portfolio-stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--admin-primary) 0%, var(--admin-primary-light) 100%);
+}
+
+.portfolio-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.portfolio-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+
+.portfolio-stat-value.primary {
+  color: var(--admin-primary);
+}
+
+.portfolio-stat-value.success {
+  color: var(--admin-success);
+}
+
+.portfolio-stat-value.warning {
+  color: var(--admin-warning);
+}
+
+.portfolio-stat-value.info {
+  color: var(--admin-info);
+}
+
+.portfolio-stat-label {
+  color: var(--admin-text-muted);
+  font-size: 0.75rem;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Portfolio Settings Form */
+.portfolio-settings-form .admin-btn {
+  min-width: 140px;
+  transition: all 0.3s ease;
+}
+
+.portfolio-settings-form .admin-btn i {
+  margin-right: 0.5rem;
+}
+
+.portfolio-settings-form .admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Quick Actions */
+.portfolio-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.portfolio-quick-actions .admin-btn {
+  width: 100%;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.portfolio-quick-actions .admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Success/Error States */
+.portfolio-setting-saved {
+  background: var(--admin-success-bg) !important;
+  border-color: var(--admin-success-border) !important;
+  animation: highlightSuccess 2s ease;
+}
+
+@keyframes highlightSuccess {
+  0% {
+    box-shadow: 0 0 0 3px var(--admin-success-200);
+  }
+  100% {
+    box-shadow: 0 0 0 0px var(--admin-success-200);
+  }
+}
+
+/* Form Validation Visual Feedback */
+.portfolio-settings-form .admin-input:valid {
+  border-color: var(--admin-success);
+}
+
+.portfolio-settings-form .admin-input:invalid {
+  border-color: var(--admin-error);
+}
+
+/* PROJECT SETTINGS SPECIFIC STYLES */
+
+/* Project Settings Main Layout */
+.project-settings-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem 1rem;
+    align-items: start;
+}
+
+.project-settings-content {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.project-settings-sidebar {
+    position: sticky;
+    top: calc(var(--admin-header-height) + 2rem);
+    height: fit-content;
+}
+
+/* Project Visibility Options */
+.project-visibility-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.project-visibility-option {
+    display: flex;
+    align-items: flex-start;
+    padding: 1.25rem;
+    border: 2px solid var(--admin-border);
+    border-radius: var(--admin-border-radius);
+    background: var(--admin-bg-secondary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.project-visibility-option:hover {
+    border-color: var(--admin-primary);
+    background: var(--admin-primary-50);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.project-visibility-option.selected {
+    border-color: var(--admin-primary);
+    background: linear-gradient(135deg, var(--admin-primary-bg) 0%, rgba(59, 130, 246, 0.05) 100%);
+    box-shadow: 0 0 0 3px var(--admin-primary-200);
+}
+
+.project-visibility-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.project-visibility-title {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    line-height: 1.3;
+}
+
+.project-visibility-title i {
+    margin-right: 0.75rem;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+}
+
+.project-visibility-description {
+    color: var(--admin-text-muted);
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Project Link Display */
+.project-link-display {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+    margin-top: 1rem;
+}
+
+.project-link-input {
+    flex: 1;
+    font-family: var(--admin-font-mono);
+    font-size: 0.8125rem;
+    background: var(--admin-bg-primary);
+    border: 2px solid var(--admin-border);
+    color: var(--admin-text-secondary);
+    padding: 0.875rem 1rem;
+    border-radius: var(--admin-border-radius);
+}
+
+.project-link-input:focus {
+    border-color: var(--admin-primary);
+    box-shadow: 0 0 0 3px var(--admin-primary-100);
+    outline: none;
+}
+
+.project-link-copy {
+    flex-shrink: 0;
+    min-width: auto;
+    padding: 0.875rem 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.project-link-copy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Project Settings Form Styling */
+.project-settings-form {
+    background: var(--admin-bg-card);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.project-settings-form .admin-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.project-settings-form .admin-label {
+    font-weight: 600;
+    color: var(--admin-text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.project-settings-form .admin-input,
+.project-settings-form .admin-textarea,
+.project-settings-form .admin-select {
+    border-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.project-settings-form .admin-input:focus,
+.project-settings-form .admin-textarea:focus,
+.project-settings-form .admin-select:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+/* Project Actions */
+.project-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.project-actions .admin-btn {
+    width: 100%;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.project-actions .admin-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project-actions .admin-btn i {
+    margin-right: 0.5rem;
+}
+
+/* Project Info Card */
+.project-info-card {
+    background: linear-gradient(135deg, var(--admin-bg-secondary) 0%, var(--admin-bg-tertiary) 100%);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-border-radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.project-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--admin-border-dark);
+}
+
+.project-info-item:last-child {
+    border-bottom: none;
+}
+
+.project-info-label {
+    color: var(--admin-text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.project-info-value {
+    color: var(--admin-text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Project Status Badge */
+.project-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    border: 1px solid;
+}
+
+.project-status-active {
+    background: linear-gradient(135deg, var(--admin-success-bg) 0%, rgba(16, 185, 129, 0.05) 100%);
+    color: var(--admin-success-light);
+    border-color: var(--admin-success-border);
+}
+
+.project-status-draft {
+    background: linear-gradient(135deg, var(--admin-warning-bg) 0%, rgba(245, 158, 11, 0.05) 100%);
+    color: var(--admin-warning-light);
+    border-color: var(--admin-warning-border);
+}
+
+.project-status-private {
+    background: linear-gradient(135deg, var(--admin-bg-secondary) 0%, var(--admin-bg-tertiary) 100%);
+    color: var(--admin-text-secondary);
+    border-color: var(--admin-border);
+}
+
+/* Project Quick Stats */
+.project-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.project-stat-card {
+    background: var(--admin-bg-primary);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-border-radius);
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.project-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--admin-primary) 0%, var(--admin-primary-light) 100%);
+}
+
+.project-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.project-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--admin-primary);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.project-stat-label {
+    color: var(--admin-text-muted);
+    font-size: 0.75rem;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Form Success Animation */
+.project-setting-saved {
+    background: var(--admin-success-bg) !important;
+    border-color: var(--admin-success-border) !important;
+    animation: projectSettingSaved 2s ease;
+}
+
+@keyframes projectSettingSaved {
+    0% {
+        box-shadow: 0 0 0 0 var(--admin-success-200);
+    }
+    50% {
+        box-shadow: 0 0 0 4px var(--admin-success-200);
+    }
+    100% {
+        box-shadow: 0 0 0 0 var(--admin-success-200);
+    }
+}
+
+/* Copy Link Button Animation */
+.project-link-copy.copied {
+    background: var(--admin-success) !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+.project-link-copy.copied::after {
+    content: '✓ Скопировано';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--admin-success);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    z-index: 10;
+}
+
+/* Form Validation States */
+.project-settings-form .admin-input.is-valid {
+    border-color: var(--admin-success);
+}
+
+.project-settings-form .admin-input.is-invalid {
+    border-color: var(--admin-error);
+}
+
+/* Loading State */
+.project-settings-form.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    position: relative;
+}
+
+.project-settings-form.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid var(--admin-border);
+    border-top-color: var(--admin-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 10;
+}

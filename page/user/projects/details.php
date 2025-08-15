@@ -371,7 +371,7 @@ $flashMessages = $flashMessageService->getAllMessages();
     </div>
 </div>
 
-<script src="/public/assets/js/admin.js"></script>
+<script type="module" src="/public/assets/js/admin.js"></script>
 
 <?php
 function getStatusBadgeClass($status): string

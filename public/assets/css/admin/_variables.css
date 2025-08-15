@@ -1,0 +1,129 @@
+/**
+ * CSS Variables for Dark Admin Panel
+ * Color scheme and design tokens
+ */
+
+:root {
+  /* Dark Theme Colors */
+  --admin-bg-primary: #0f172a;
+  --admin-bg-secondary: #1e293b;
+  --admin-bg-tertiary: #334155;
+  --admin-bg-card: #1e293b;
+  --admin-bg-nav: #0f172a;
+  --admin-bg-header: #1e293b;
+
+  /* Text Colors */
+  --admin-text-primary: #f8fafc;
+  --admin-text-secondary: #cbd5e1;
+  --admin-text-muted: #94a3b8;
+  --admin-text-inverse: #0f172a;
+
+  /* Gray Scale Colors */
+    --admin-gray-50: #f8fafc;
+    --admin-gray-100: #f1f5f9;
+    --admin-gray-200: #e2e8f0;
+    --admin-gray-300: #cbd5e1;
+    --admin-gray-400: #94a3b8;
+    --admin-gray-500: #64748b;
+    --admin-gray-600: #475569;
+    --admin-gray-700: #334155;
+    --admin-gray-800: #1e293b;
+    --admin-gray-900: #ffffff;
+
+  /* Primary Colors */
+  --admin-primary: #3b82f6;
+  --admin-primary-dark: #2563eb;
+  --admin-primary-light: #60a5fa;
+  --admin-primary-bg: rgba(59, 130, 246, 0.1);
+  --admin-primary-border: rgba(59, 130, 246, 0.2);
+  --admin-primary-50: rgba(59, 130, 246, 0.05);
+  --admin-primary-100: rgba(59, 130, 246, 0.1);
+  --admin-primary-200: rgba(59, 130, 246, 0.2);
+  --admin-primary-300: rgba(59, 130, 246, 0.3);
+  --admin-primary-400: #60a5fa;
+  --admin-primary-500: #3b82f6;
+  --admin-primary-600: #2563eb;
+  --admin-primary-700: #1d4ed8;
+  --admin-primary-800: #1e40af;
+  --admin-primary-900: #1e3a8a;
+
+  /* Status Colors */
+  --admin-success: #10b981;
+  --admin-success-light: #34d399;
+  --admin-success-bg: rgba(16, 185, 129, 0.1);
+  --admin-success-border: rgba(16, 185, 129, 0.2);
+  --admin-success-50: rgba(16, 185, 129, 0.05);
+  --admin-success-100: rgba(16, 185, 129, 0.1);
+  --admin-success-200: rgba(16, 185, 129, 0.2);
+  --admin-success-300: rgba(16, 185, 129, 0.3);
+  --admin-success-400: #34d399;
+  --admin-success-500: #10b981;
+  --admin-success-600: #059669;
+  --admin-success-700: #047857;
+  --admin-success-800: #065f46;
+  --admin-success-900: #064e3b;
+
+  --admin-warning: #f59e0b;
+  --admin-warning-light: #fbbf24;
+  --admin-warning-bg: rgba(245, 158, 11, 0.1);
+  --admin-warning-border: rgba(245, 158, 11, 0.2);
+  --admin-warning-50: rgba(245, 158, 11, 0.05);
+  --admin-warning-100: rgba(245, 158, 11, 0.1);
+  --admin-warning-200: rgba(245, 158, 11, 0.2);
+  --admin-warning-300: rgba(245, 158, 11, 0.3);
+  --admin-warning-400: #fbbf24;
+  --admin-warning-500: #f59e0b;
+  --admin-warning-600: #d97706;
+  --admin-warning-700: #b45309;
+  --admin-warning-800: #92400e;
+  --admin-warning-900: #78350f;
+
+  --admin-error: #ef4444;
+  --admin-error-light: #f87171;
+  --admin-error-bg: rgba(239, 68, 68, 0.1);
+  --admin-error-border: rgba(239, 68, 68, 0.2);
+  --admin-error-50: rgba(239, 68, 68, 0.05);
+  --admin-error-100: rgba(239, 68, 68, 0.1);
+  --admin-error-200: rgba(239, 68, 68, 0.2);
+  --admin-error-300: rgba(239, 68, 68, 0.3);
+  --admin-error-400: #f87171;
+  --admin-error-500: #ef4444;
+  --admin-error-600: #dc2626;
+  --admin-error-700: #b91c1c;
+  --admin-error-800: #991b1b;
+  --admin-error-900: #7f1d1d;
+
+  --admin-info: #06b6d4;
+  --admin-info-light: #22d3ee;
+  --admin-info-bg: rgba(6, 182, 212, 0.1);
+  --admin-info-border: rgba(6, 182, 212, 0.2);
+  --admin-info-50: rgba(6, 182, 212, 0.05);
+  --admin-info-100: rgba(6, 182, 212, 0.1);
+  --admin-info-200: rgba(6, 182, 212, 0.2);
+  --admin-info-300: rgba(6, 182, 212, 0.3);
+  --admin-info-400: #22d3ee;
+  --admin-info-500: #06b6d4;
+  --admin-info-600: #0891b2;
+  --admin-info-700: #0e7490;
+  --admin-info-800: #155e75;
+  --admin-info-900: #164e63;
+
+  /* Border Colors */
+  --admin-border: #334155;
+  --admin-border-light: #475569;
+  --admin-border-dark: #1e293b;
+
+  /* Shadow Colors */
+  --admin-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --admin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --admin-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+
+  /* Layout */
+  --admin-sidebar-width: 280px;
+  --admin-header-height: 64px;
+  --admin-border-radius: 0.75rem;
+
+  /* Typography */
+  --admin-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --admin-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}

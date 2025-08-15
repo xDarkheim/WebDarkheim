@@ -246,7 +246,7 @@ $pageTitle = 'Project Documents - Client Portal';
         </div>
     </div>
 
-    <script src="/public/assets/js/admin.js"></script>
+    <script type="module" src="/public/assets/js/admin.js"></script>
     <script>
     function refreshDocuments() {
         // Show loading state

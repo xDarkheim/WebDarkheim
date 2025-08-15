@@ -387,4 +387,4 @@ $flashMessages = $flashMessageService->getAllMessages();
     </main>
 
     <!-- Admin Scripts -->
-    <script src="/public/assets/js/admin.js"></script>
+    <script type="module" src="/public/assets/js/admin.js"></script>

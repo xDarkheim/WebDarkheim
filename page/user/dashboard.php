@@ -903,7 +903,7 @@ function getRecentInvoices($database, $userId, $limit = 3): array
     </main>
 
     <!-- Admin Scripts -->
-    <script src="/public/assets/js/admin.js"></script>
+    <script type="module" src="/public/assets/js/admin.js"></script>
     <script>
         // Prevent any network requests and handle errors gracefully
         window.addEventListener('error', function(e) {

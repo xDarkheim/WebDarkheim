@@ -161,7 +161,6 @@ class NavigationHelper
             default:
                 // Guest users get minimal access
                 $baseDropdown = [
-                    ['key' => 'dashboard', 'url' => '/index.php?page=dashboard', 'text' => 'Dashboard'],
                     ['key' => 'user_profile', 'url' => '/index.php?page=user_profile', 'text' => 'My Profile'],
                 ];
                 break;

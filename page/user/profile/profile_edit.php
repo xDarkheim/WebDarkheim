@@ -524,7 +524,7 @@ $completion = calculateProfileCompletion($currentUser, $clientProfile);
     </form>
 </div>
 
-<script src="/public/assets/js/admin.js"></script>
+<script type="module" src="/public/assets/js/admin.js"></script>
 <script>
 // Skills management
 document.addEventListener('DOMContentLoaded', function() {

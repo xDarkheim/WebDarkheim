@@ -1,0 +1,119 @@
+/**
+ * Statistics cards and metrics
+ */
+
+/* Statistics Cards */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+/* Специальные стили для страниц с 4 карточками (например, тикеты) */
+.admin-stats-grid.stats-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.admin-stat-card {
+  background-color: var(--admin-bg-card);
+  border-radius: var(--admin-border-radius);
+  box-shadow: var(--admin-shadow);
+  padding: 1.5rem;
+  border: 1px solid var(--admin-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-stat-content {
+  display: flex;
+  align-items: center;
+}
+
+.admin-stat-icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--admin-border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  margin-right: 1rem;
+}
+
+.admin-stat-icon-primary {
+  background: linear-gradient(135deg, var(--admin-primary-bg) 0%, rgba(59, 130, 246, 0.05) 100%);
+  color: var(--admin-primary);
+  border: 1px solid var(--admin-primary-border);
+}
+
+.admin-stat-icon-success {
+  background: linear-gradient(135deg, var(--admin-success-bg) 0%, rgba(16, 185, 129, 0.05) 100%);
+  color: var(--admin-success);
+  border: 1px solid var(--admin-success-border);
+}
+
+.admin-stat-icon-warning {
+  background: linear-gradient(135deg, var(--admin-warning-bg) 0%, rgba(245, 158, 11, 0.05) 100%);
+  color: var(--admin-warning);
+  border: 1px solid var(--admin-warning-border);
+}
+
+.admin-stat-icon-info {
+  background: linear-gradient(135deg, var(--admin-info-bg) 0%, rgba(6, 182, 212, 0.05) 100%);
+  color: var(--admin-info);
+  border: 1px solid var(--admin-info-border);
+}
+
+.admin-stat-details h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-stat-details p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.admin-stat-details span {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Glow Effects for Cards */
+.admin-glow-primary {
+  border-color: var(--admin-primary-border);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+}
+
+.admin-glow-success {
+  border-color: var(--admin-success-border);
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1), 0 2px 4px -1px rgba(16, 185, 129, 0.06);
+}
+
+.admin-glow-warning {
+  border-color: var(--admin-warning-border);
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1), 0 2px 4px -1px rgba(245, 158, 11, 0.06);
+}
+
+.admin-glow-info {
+  border-color: var(--admin-info-border);
+  box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.1), 0 2px 4px -1px rgba(6, 182, 212, 0.06);
+}
+
+.admin-glow-error {
+  border-color: var(--admin-error-border);
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1), 0 2px 4px -1px rgba(239, 68, 68, 0.06);
+}

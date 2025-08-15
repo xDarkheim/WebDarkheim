@@ -297,7 +297,7 @@ $pageTitle = 'Meetings & Consultations - Client Portal';
     </div>
 </div>
 
-<script src="/public/assets/js/admin.js"></script>
+<script type="module" src="/public/assets/js/admin.js"></script>
 <script>
 function showMeetingDetails(meetingId) {
     const modal = document.getElementById('meetingModal');

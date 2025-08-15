@@ -1,0 +1,248 @@
+/**
+ * Modal and accordion components
+ */
+
+/* Modal styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1050;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal.fade {
+  transition: opacity 0.15s linear;
+}
+
+.modal.fade.show {
+  display: block;
+  opacity: 1;
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal-dialog {
+  position: relative;
+  width: auto;
+  margin: 1.75rem auto;
+  max-width: 500px;
+  pointer-events: none;
+}
+
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: auto;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-border-radius);
+  box-shadow: var(--admin-shadow-xl);
+  outline: 0;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-bg-secondary);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.modal-body {
+  position: relative;
+  flex: 1 1 auto;
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--admin-border);
+  background: var(--admin-bg-secondary);
+  gap: 0.75rem;
+}
+
+.btn-close {
+  background: none;
+  border: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--admin-text-muted);
+  text-shadow: none;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-close::before {
+  content: "×";
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Tab navigation styles */
+.admin-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 1.5rem;
+}
+
+.admin-tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.admin-tab:hover {
+  color: var(--admin-text-primary);
+}
+
+.admin-tab.active {
+  color: var(--admin-primary);
+  border-bottom-color: var(--admin-primary);
+}
+
+.admin-tab-content {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.admin-tab-content.active {
+  display: block;
+  opacity: 1;
+  animation: fadeInTab 0.3s ease;
+}
+
+.tab-content {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+  opacity: 1;
+  animation: fadeInTab 0.3s ease;
+}
+
+@keyframes fadeInTab {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accordion styles */
+.admin-accordion {
+  border-radius: var(--admin-border-radius);
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-accordion-item {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-accordion-item:last-child {
+  border-bottom: none;
+}
+
+.admin-accordion-header {
+  padding: 1rem 1.5rem;
+  background: var(--admin-bg-secondary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.admin-accordion-header:hover {
+  background: var(--admin-bg-tertiary);
+}
+
+.admin-accordion-title {
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.admin-accordion-icon {
+  color: var(--admin-text-muted);
+  transition: transform 0.3s ease;
+}
+
+.admin-accordion-item.active .admin-accordion-icon {
+  transform: rotate(180deg);
+}
+
+.admin-accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  background: var(--admin-bg-card);
+}
+
+.admin-accordion-item.active .admin-accordion-content {
+  max-height: 1000px;
+}
+
+.admin-accordion-body {
+  padding: 1.5rem;
+}

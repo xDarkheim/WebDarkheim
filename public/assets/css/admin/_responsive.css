@@ -1,0 +1,719 @@
+/**
+ * Responsive Design for Admin Panel
+ * Mobile-first approach with enhanced touch interactions
+ */
+
+/* ===== BREAKPOINTS ===== */
+/*
+  xs: 0-575px (phones)
+  sm: 576-767px (large phones)
+  md: 768-991px (tablets)
+  lg: 992-1199px (small desktops)
+  xl: 1200px+ (large desktops)
+*/
+
+/* ===== LARGE DESKTOP STYLES ===== */
+@media (min-width: 1400px) {
+  .admin-nav-container {
+    max-width: 1400px;
+  }
+
+  .admin-header-container,
+  .admin-layout-main,
+  .admin-breadcrumbs-container {
+    max-width: 1400px;
+  }
+}
+
+/* ===== DESKTOP STYLES ===== */
+@media (max-width: 1199px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .admin-stats-grid.stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-sidebar {
+    min-width: 280px;
+    max-width: 280px;
+  }
+}
+
+/* ===== TABLET LANDSCAPE STYLES ===== */
+@media (max-width: 1024px) {
+  .admin-nav-links {
+    gap: 0.25rem;
+  }
+
+  .admin-nav-link span {
+    display: none;
+  }
+
+  .admin-nav-link {
+    padding: 0.75rem;
+    min-width: 48px;
+    justify-content: center;
+  }
+
+  .admin-layout-main {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .admin-sidebar {
+    order: -1;
+    position: static;
+    min-width: auto;
+    max-width: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .admin-content {
+    overflow-x: visible;
+  }
+
+  .admin-grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Table improvements for tablets */
+  .admin-table-container {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    min-width: 700px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* ===== TABLET PORTRAIT STYLES ===== */
+@media (max-width: 768px) {
+  /* Navigation adjustments */
+  .admin-nav-links {
+    display: none;
+  }
+
+  .admin-mobile-toggle {
+    display: block;
+  }
+
+  .admin-nav-container {
+    padding: 0 1rem;
+    height: var(--admin-header-height);
+    justify-content: space-between;
+  }
+
+  .admin-nav-brand {
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    z-index: 1001;
+  }
+
+  .admin-nav-brand i {
+    font-size: 1.25rem;
+  }
+
+  /* Header improvements */
+  .admin-header-container {
+    padding: 1rem;
+  }
+
+  .admin-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .admin-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Breadcrumbs */
+  .admin-breadcrumbs {
+    padding: 0.5rem 0;
+  }
+
+  .admin-breadcrumb-list {
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-breadcrumb-separator {
+    margin: 0 0.25rem;
+  }
+
+  /* Cards and grids */
+  .admin-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .admin-stats-grid.stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-stat-card {
+    padding: 1.25rem;
+  }
+
+  .admin-stat-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .admin-stat-icon {
+    margin-right: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Forms */
+  .admin-form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .admin-input,
+  .admin-select,
+  .admin-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Buttons */
+  .admin-btn {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    min-height: 48px; /* Touch target */
+  }
+
+  .admin-btn-sm {
+    padding: 0.625rem 0.875rem;
+    min-height: 40px;
+  }
+
+  /* Tables - horizontal scroll */
+  .admin-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 600px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .admin-table-actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  .admin-table .admin-btn-sm {
+    padding: 0.375rem;
+    min-width: 32px;
+    width: auto;
+    min-height: 32px;
+  }
+
+  .admin-table .admin-btn-sm span {
+    display: none;
+  }
+
+  /* Modals */
+  .admin-modal-content {
+    width: 95%;
+    margin: 1rem;
+    max-height: 90vh;
+  }
+
+  .admin-modal-header,
+  .admin-modal-body,
+  .admin-modal-footer {
+    padding: 1rem;
+  }
+
+  /* System monitor adjustments */
+  .log-container {
+    max-height: 300px;
+    font-size: 0.75rem;
+  }
+
+  .performance-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .system-status-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* ===== MOBILE LANDSCAPE STYLES ===== */
+@media (max-width: 576px) and (orientation: landscape) {
+  .admin-nav {
+    height: 48px;
+  }
+
+  .admin-nav-container {
+    height: 48px;
+  }
+
+  .admin-nav-brand {
+    font-size: 0.9rem;
+  }
+
+  .admin-header-container {
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-layout-main {
+    padding: 0 0.75rem 1rem 0.75rem;
+  }
+}
+
+/* ===== MOBILE PORTRAIT STYLES ===== */
+@media (max-width: 576px) {
+  /* Enhanced touch targets */
+  .admin-nav-container {
+    padding: 0 0.75rem;
+    min-height: 56px;
+  }
+
+  .admin-nav-brand {
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+  }
+
+  .admin-nav-brand i {
+    font-size: 1.1rem;
+    margin-right: 0.375rem;
+  }
+
+  .admin-mobile-toggle {
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Mobile navigation improvements */
+  .admin-nav-mobile {
+    padding: 0.75rem;
+    top: 56px;
+  }
+
+  .admin-nav-mobile-link {
+    padding: 1rem;
+    font-size: 0.95rem;
+    min-height: 52px;
+    border-radius: 0.5rem;
+  }
+
+  .admin-nav-mobile-link i {
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    width: 1.25rem;
+  }
+
+  .admin-mobile-user-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .admin-mobile-user-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Content layout */
+  .admin-header-container {
+    padding: 0.75rem;
+  }
+
+  .admin-layout-main {
+    padding: 0 0.75rem 1.5rem 0.75rem;
+    gap: 1rem;
+  }
+
+  /* Statistics grid - single column */
+  .admin-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-stats-grid.stats-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stat-card {
+    padding: 1rem;
+  }
+
+  .admin-stat-content {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .admin-stat-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-right: 0.75rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  /* Cards */
+  .admin-card {
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .admin-card-header {
+    padding: 1rem;
+  }
+
+  .admin-card-body {
+    padding: 1rem;
+  }
+
+  .admin-card-footer {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Forms - enhanced mobile experience */
+  .admin-input,
+  .admin-select,
+  .admin-textarea {
+    padding: 1rem;
+    font-size: 16px; /* Prevent iOS zoom */
+    border-radius: 0.5rem;
+  }
+
+  .admin-btn {
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    min-height: 48px;
+    border-radius: 0.5rem;
+  }
+
+  .admin-btn-sm {
+    padding: 0.75rem 1rem;
+    min-height: 44px;
+    font-size: 0.85rem;
+  }
+
+  /* Tables - mobile-first approach */
+  .admin-table-container {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .admin-table {
+    min-width: 500px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* Action buttons in table - icon only */
+  .admin-table .admin-btn-sm {
+    padding: 0.5rem;
+    min-width: 36px;
+    min-height: 36px;
+    width: auto;
+  }
+
+  .admin-table .admin-btn-sm i {
+    margin-right: 0;
+    font-size: 0.75rem;
+  }
+
+  .admin-table .admin-btn-sm span {
+    display: none;
+  }
+
+  .admin-table-actions {
+    gap: 0.125rem;
+    justify-content: center;
+  }
+
+  /* Flash messages */
+  .admin-flash-messages {
+    padding: 0 0.75rem;
+  }
+
+  .admin-flash-message {
+    padding: 0.875rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Modals - full screen approach */
+  .admin-modal {
+    padding: 0.5rem;
+  }
+
+  .admin-modal-content {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0.75rem 0.75rem 0 0;
+    max-height: 95vh;
+  }
+
+  .admin-modal-header {
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    background: var(--admin-bg-card);
+    z-index: 1;
+  }
+
+  .admin-modal-body {
+    padding: 1rem;
+    max-height: calc(95vh - 140px);
+    overflow-y: auto;
+  }
+
+  .admin-modal-footer {
+    padding: 1rem;
+    position: sticky;
+    bottom: 0;
+    background: var(--admin-bg-card);
+    border-top: 1px solid var(--admin-border);
+  }
+
+  /* System monitor - mobile optimized */
+  .log-container {
+    max-height: 250px;
+    font-size: 0.7rem;
+    padding: 0.75rem;
+  }
+
+  .log-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .log-control-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .performance-metrics {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .metric-item {
+    padding: 0.75rem;
+  }
+
+  .metric-value {
+    font-size: 1.25rem;
+  }
+
+  /* Settings page mobile */
+  .settings-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  .settings-control {
+    width: 100%;
+  }
+
+  /* Badges - larger touch targets */
+  .admin-badge {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 32px;
+    align-items: center;
+  }
+
+  /* Accordions */
+  .admin-accordion-header {
+    padding: 1rem;
+    min-height: 52px;
+  }
+
+  .admin-accordion-body {
+    padding: 1rem;
+  }
+
+  /* Tooltips - disable on mobile */
+  .admin-tooltip {
+    display: none !important;
+  }
+
+  /* File upload */
+  .admin-file-upload {
+    padding: 1.5rem 1rem;
+  }
+
+  .admin-file-upload-icon {
+    font-size: 1.5rem;
+  }
+
+  /* Progress bars */
+  .admin-progress {
+    height: 0.75rem;
+  }
+}
+
+/* ===== SMALL MOBILE STYLES ===== */
+@media (max-width: 480px) {
+  .admin-nav-container {
+    padding: 0 0.5rem;
+  }
+
+  .admin-header-container {
+    padding: 0.5rem;
+  }
+
+  .admin-layout-main {
+    padding: 0 0.5rem 1rem 0.5rem;
+  }
+
+  .admin-stats-grid {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .admin-stat-card {
+    padding: 0.75rem;
+  }
+
+  .admin-card-header,
+  .admin-card-body,
+  .admin-card-footer {
+    padding: 0.75rem;
+  }
+
+  /* Smaller buttons for very small screens */
+  .admin-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .admin-btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 40px;
+  }
+
+  /* Flash messages */
+  .admin-flash-messages {
+    padding: 0 0.5rem;
+  }
+}
+
+/* ===== TOUCH ENHANCEMENTS ===== */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device specific styles */
+  .admin-btn,
+  .admin-nav-link,
+  .admin-nav-mobile-link,
+  .admin-table .admin-btn-sm {
+    min-height: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .admin-btn:hover,
+  .admin-nav-link:hover,
+  .admin-card:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+
+  /* Enhanced touch feedback */
+  .admin-btn:active,
+  .admin-nav-link:active {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== HIGH DPI DISPLAYS ===== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .admin-table th,
+  .admin-table td {
+    border-width: 0.5px;
+  }
+
+  .admin-card {
+    border-width: 0.5px;
+  }
+}
+
+/* ===== DARK MODE PREFERENCES ===== */
+@media (prefers-color-scheme: dark) {
+  /* Already using dark theme, but can add specific overrides if needed */
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .admin-nav,
+  .admin-header-actions,
+  .admin-sidebar,
+  .admin-mobile-toggle,
+  .admin-nav-mobile {
+    display: none !important;
+  }
+
+  .admin-layout-main {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0;
+  }
+
+  .admin-card {
+    box-shadow: none;
+    border: 1px solid #000;
+    page-break-inside: avoid;
+  }
+
+  .admin-table {
+    font-size: 10px;
+  }
+
+  .admin-btn {
+    display: none;
+  }
+}

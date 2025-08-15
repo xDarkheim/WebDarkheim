@@ -169,7 +169,7 @@ $pageTitle = 'Schedule Meeting';
     </div>
 </div>
 
-<script src="/public/assets/js/admin.js"></script>
+<script type="module" src="/public/assets/js/admin.js"></script>
 <script>
 // Set minimum date to today
 document.getElementById('preferred_date').min = new Date().toISOString().split('T')[0];

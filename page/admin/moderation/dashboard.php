@@ -430,7 +430,7 @@ try {
     </main>
 
     <!-- Admin Scripts -->
-    <script src="/public/assets/js/admin.js"></script>
+    <script type="module" src="/public/assets/js/admin.js"></script>
     <?= $adminNavigation->renderBadgeUpdateScript() ?>
     <script>
         // Initialize dashboard functionality

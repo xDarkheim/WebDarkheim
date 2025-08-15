@@ -1,0 +1,99 @@
+/**
+ * Base styles and reset
+ */
+
+/* Reset and Base Styles */
+.admin-panel {
+  font-family: var(--admin-font-family);
+  line-height: 1.6;
+  color: var(--admin-text-primary);
+  background-color: var(--admin-bg-primary);
+}
+
+.admin-panel * {
+  box-sizing: border-box;
+}
+
+/* Layout Components */
+.admin-container {
+  min-height: 100vh;
+  background-color: var(--admin-bg-primary);
+  color: var(--admin-text-primary);
+}
+
+/* Hidden utility class */
+.admin-hidden {
+  display: none !important;
+}
+
+/* Text utilities */
+.admin-text-center {
+  text-align: center;
+}
+
+/* Loading states */
+.admin-loading {
+  opacity: 0.6;
+  cursor: wait;
+  position: relative;
+}
+
+.admin-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--admin-border);
+  border-top-color: var(--admin-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Loading spinner */
+@keyframes admin-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fa-spinner.fa-spin,
+.admin-loading i {
+  animation: admin-spin 1s linear infinite;
+}
+
+/* Inline form styles */
+form.inline {
+  display: inline-block;
+  margin: 0;
+}
+
+/* Body scroll lock when mobile menu is open */
+body.admin-mobile-menu-open {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Scrollbar styling */
+.admin-textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-textarea::-webkit-scrollbar-track {
+  background: var(--admin-bg-secondary);
+  border-radius: 4px;
+}
+
+.admin-textarea::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 4px;
+}
+
+.admin-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-border-light);
+}

@@ -1,0 +1,717 @@
+/**
+ * Button and form styles
+ */
+
+/* Buttons */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--admin-border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  min-height: 44px; /* Touch target */
+  gap: 0.5rem;
+}
+
+.admin-btn i {
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.admin-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.admin-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Button variants */
+.admin-btn-primary {
+  background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-primary-dark) 100%);
+  color: white;
+  border-color: var(--admin-primary);
+}
+
+.admin-btn-primary:hover {
+  background: linear-gradient(135deg, var(--admin-primary-dark) 0%, #1e40af 100%);
+}
+
+.admin-btn-secondary {
+  background-color: var(--admin-bg-secondary);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border);
+}
+
+.admin-btn-secondary:hover {
+  background-color: var(--admin-bg-tertiary);
+  border-color: var(--admin-border-light);
+}
+
+.admin-btn-success {
+  background: linear-gradient(135deg, var(--admin-success) 0%, #059669 100%);
+  color: white;
+  border-color: var(--admin-success);
+}
+
+.admin-btn-warning {
+  background: linear-gradient(135deg, var(--admin-warning) 0%, #d97706 100%);
+  color: white;
+  border-color: var(--admin-warning);
+}
+
+.admin-btn-danger {
+  background: linear-gradient(135deg, var(--admin-error) 0%, #dc2626 100%);
+  color: white;
+  border-color: var(--admin-error);
+}
+
+.admin-btn-outline {
+  background: transparent;
+  border-width: 2px;
+}
+
+.admin-btn-outline-primary {
+  color: var(--admin-primary);
+  border-color: var(--admin-primary);
+}
+
+.admin-btn-outline-primary:hover {
+  background: var(--admin-primary);
+  color: white;
+}
+
+/* Button sizes */
+.admin-btn-sm {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  min-height: 36px;
+}
+
+.admin-btn-lg {
+  padding: 1rem 1.75rem;
+  font-size: 1rem;
+  min-height: 52px;
+}
+
+.admin-btn-xl {
+  padding: 1.25rem 2rem;
+  font-size: 1.125rem;
+  min-height: 56px;
+}
+
+/* Button groups */
+.admin-btn-group {
+  display: inline-flex;
+  border-radius: var(--admin-border-radius);
+  overflow: hidden;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-btn-group .admin-btn {
+  border-radius: 0;
+  border-right-width: 0;
+}
+
+.admin-btn-group .admin-btn:first-child {
+  border-top-left-radius: var(--admin-border-radius);
+  border-bottom-left-radius: var(--admin-border-radius);
+}
+
+.admin-btn-group .admin-btn:last-child {
+  border-top-right-radius: var(--admin-border-radius);
+  border-bottom-right-radius: var(--admin-border-radius);
+  border-right-width: 1px;
+}
+
+/* Forms */
+.admin-form {
+  width: 100%;
+}
+
+.admin-form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.admin-form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.admin-form-row.two-columns {
+  grid-template-columns: 1fr 1fr;
+}
+
+.admin-form-row.three-columns {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ===== LABELS ===== */
+.admin-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.admin-label-required::after {
+  content: " *";
+  color: var(--admin-error);
+  font-weight: 600;
+}
+
+.admin-label-optional {
+  color: var(--admin-text-muted);
+  font-weight: 400;
+}
+
+.admin-label-optional::after {
+  content: " (optional)";
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+/* ===== INPUT FIELDS ===== */
+.admin-input {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-border-radius);
+  font-size: 0.875rem;
+  background-color: var(--admin-bg-secondary);
+  color: var(--admin-text-primary);
+  transition: all 0.3s ease;
+  line-height: 1.5;
+  min-height: 44px; /* Minimum touch target */
+}
+
+.admin-input::placeholder {
+  color: var(--admin-text-muted);
+  opacity: 1;
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-primary-bg);
+  background-color: var(--admin-bg-card);
+}
+
+.admin-input:disabled {
+  background-color: var(--admin-bg-primary);
+  color: var(--admin-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-input-valid {
+  border-color: var(--admin-success);
+  background-color: var(--admin-bg-card);
+}
+
+.admin-input-invalid {
+  border-color: var(--admin-error);
+  background-color: var(--admin-error-50);
+}
+
+/* ===== TEXTAREA ===== */
+.admin-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* ===== SELECT DROPDOWN ===== */
+.admin-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 3rem;
+  cursor: pointer;
+}
+
+.admin-select:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* ===== CHECKBOX AND RADIO ===== */
+.admin-checkbox-group,
+.admin-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-checkbox-item,
+.admin-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: var(--admin-border-radius);
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  min-height: 44px; /* Touch target */
+}
+
+.admin-checkbox-item:hover,
+.admin-radio-item:hover {
+  background-color: var(--admin-bg-tertiary);
+}
+
+.admin-checkbox,
+.admin-radio {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--admin-border);
+  background-color: var(--admin-bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-checkbox {
+  border-radius: 0.25rem;
+}
+
+.admin-radio {
+  border-radius: 50%;
+}
+
+.admin-checkbox:checked,
+.admin-radio:checked {
+  background-color: var(--admin-primary);
+  border-color: var(--admin-primary);
+}
+
+.admin-checkbox:checked {
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m13.854 3.646-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 9.293l6.646-6.647a.5.5 0 0 1 .708.708z'/%3e%3c/svg%3e");
+}
+
+.admin-radio:checked {
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+}
+
+.admin-checkbox-label,
+.admin-radio-label {
+  font-size: 0.875rem;
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+/* ===== FORM VALIDATION ===== */
+.admin-field-error {
+  color: var(--admin-error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-field-error i {
+  font-size: 0.75rem;
+}
+
+.admin-field-success {
+  color: var(--admin-success);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-help-text {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* ===== INPUT GROUPS ===== */
+.admin-input-group {
+  display: flex;
+  width: 100%;
+}
+
+.admin-input-group .admin-input {
+  border-radius: 0;
+  border-right: none;
+}
+
+.admin-input-group .admin-input:first-child {
+  border-top-left-radius: var(--admin-border-radius);
+  border-bottom-left-radius: var(--admin-border-radius);
+}
+
+.admin-input-group .admin-input:last-child {
+  border-top-right-radius: var(--admin-border-radius);
+  border-bottom-right-radius: var(--admin-border-radius);
+  border-right: 1px solid var(--admin-border);
+}
+
+.admin-input-group-addon {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background: var(--admin-bg-tertiary);
+  border: 1px solid var(--admin-border);
+  border-right: none;
+  color: var(--admin-text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.admin-input-group-addon:first-child {
+  border-top-left-radius: var(--admin-border-radius);
+  border-bottom-left-radius: var(--admin-border-radius);
+}
+
+.admin-input-group-addon:last-child {
+  border-top-right-radius: var(--admin-border-radius);
+  border-bottom-right-radius: var(--admin-border-radius);
+  border-right: 1px solid var(--admin-border);
+}
+
+/* ===== FLOATING LABELS ===== */
+.admin-floating-label {
+  position: relative;
+}
+
+.admin-floating-label .admin-input {
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.admin-floating-label .admin-label {
+  position: absolute;
+  top: 0.875rem;
+  left: 1rem;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  background: var(--admin-bg-secondary);
+  padding: 0 0.25rem;
+  margin-bottom: 0;
+}
+
+.admin-floating-label .admin-input:focus + .admin-label,
+.admin-floating-label .admin-input:not(:placeholder-shown) + .admin-label {
+  top: -0.5rem;
+  font-size: 0.75rem;
+  color: var(--admin-primary);
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.admin-toggle {
+  position: relative;
+  display: inline-block;
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.admin-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--admin-bg-tertiary);
+  border: 1px solid var(--admin-border);
+  transition: 0.3s;
+  border-radius: 1.5rem;
+}
+
+.admin-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 1rem;
+  width: 1rem;
+  left: 0.125rem;
+  bottom: 0.125rem;
+  background-color: var(--admin-text-muted);
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.admin-toggle input:checked + .admin-toggle-slider {
+  background-color: var(--admin-primary);
+  border-color: var(--admin-primary);
+}
+
+.admin-toggle input:checked + .admin-toggle-slider:before {
+  transform: translateX(1.5rem);
+  background-color: white;
+}
+
+.admin-toggle input:focus + .admin-toggle-slider {
+  box-shadow: 0 0 0 3px var(--admin-primary-bg);
+}
+
+/* ===== FILE UPLOAD ===== */
+.admin-file-upload {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  border-radius: var(--admin-border-radius);
+  border: 2px dashed var(--admin-border);
+  background: var(--admin-bg-secondary);
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+}
+
+.admin-file-upload:hover,
+.admin-file-upload.dragover {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-50);
+}
+
+.admin-file-upload input[type="file"] {
+  position: absolute;
+  left: -9999px;
+}
+
+.admin-file-upload-content {
+  pointer-events: none;
+}
+
+.admin-file-upload-icon {
+  font-size: 2rem;
+  color: var(--admin-text-muted);
+  margin-bottom: 1rem;
+}
+
+.admin-file-upload-text {
+  color: var(--admin-text-primary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.admin-file-upload-hint {
+  color: var(--admin-text-muted);
+  font-size: 0.75rem;
+}
+
+/* ===== SEARCH INPUT ===== */
+.admin-search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-search-input .admin-input {
+  padding-left: 2.5rem;
+}
+
+.admin-search-input i {
+  position: absolute;
+  left: 1rem;
+  color: var(--admin-text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.admin-search-clear {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.admin-search-clear:hover {
+  background: var(--admin-bg-tertiary);
+  color: var(--admin-text-primary);
+}
+
+/* ===== FORM ACTIONS ===== */
+.admin-form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--admin-border);
+  margin-top: 2rem;
+}
+
+.admin-form-actions.centered {
+  justify-content: center;
+}
+
+.admin-form-actions.space-between {
+  justify-content: space-between;
+}
+
+/* ===== LOADING STATE ===== */
+.admin-form-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.admin-form-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(2px);
+  border-radius: var(--admin-border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-btn-loading {
+  pointer-events: none;
+  position: relative;
+}
+
+.admin-btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ===== RESPONSIVE FORM STYLES ===== */
+@media (max-width: 768px) {
+  .admin-form-row.two-columns,
+  .admin-form-row.three-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-input,
+  .admin-select,
+  .admin-textarea {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 1rem;
+  }
+
+  .admin-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .admin-btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-btn-group .admin-btn {
+    border-radius: var(--admin-border-radius);
+    border-right-width: 1px;
+    border-bottom-width: 0;
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+
+  .admin-btn-group .admin-btn:last-child {
+    margin-bottom: 0;
+    border-bottom-width: 1px;
+  }
+
+  .admin-form-actions {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+
+  .admin-input-group {
+    flex-direction: column;
+  }
+
+  .admin-input-group .admin-input,
+  .admin-input-group-addon {
+    border-radius: var(--admin-border-radius);
+    border: 1px solid var(--admin-border);
+    width: 100%;
+  }
+
+  .admin-file-upload {
+    padding: 1.5rem 1rem;
+  }
+
+  .admin-file-upload-icon {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .admin-input,
+  .admin-select,
+  .admin-textarea {
+    padding: 0.875rem 1rem;
+  }
+
+  .admin-btn {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    min-height: 48px;
+  }
+
+  .admin-btn-sm {
+    padding: 0.625rem 0.875rem;
+    min-height: 40px;
+  }
+
+  .admin-checkbox-item,
+  .admin-radio-item {
+    padding: 0.75rem 0.5rem;
+  }
+}

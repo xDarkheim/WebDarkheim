@@ -717,7 +717,7 @@ $flashMessages = $flashMessageService->getAllMessages();
     </div>
 
     <!-- Admin Scripts -->
-    <script src="/public/assets/js/admin.js"></script>
+    <script type="module" src="/public/assets/js/admin.js"></script>
 
     <script>
     // Global variables for moderation
