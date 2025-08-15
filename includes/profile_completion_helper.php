@@ -1,8 +1,11 @@
 <?php
+declare(strict_types=1);
 
 /**
  * Profile Completion Utility
  * Unified function for calculating profile completion across all pages
+ *
+ * @author Dmytro Hovenko
  */
 
 if (!function_exists('calculateProfileCompletion')) {
@@ -13,7 +16,7 @@ if (!function_exists('calculateProfileCompletion')) {
      * @param array|null $profile Client profile data from database
      * @return array Completion statistics
      */
-    function calculateProfileCompletion($user, $profile): array {
+    function calculateProfileCompletion(array $user, ?array $profile): array {
         $fields = [
             'email' => !empty($user['email']),
             'company' => !empty($profile['company_name'] ?? ''),
@@ -46,14 +49,14 @@ if (!function_exists('getClientProfileData')) {
      * @param int $userId User ID
      * @return array|null Client profile data or null
      */
-    function getClientProfileData($database, int $userId): ?array {
+    function getClientProfileData(object $database, int $userId): ?array {
         try {
-            $sql = "SELECT * FROM client_profiles WHERE user_id = ?";
+            $sql = 'SELECT * FROM client_profiles WHERE user_id = ?';
             $stmt = $database->getConnection()->prepare($sql);
             $stmt->execute([$userId]);
             return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         } catch (Exception $e) {
-            error_log("Error fetching client profile: " . $e->getMessage());
+            error_log('Error fetching client profile: ' . $e->getMessage());
             return null;
         }
     }

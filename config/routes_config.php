@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Routes configuration for the reorganized page structure
  * Updated to reflect the new logical organization of pages

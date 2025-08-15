@@ -51,7 +51,7 @@ if (!isset($database_handler)) {
     exit();
 }
 
-$page_title = "Edit Category";
+$page_title = 'Edit Category';
 
 // Get category ID from request
 $category_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -190,7 +190,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                 <div class="admin-header-actions">
                     <a href="/index.php?page=manage_categories" class="admin-btn admin-btn-secondary">
                         <i class="fas fa-arrow-left"></i>
-                        Back to Categories
+                        Back to Categorize
                     </a>
                     <a href="/index.php?page=dashboard" class="admin-btn admin-btn-secondary">
                         <i class="fas fa-tachometer-alt"></i>

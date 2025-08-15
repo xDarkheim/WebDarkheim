@@ -101,30 +101,30 @@ class Article
     }
 
     /**
-     * Creates an article instance from an array of data
+     * Create Article instance from array data
      */
     public static function fromArray(array $data): self
     {
         return new self(
-            (int)($data['id'] ?? 0),
-            $data['title'] ?? '',
-            $data['short_description'] ?? '',
-            $data['full_text'] ?? '',
-            $data['date'] ?? date('Y-m-d'),
-            isset($data['user_id']) ? (int)$data['user_id'] : null,
-            $data['status'] ?? 'draft',
-            isset($data['reviewed_by']) ? (int)$data['reviewed_by'] : null,
-            $data['reviewed_at'] ?? null,
-            $data['review_notes'] ?? null,
-            $data['created_at'] ?? null,
-            $data['updated_at'] ?? null,
-            $data['author_name'] ?? null,
-            $data['reviewer_name'] ?? null
+            id: (int)($data['id'] ?? 0),
+            title: $data['title'] ?? '',
+            short_description: $data['excerpt'] ?? $data['short_description'] ?? '',
+            full_text: $data['content'] ?? $data['full_text'] ?? '',
+            date: $data['created_at'] ?? $data['date'] ?? date('Y-m-d H:i:s'),
+            user_id: isset($data['author_id']) ? (int)$data['author_id'] : (isset($data['user_id']) ? (int)$data['user_id'] : null),
+            status: $data['status'] ?? 'draft',
+            reviewed_by: isset($data['reviewer_id']) ? (int)$data['reviewer_id'] : (isset($data['reviewed_by']) ? (int)$data['reviewed_by'] : null),
+            reviewed_at: $data['reviewed_at'] ?? null,
+            review_notes: $data['review_notes'] ?? null,
+            created_at: $data['created_at'] ?? null,
+            updated_at: $data['updated_at'] ?? null,
+            author_name: $data['author_name'] ?? null,
+            reviewer_name: $data['reviewer_name'] ?? null
         );
     }
 
     /**
-     * Converts the model to an array
+     * Convert Article to array
      */
     public function toArray(): array
     {
@@ -132,11 +132,15 @@ class Article
             'id' => $this->id,
             'title' => $this->title,
             'short_description' => $this->short_description,
+            'excerpt' => $this->short_description,
             'full_text' => $this->full_text,
+            'content' => $this->full_text,
             'date' => $this->date,
             'user_id' => $this->user_id,
+            'author_id' => $this->user_id,
             'status' => $this->status,
             'reviewed_by' => $this->reviewed_by,
+            'reviewer_id' => $this->reviewed_by,
             'reviewed_at' => $this->reviewed_at,
             'review_notes' => $this->review_notes,
             'created_at' => $this->created_at,

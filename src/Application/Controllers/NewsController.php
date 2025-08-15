@@ -132,10 +132,12 @@ class NewsController
                 'view_type' => 'articles_list',
                 'articles' => $articlesData['articles'],
                 'pagination' => [
-                    'current_page' => $articlesData['current_page'],
-                    'total_pages' => $articlesData['pages'],
-                    'total_articles' => $articlesData['total'],
-                    'per_page' => $filters['per_page']
+                    'current_page' => $articlesData['pagination']['current_page'],
+                    'total_pages' => $articlesData['pagination']['total_pages'],
+                    'total_articles' => $articlesData['pagination']['total'],
+                    'per_page' => $articlesData['pagination']['per_page'],
+                    'has_next' => $articlesData['pagination']['has_next'] ?? false,
+                    'has_prev' => $articlesData['pagination']['has_prev'] ?? false
                 ],
                 'filters' => $filters,
                 'categories' => $categories,

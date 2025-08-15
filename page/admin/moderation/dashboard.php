@@ -2,7 +2,9 @@
 
 /**
  * Moderation Dashboard - DARK ADMIN THEME
- * Updated to use unified AdminNavigation component
+ * Updated to use a unified AdminNavigation component
+ *
+ * @author Dmytro Hovenko
  */
 
 declare(strict_types=1);
@@ -43,7 +45,7 @@ try {
     // Set page title
     $pageTitle = 'Moderation Dashboard - Admin Panel';
 
-    // Create navigation - it will auto-inject database and show badges
+    // Create navigation - it will auto-inject a database and show badges
     $adminNavigation = new AdminNavigation($authService);
 
 } catch (Exception $e) {
@@ -182,7 +184,7 @@ try {
                         </div>
                     </div>
 
-                    <!-- Total Approved -->
+                    <!-- Totally Approved -->
                     <div class="admin-stat-card admin-glow-success">
                         <div class="admin-stat-content">
                             <div class="admin-stat-icon admin-stat-icon-success">

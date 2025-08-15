@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 use App\Domain\Models\Category;
 use App\Application\Components\AdminNavigation;
+use Random\RandomException;
 
 // Use global services from bootstrap.php
 global $flashMessageService, $database_handler, $serviceProvider;
@@ -25,31 +26,31 @@ if (session_status() == PHP_SESSION_NONE) {
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: Failed to get AuthenticationService instance: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
 }
 
 // Check authentication and admin rights
 if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
-    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    $flashMessageService->addError('Access Denied. You do not have permission to view this page.');
     header('Location: /index.php?page=login');
     exit();
 }
 
 // Check required services
 if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in manage_categories.php");
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: FlashMessageService not available in manage_categories.php');
+    die('A critical system error occurred. Please try again later.');
 }
 
 if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in manage_categories.php");
-    $flashMessageService->addError("Database connection error. Please try again later.");
+    error_log('Critical: Database handler not available in manage_categories.php');
+    $flashMessageService->addError('Database connection error. Please try again later.');
     header('Location: /index.php?page=dashboard');
     exit();
 }
 
-$pageTitle = "Manage Categories";
+$pageTitle = 'Manage Categories';
 
 // Create unified navigation
 $adminNavigation = new AdminNavigation($authService);
@@ -77,7 +78,7 @@ function generateSlug(string $text): string {
 // --- Handle POST requests (Add/Delete Category) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token_manage_categories'] ?? '', $_POST['csrf_token'])) {
-        $flashMessageService->addError("Invalid CSRF token. Action aborted.");
+        $flashMessageService->addError('Invalid CSRF token. Action aborted.');
         header('Location: /index.php?page=manage_categories');
         exit();
     }
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validation_passed = true;
 
         if (empty($category_name)) {
-            $flashMessageService->addError("Category name cannot be empty.");
+            $flashMessageService->addError('Category name cannot be empty.');
             $validation_passed = false;
         }
 
@@ -100,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $category_slug = generateSlug($category_name);
             } else {
                 if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $category_slug)) {
-                    $flashMessageService->addError("Slug can only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.");
+                    $flashMessageService->addError('Slug can only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.');
                     $validation_passed = false;
                 }
             }
@@ -109,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($validation_passed) {
             // Use Category model to check existence
             if (Category::existsByNameOrSlugExcludingId($database_handler, $category_name, $category_slug, 0)) {
-                $flashMessageService->addError("A category with this name or slug already exists.");
+                $flashMessageService->addError('A category with this name or slug already exists.');
             } else {
                 try {
                     // Use Category model to create
@@ -119,12 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header('Location: /index.php?page=manage_categories');
                         exit();
                     } else {
-                        $flashMessageService->addError("Failed to add category. Database error.");
-                        error_log("Manage Categories - Add: Failed to create category");
+                        $flashMessageService->addError('Failed to add category. Database error.');
+                        error_log('Manage Categories - Add: Failed to create category');
                     }
                 } catch (Exception $e) {
-                    $flashMessageService->addError("Database error adding category: " . $e->getMessage());
-                    error_log("Manage Categories - Add Exception: " . $e->getMessage());
+                    $flashMessageService->addError('Database error adding category: ' . $e->getMessage());
+                    error_log('Manage Categories - Add Exception: ' . $e->getMessage());
                 }
             }
         }
@@ -140,15 +141,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: /index.php?page=manage_categories');
                     exit();
                 } else {
-                    $flashMessageService->addError("Failed to delete category or category not found.");
+                    $flashMessageService->addError('Failed to delete category or category not found.');
                     error_log("Manage Categories - Delete: Failed for ID $category_id_to_delete");
                 }
             } catch (Exception $e) {
-                $flashMessageService->addError("Database error deleting category: " . $e->getMessage());
-                error_log("Manage Categories - Delete Exception: " . $e->getMessage());
+                $flashMessageService->addError('Database error deleting category: ' . $e->getMessage());
+                error_log('Manage Categories - Delete Exception: ' . $e->getMessage());
             }
         } else {
-            $flashMessageService->addError("Invalid category ID for deletion.");
+            $flashMessageService->addError('Invalid category ID for deletion.');
         }
     }
 
@@ -159,7 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // --- Generate CSRF token for forms ---
 if (empty($_SESSION['csrf_token_manage_categories'])) {
-    $_SESSION['csrf_token_manage_categories'] = bin2hex(random_bytes(32));
+    try {
+        $_SESSION['csrf_token_manage_categories'] = bin2hex(random_bytes(32));
+    } catch (RandomException $e) {
+        $flashMessageService->addError('Failed to generate CSRF token. Please try again later.');
+    }
 }
 $csrf_token = $_SESSION['csrf_token_manage_categories'];
 
@@ -168,8 +173,8 @@ $categories = [];
 try {
     $categories = Category::findAll($database_handler);
 } catch (Exception $e) {
-    $flashMessageService->addError("Error fetching categories: " . $e->getMessage());
-    error_log("Manage Categories - Fetch Exception: " . $e->getMessage());
+    $flashMessageService->addError('Error fetching categories: ' . $e->getMessage());
+    error_log('Manage Categories - Fetch Exception: ' . $e->getMessage());
 }
 
 // Get flash messages
@@ -300,7 +305,9 @@ $monthly_categories = array_filter($categories, function($category) {
                             <h3 class="admin-card-title">
                                 <i class="fas fa-list"></i>Existing Categories (<?= count($categories) ?>)
                             </h3>
-                            <input type="text" class="admin-input" placeholder="Search categories..." data-search-target="tbody tr" style="width: 250px;">
+                            <label>
+                                <input type="text" class="admin-input" placeholder="Search categories..." data-search-target="tbody tr" style="width: 250px;">
+                            </label>
                         </div>
                         
                         <div class="admin-table-container">

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Manage Articles Page - MODERN DARK ADMIN INTERFACE
+ * Manage Articles Page - MODERN INTERFACE WITH SOLID ARCHITECTURE
  *
- * Modern dark administrative interface for managing articles
- * with improved UX and consistent styling
+ * Modern administrative interface for managing articles
+ * Updated to work with new SOLID architecture and dependency injection
  *
  * @author Dmytro Hovenko
  */
@@ -18,39 +18,33 @@ use App\Application\Middleware\CSRFMiddleware;
 use App\Domain\Repositories\ArticleRepository;
 use App\Application\Components\AdminNavigation;
 
-// Use global services from bootstrap.php
-global $flashMessageService, $database_handler, $serviceProvider;
+// Use enhanced services from new architecture
+global $serviceProvider;
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-
-// Get AuthenticationService
+// Get services through enhanced ServiceProvider
 try {
     $authService = $serviceProvider->getAuth();
+    $database = $serviceProvider->getDatabase();
+    $logger = $serviceProvider->getLogger();
+    $flashMessage = $serviceProvider->getFlashMessage();
+
+    // Create ArticleRepository with proper DI
+    $articleRepository = new ArticleRepository($database, $logger);
+
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log('Error initializing services in manage_articles.php: ' . $e->getMessage());
+    header('Location: /index.php?page=error');
+    exit;
 }
 
 // Check authentication and admin rights
 if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
-    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    $flashMessage->addError("Access Denied. You do not have permission to view this page.");
     header('Location: /index.php?page=login');
-    exit();
-}
-
-// Check for required services
-if (!isset($flashMessageService)) {
-    error_log("Critical: FlashMessageService not available in manage_articles.php");
-    die("A critical system error occurred. Please try again later.");
-}
-
-if (!isset($database_handler)) {
-    error_log("Critical: Database handler not available in manage_articles.php");
-    $flashMessageService->addError("Database connection error. Please try again later.");
-    header('Location: /index.php?page=dashboard');
     exit();
 }
 
@@ -70,7 +64,7 @@ $csrf_token = CSRFMiddleware::getToken();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF token via global system
     if (!CSRFMiddleware::validateQuick()) {
-        $flashMessageService->addError('Invalid CSRF token. Please try again.');
+        $flashMessage->addError('Invalid CSRF token. Please try again.');
         header('Location: /index.php?page=manage_articles');
         exit;
     }
@@ -79,11 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $article_id = (int)($_POST['article_id'] ?? 0);
 
     if ($article_id > 0) {
-        $articleRepository = new ArticleRepository($database_handler);
         $article = $articleRepository->findById($article_id);
 
         if (!$article) {
-            $flashMessageService->addError('Article not found.');
+            $flashMessage->addError('Article not found.');
             header('Location: /index.php?page=manage_articles');
             exit;
         }
@@ -91,9 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         switch ($action) {
             case 'submit_for_review':
                 if ($article->updateStatus('pending_review', $current_user_id, $articleRepository)) {
-                    $flashMessageService->addSuccess('Article submitted for review successfully.');
+                    $flashMessage->addSuccess('Article submitted for review successfully.');
                 } else {
-                    $flashMessageService->addError('Failed to submit article for review.');
+                    $flashMessage->addError('Failed to submit article for review.');
                 }
                 break;
 
@@ -104,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $review_notes = $_POST['review_notes'] ?? null;
 
                     if ($article->updateStatus('published', $reviewer_id, $articleRepository, $review_notes)) {
-                        $flashMessageService->addSuccess('Article approved successfully.');
+                        $flashMessage->addSuccess('Article approved successfully.');
                     } else {
-                        $flashMessageService->addError('Failed to approve article.');
+                        $flashMessage->addError('Failed to approve article.');
                     }
                 } else {
-                    $flashMessageService->addError('Access denied. You do not have moderation permissions.');
+                    $flashMessage->addError('Access denied. You do not have moderation permissions.');
                 }
                 break;
 
@@ -120,16 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $review_notes = $_POST['review_notes'] ?? '';
 
                     if (empty($review_notes)) {
-                        $flashMessageService->addError('Review notes are required for rejection.');
+                        $flashMessage->addError('Review notes are required for rejection.');
                     } else {
                         if ($article->updateStatus('rejected', $reviewer_id, $articleRepository, $review_notes)) {
-                            $flashMessageService->addSuccess('Article rejected successfully.');
+                            $flashMessage->addSuccess('Article rejected successfully.');
                         } else {
-                            $flashMessageService->addError('Failed to reject article.');
+                            $flashMessage->addError('Failed to reject article.');
                         }
                     }
                 } else {
-                    $flashMessageService->addError('Access denied. You do not have moderation permissions.');
+                    $flashMessage->addError('Access denied. You do not have moderation permissions.');
                 }
                 break;
 
@@ -140,16 +133,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $review_notes = $_POST['review_notes'] ?? '';
 
                     if (empty($review_notes)) {
-                        $flashMessageService->addError('Review notes are required for revoking approval.');
+                        $flashMessage->addError('Review notes are required for revoking approval.');
                     } else {
                         if ($article->updateStatus('draft', $reviewer_id, $articleRepository, $review_notes)) {
-                            $flashMessageService->addSuccess('Article approval revoked successfully. Article returned to draft status.');
+                            $flashMessage->addSuccess('Article approval revoked successfully. Article returned to draft status.');
                         } else {
-                            $flashMessageService->addError('Failed to revoke article approval.');
+                            $flashMessage->addError('Failed to revoke article approval.');
                         }
                     }
                 } else {
-                    $flashMessageService->addError('Access denied. You do not have moderation permissions.');
+                    $flashMessage->addError('Access denied. You do not have moderation permissions.');
                 }
                 break;
         }
@@ -172,8 +165,6 @@ if (!in_array($status_filter, $valid_filters)) {
 try {
     $filter_status = ($status_filter === 'all') ? null : $status_filter;
 
-    // Create an ArticleRepository instance
-    $articleRepository = new ArticleRepository($database_handler);
     $articles_list = ($user_role === 'admin')
         ? $articleRepository->findAll($filter_status)
         : $articleRepository->findByUserId($current_user_id, $filter_status);
@@ -184,7 +175,7 @@ try {
         $authors_map = [];
         if (!empty($user_ids_to_fetch)) {
             foreach ($user_ids_to_fetch as $uid) {
-                $author_user = User::findById($database_handler, $uid);
+                $author_user = User::findById($database, $uid);
                 $authors_map[$uid] = $author_user ? $author_user['username'] : 'Unknown User';
             }
         }
@@ -210,11 +201,11 @@ try {
     }
 } catch (Exception $e) {
     error_log("Error loading articles in manage_articles.php: " . $e->getMessage());
-    $flashMessageService->addError("Error loading articles. Please try again later.");
+    $flashMessage->addError("Error loading articles. Please try again later.");
 }
 
 // Get flash messages
-$flashMessages = $flashMessageService->getAllMessages();
+$flashMessages = $flashMessage->getAllMessages();
 
 ?>
 
@@ -447,7 +438,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                                                         <?php foreach (array_slice($article_item['categories'], 0, 2) as $category): ?>
                                                             <span class="admin-badge admin-badge-primary" style="font-size: 0.625rem;">
                                                                 <i class="fas fa-tag"></i>
-                                                                <?= htmlspecialchars($category->name) ?>
+                                                                <?= htmlspecialchars($category['name']) ?>
                                                             </span>
                                                         <?php endforeach; ?>
                                                         <?php if (count($article_item['categories']) > 2): ?>

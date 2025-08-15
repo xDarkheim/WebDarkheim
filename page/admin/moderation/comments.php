@@ -2,6 +2,8 @@
 
 /**
  * Comments Moderation - Updated to use unified AdminNavigation and FlashMessage
+ *
+ * @author Dmytro Hovenko
  */
 
 declare(strict_types=1);
@@ -14,7 +16,12 @@ use App\Application\Controllers\ModerationController;
 use App\Application\Core\ServiceProvider;
 
 // Create unified navigation
-$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+try {
+    $adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+} catch (ReflectionException $e) {
+    error_log('Critical: Failed to initialize AdminNavigation in comments moderation - ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
+}
 
 try {
     // Get ServiceProvider for accessing services
@@ -25,13 +32,13 @@ try {
     $logger = $serviceProvider->getLogger();
     $database = $serviceProvider->getDatabase();
 
-    // Use global FlashMessage service instead of creating new one
+    // Use global FlashMessage service instead of creating a new one
     if (!isset($flashMessageService)) {
-        error_log("Critical: FlashMessageService not available in comments moderation");
-        die("A critical system error occurred. Please try again later.");
+        error_log('Critical: FlashMessageService not available in comments moderation');
+        die('A critical system error occurred. Please try again later.');
     }
 
-    // Create moderation controller with global FlashMessage service
+    // Create a moderation controller with global FlashMessage service
     $moderationController = new ModerationController(
         $database,
         $authService,
@@ -162,7 +169,7 @@ try {
                         </div>
                         <h3 style="color: var(--admin-text-primary); margin-bottom: 1rem;">No Comments to Review</h3>
                         <p style="color: var(--admin-text-muted); margin-bottom: 2rem;">
-                            All comments have been reviewed. Great job keeping the community clean!
+                            All comments have been reviewed. Great job is keeping the community clean!
                         </p>
                         <a href="/index.php?page=admin_moderation_dashboard" class="admin-btn admin-btn-primary">
                             <i class="fas fa-tachometer-alt"></i>Back to Dashboard
@@ -389,7 +396,7 @@ try {
                                 <ul style="font-size: 0.75rem; color: var(--admin-text-secondary); margin: 0; padding-left: 1rem;">
                                     <li>Multiple external links</li>
                                     <li>Generic promotional content</li>
-                                    <li>Irrelevant to project topic</li>
+                                    <li>Irrelevant to a project topic</li>
                                     <li>Repeated across projects</li>
                                 </ul>
                             </div>

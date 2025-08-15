@@ -4,7 +4,7 @@
  * Project Details Moderation Page - DARK ADMIN THEME
  * Detailed view for moderating individual portfolio projects
  *
- * @author GitHub Copilot
+ * @author Dmytro Hovenko
  */
 
 declare(strict_types=1);

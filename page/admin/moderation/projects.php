@@ -2,6 +2,8 @@
 
 /**
  * Projects Moderation - Updated to use unified AdminNavigation and FlashMessage
+ *
+ * @author Dmytro Hovenko
  */
 
 declare(strict_types=1);
@@ -14,7 +16,12 @@ use App\Application\Controllers\ModerationController;
 use App\Application\Core\ServiceProvider;
 
 // Create unified navigation
-$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+try {
+    $adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+} catch (ReflectionException $e) {
+    error_log('Critical: Failed to initialize AdminNavigation: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
+}
 
 try {
     // Get ServiceProvider for accessing services
@@ -27,8 +34,8 @@ try {
 
     // Use global FlashMessage service instead of creating new one
     if (!isset($flashMessageService)) {
-        error_log("Critical: FlashMessageService not available in projects moderation");
-        die("A critical system error occurred. Please try again later.");
+        error_log('Critical: FlashMessageService not available in projects moderation');
+        die('A critical system error occurred. Please try again later.');
     }
 
     // Create moderation controller with global FlashMessage service
@@ -64,7 +71,12 @@ try {
 }
 
 // Create unified navigation
-$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+try {
+    $adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+} catch (ReflectionException $e) {
+    error_log('Critical: Failed to initialize AdminNavigation: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
+}
 
 ?>
 

@@ -12,40 +12,26 @@ declare(strict_types=1);
 namespace App\Application\Services;
 
 use App\Domain\Interfaces\DatabaseInterface;
-use App\Domain\Models\Article;
-use App\Domain\Models\Category;
-use App\Domain\Models\Comments;
+use App\Domain\Interfaces\LoggerInterface;
 use App\Domain\Repositories\ArticleRepository;
-use App\Infrastructure\Lib\Database;
+use App\Domain\Models\Article;
 use Exception;
 use PDO;
 
-
+/**
+ * Enhanced News Service following SOLID principles
+ * Now uses dependency injection for better testability and maintainability
+ */
 class NewsService
 {
-    private DatabaseInterface $database;
-    private $logger;
+    private ArticleRepository $articleRepository;
 
-    public function __construct(DatabaseInterface $database)
-    {
-        $this->database = $database;
-        // Initialize a simple logger for compatibility
-        $this->logger = new class {
-            public function error($message): void
-            {
-                error_log("NewsService Error: " . $message);
-            }
-        };
-    }
-
-    /**
-     * Get a specific Database object for compatibility with models
-     */
-    private function getDatabaseHandler(): Database
-    {
-        /** @var Database $database */
-        $database = $this->database;
-        return $database;
+    public function __construct(
+        private readonly DatabaseInterface $database,
+        private readonly ?LoggerInterface $logger = null
+    ) {
+        // Create ArticleRepository with proper dependencies
+        $this->articleRepository = new ArticleRepository($this->database, $this->logger);
     }
 
     /**
@@ -55,16 +41,21 @@ class NewsService
     public function getArticleById(int $articleId): ?Article
     {
         try {
-            $articleRepository = new ArticleRepository($this->database);
-            $article = $articleRepository->findById($articleId);
+            $article = $this->articleRepository->findById($articleId);
 
             // Check that the article is published (for public access)
-            if ($article && $article->status !== 'published') {
+            if ($article && ($article['status'] ?? '') !== 'published') {
                 return null; // Return null for unpublished articles
             }
 
-            return $article;
+            return $article ? Article::fromArray($article) : null;
         } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error loading article', [
+                    'article_id' => $articleId,
+                    'error' => $e->getMessage()
+                ]);
+            }
             throw new Exception("Error loading article: " . $e->getMessage());
         }
     }
@@ -79,100 +70,77 @@ class NewsService
         $articlesPerPage = $filters['per_page'] ?? 12;
         $searchQuery = trim($filters['search'] ?? '');
         $sortBy = $filters['sort'] ?? 'date_desc';
-        $categorySlug = $filters['category'] ?? null;
-        $offset = ($currentPage - 1) * $articlesPerPage;
 
         try {
-            $connection = $this->database->getConnection();
+            $offset = ($currentPage - 1) * $articlesPerPage;
 
-            // Build WHERE conditions
-            $whereConditions = [];
+            // Build query with filters
+            $whereConditions = ["status = 'published'"];
             $params = [];
 
-            // Filter only published articles
-            $whereConditions[] = "a.status = ?";
-            $params[] = 'published';
-
-            // Filter by category
-            if ($categorySlug) {
-                $category = Category::findBySlug($this->getDatabaseHandler(), $categorySlug);
-                if ($category) {
-                    $whereConditions[] = "EXISTS (SELECT 1 FROM article_categories ac WHERE ac.article_id = a.id AND ac.category_id = ?)";
-                    $params[] = $category->id;
-                } else {
-                    return [
-                        'articles' => [],
-                        'total' => 0,
-                        'pages' => 1,
-                        'current_page' => 1
-                    ];
-                }
-            }
-
-            // Search by text
             if (!empty($searchQuery)) {
-                $whereConditions[] = "(a.title LIKE ? OR a.short_description LIKE ? OR a.full_text LIKE ?)";
-                $searchParam = '%' . $searchQuery . '%';
-                $params[] = $searchParam;
-                $params[] = $searchParam;
-                $params[] = $searchParam;
+                $whereConditions[] = "(title LIKE :search OR content LIKE :search OR excerpt LIKE :search)";
+                $params[':search'] = '%' . $searchQuery . '%';
             }
 
-            $whereClause = "WHERE " . implode(" AND ", $whereConditions);
+            if (!empty($filters['category_id'])) {
+                $whereConditions[] = "category_id = :category_id";
+                $params[':category_id'] = (int)$filters['category_id'];
+            }
 
-            // Count total articles
-            $countSql = "SELECT COUNT(DISTINCT a.id) FROM articles a $whereClause";
-            $countStmt = $connection->prepare($countSql);
-            $countStmt->execute($params);
+            // Build ORDER BY clause
+            $orderBy = match($sortBy) {
+                'date_asc' => 'created_at ASC',
+                'title_asc' => 'title ASC',
+                'title_desc' => 'title DESC',
+                default => 'created_at DESC'
+            };
+
+            $sql = "SELECT * FROM articles WHERE " . implode(' AND ', $whereConditions) .
+                   " ORDER BY {$orderBy} LIMIT :limit OFFSET :offset";
+
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->bindValue(':limit', $articlesPerPage, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+
+            $stmt->execute();
+            $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get total count for pagination
+            $countSql = "SELECT COUNT(*) FROM articles WHERE " . implode(' AND ', $whereConditions);
+            $countStmt = $this->database->getConnection()->prepare($countSql);
+
+            foreach ($params as $key => $value) {
+                $countStmt->bindValue($key, $value);
+            }
+
+            $countStmt->execute();
             $totalArticles = (int)$countStmt->fetchColumn();
-            $totalPages = max(1, ceil($totalArticles / $articlesPerPage));
-
-            // Adjust current page
-            if ($currentPage > $totalPages) {
-                $currentPage = $totalPages;
-                $offset = ($currentPage - 1) * $articlesPerPage;
-            }
-
-            // Determine sorting
-            $orderByClause = $this->buildOrderClause($sortBy);
-
-            // Load articles
-            $articles = [];
-            if ($totalArticles > 0) {
-                $sql = "SELECT DISTINCT a.* FROM articles a $whereClause $orderByClause LIMIT ? OFFSET ?";
-                $params[] = $articlesPerPage;
-                $params[] = $offset;
-
-                $stmt = $connection->prepare($sql);
-                $stmt->execute($params);
-                $articlesData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                foreach ($articlesData as $articleData) {
-                    $articles[] = new Article(
-                        (int)$articleData['id'],
-                        $articleData['title'],
-                        $articleData['short_description'],
-                        $articleData['full_text'],
-                        $articleData['date'],
-                        isset($articleData['user_id']) ? (int)$articleData['user_id'] : null,
-                        $articleData['status'] ?? 'published',
-                        isset($articleData['reviewed_by']) ? (int)$articleData['reviewed_by'] : null,
-                        $articleData['reviewed_at'] ?? null,
-                        $articleData['review_notes'] ?? null,
-                        $articleData['created_at'],
-                        $articleData['updated_at']
-                    );
-                }
-            }
 
             return [
-                'articles' => $articles,
-                'total' => $totalArticles,
-                'pages' => $totalPages,
-                'current_page' => $currentPage
+                'articles' => array_map(fn($article) => Article::fromArray($article), $articles),
+                'pagination' => [
+                    'current_page' => $currentPage,
+                    'per_page' => $articlesPerPage,
+                    'total' => $totalArticles,
+                    'total_pages' => (int)ceil($totalArticles / $articlesPerPage),
+                    'has_next' => $currentPage < ceil($totalArticles / $articlesPerPage),
+                    'has_prev' => $currentPage > 1
+                ],
+                'filters' => $filters
             ];
 
         } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error getting articles', [
+                    'filters' => $filters,
+                    'error' => $e->getMessage()
+                ]);
+            }
             throw new Exception("Error loading articles: " . $e->getMessage());
         }
     }

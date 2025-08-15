@@ -238,7 +238,7 @@ function loadDatabaseSettings(): array
         $loaded = true;
 
     } catch (Exception $e) {
-        error_log("Failed to load database settings: " . $e->getMessage());
+        error_log('Failed to load database settings: ' . $e->getMessage());
         $settings = [];
     }
 
@@ -254,7 +254,7 @@ function loadDatabaseSettingsFallback(): array
 
     try {
         $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET,
+            'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET,
             DB_USER,
             DB_PASS,
             [
@@ -264,11 +264,11 @@ function loadDatabaseSettingsFallback(): array
             ]
         );
 
-        $stmt = $pdo->prepare("
+        $stmt = $pdo->prepare('
             SELECT category, setting_key, setting_value, setting_type, is_public
             FROM site_settings 
             ORDER BY category, setting_key
-        ");
+        ');
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
@@ -301,7 +301,7 @@ function loadDatabaseSettingsFallback(): array
         }
 
     } catch (Exception $e) {
-        error_log("Fallback database settings load failed: " . $e->getMessage());
+        error_log('Fallback database settings load failed: ' . $e->getMessage());
     }
 
     return $settings;
@@ -392,7 +392,7 @@ function isDebugMode(): bool
             }
         } catch (Exception $e) {
             // If unable to get via StateManager, continue
-            error_log("Failed to get debug mode from StateManager: " . $e->getMessage());
+            error_log('Failed to get debug mode from StateManager: ' . $e->getMessage());
         }
     }
 
@@ -404,7 +404,7 @@ function isDebugMode(): bool
         }
     } catch (Exception $e) {
         // If unable to get from the database, continue with the global variable
-        error_log("Failed to get debug mode from database: " . $e->getMessage());
+        error_log('Failed to get debug mode from database: ' . $e->getMessage());
     }
 
     // Final fallback to the global variable

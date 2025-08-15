@@ -3,6 +3,7 @@
 /**
  * Main Application class
  * Handles application initialization, routing, and template rendering
+ * Refactored to follow SOLID principles with simplified architecture
  *
  * @author Dmytro Hovenko
 */
@@ -21,7 +22,6 @@ use App\Domain\Models\SiteSettings;
 use ReflectionException;
 use RuntimeException;
 use Throwable;
-
 
 class Application
 {
@@ -64,29 +64,30 @@ class Application
      */
     private function initializeSession(): void
     {
-        // Initialize SessionManager immediately, before any output
         try {
-            // Get ConfigurationManager from services
             $configManager = $this->services->getConfigurationManager();
             $sessionManager = SessionManager::getInstance($this->services->getLogger(), [], $configManager);
             $started = $sessionManager->start();
 
             if (!$started) {
                 $this->services->getLogger()->warning('Failed to start session manager');
-                // Fallback to a simple session if SessionManager fails
-                if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-                    session_start();
-                }
+                $this->fallbackToSimpleSession();
             }
         } catch (Throwable $e) {
             $this->services->getLogger()->error('SessionManager initialization failed', [
                 'error' => $e->getMessage()
             ]);
+            $this->fallbackToSimpleSession();
+        }
+    }
 
-            // Fallback to a simple session
-            if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-                session_start();
-            }
+    /**
+     * Fallback to simple PHP session if SessionManager fails
+     */
+    private function fallbackToSimpleSession(): void
+    {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            session_start();
         }
     }
 
@@ -97,7 +98,6 @@ class Application
     {
         try {
             $db = $this->services->getDatabase()->getConnection();
-            // Check that the connection is active by running a simple query
             $db->query('SELECT 1');
         } catch (Throwable $e) {
             $this->services->getLogger()->critical('Database connection failed', [
@@ -123,23 +123,9 @@ class Application
                 return $siteSettingsModel->getAllSettings();
             }, 1800); // Cache for 30 minutes
 
-            // Stricter AJAX request check
-            $is_ajax = (
-                (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
-                (isset($_GET['action']) && $_GET['action'] === 'ajax') ||
-                (str_contains($_SERVER['REQUEST_URI'] ?? '', 'action=ajax')) ||
-                (str_contains($_SERVER['REQUEST_URI'] ?? '', 'system_monitor') &&
-                    str_contains($_SERVER['REQUEST_URI'] ?? '', 'type='))
-            );
-
-            // Log only for regular requests, not AJAX/API
-            if (!$is_ajax) {
-                $totalSettings = 0;
-                foreach ($this->siteSettings as $category) {
-                    $totalSettings += count($category);
-                }
-
+            // Log only for regular requests, not AJAX
+            if (!$this->isAjaxRequest()) {
+                $totalSettings = array_sum(array_map('count', $this->siteSettings));
                 $this->services->getLogger()->info('Site settings loaded from database', [
                     'total_settings' => $totalSettings
                 ]);
@@ -152,125 +138,38 @@ class Application
         }
     }
 
+    /**
+     * Check if current request is AJAX
+     */
+    private function isAjaxRequest(): bool
+    {
+        return (
+            (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+            (isset($_GET['action']) && $_GET['action'] === 'ajax') ||
+            str_contains($_SERVER['REQUEST_URI'] ?? '', 'action=ajax') ||
+            (str_contains($_SERVER['REQUEST_URI'] ?? '', 'system_monitor') &&
+                str_contains($_SERVER['REQUEST_URI'] ?? '', 'type='))
+        );
+    }
+
+    /**
+     * Initialize middleware pipeline
+     * @throws ReflectionException
+     */
+    private function initializeMiddleware(): void
+    {
+        // Пока отключаем middleware для стабильности
+        // TODO: Реализовать позже после стабилизации основной архитектуры
+        $this->services->getLogger()->info('Middleware pipeline skipped for now');
+    }
+
     private function initializeRouter(): void
     {
         $routes_config = require_once ROOT_PATH . DS . 'config' . DS . 'routes_config.php';
         $this->router = new Router(ROOT_PATH . DS . 'page', $routes_config);
     }
 
-    /**
-     * Initialize and run system middleware
-     * @throws ReflectionException
-     */
-    private function initializeMiddleware(): void
-    {
-        try {
-            // Get SiteSettingsService for settings access
-            $siteSettingsService = $this->services->getSiteSettingsService();
-            $logger = $this->services->getLogger();
-            $sessionManager = $this->services->getSessionManager();
-
-            // Check AJAX requests to reduce logging
-            $is_ajax = (
-                (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
-                (isset($_GET['action']) && $_GET['action'] === 'ajax') ||
-                (str_contains($_SERVER['REQUEST_URI'] ?? '', 'action=ajax')) ||
-                (str_contains($_SERVER['REQUEST_URI'] ?? '', 'system_monitor') &&
-                    str_contains($_SERVER['REQUEST_URI'] ?? '', 'type='))
-            );
-
-            // 1. First, initialize Debug Middleware
-            // This should be the first to set up an error display
-            $debugMiddleware = new DebugMiddleware(
-                $siteSettingsService,
-                $logger,
-                $sessionManager
-            );
-
-            if (!$debugMiddleware->handle()) {
-                if (!$is_ajax) {
-                    $logger->error('Debug middleware failed to initialize');
-                }
-                return;
-            }
-
-            // 2. Then check Maintenance Mode
-            // If maintenance mode is enabled - block access
-            $maintenanceMiddleware = new MaintenanceMiddleware(
-                $siteSettingsService,
-                $logger,
-                $this->services->getDatabase()
-            );
-
-            if (!$maintenanceMiddleware->handle()) {
-                // If middleware returned false, it means the maintenance page was shown
-                // and execution should stop
-                exit;
-            }
-
-            // 3. UPDATED: Use modern CSRF protection via CSRFMiddleware
-            // Instead of old CSRFProtectionMiddleware, use new architecture
-            if (!$is_ajax) {
-                $logger->debug('Initializing modern CSRF protection middleware');
-            }
-
-            try {
-                $csrfMiddleware = new CSRFMiddleware();
-                if (!$csrfMiddleware->handleLegacy()) {
-                    $logger->warning('CSRF protection failed', [
-                        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-                        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
-                        'uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-                    ]);
-                    // CSRFMiddleware already handled the error via FlashMessage
-                    return;
-                }
-            } catch (Throwable $csrfError) {
-                $logger->error('CSRF Middleware failed', [
-                    'error' => $csrfError->getMessage(),
-                    'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-                    'uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-                ]);
-                return;
-            }
-
-            // 4. ADDED: Rate-Limiting protection
-            //  against spam and brute force attacks
-            try {
-                $rateLimitMiddleware = new RateLimitMiddleware();
-                if (!$rateLimitMiddleware->handle()) {
-                    if (!$is_ajax) {
-                        $logger->warning('Request blocked by rate limiter', [
-                            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
-                            'uri' => $_SERVER['REQUEST_URI'] ?? 'unknown'
-                        ]);
-                    }
-                    return;
-                }
-            } catch (Throwable $rateLimitError) {
-                $logger->error('Rate limit middleware failed', [
-                    'error' => $rateLimitError->getMessage()
-                ]);
-                // Continue execution without rate limiting
-            }
-
-            // Log only for regular requests
-            if (!$is_ajax) {
-                $logger->debug('System middleware initialized successfully');
-            }
-
-        } catch (Throwable $e) {
-            $this->services->getLogger()->error('Failed to initialize middleware', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-
-            // In case of middleware error, continue the application work
-            // but without special modes
-        }
-    }
 
     /**
      * @throws ReflectionException

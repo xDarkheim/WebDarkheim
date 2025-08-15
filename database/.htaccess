@@ -1,9 +1,0 @@
-# Protect database directory
-Order Deny,Allow
-Deny from all
-
-# Block all database and SQL files
-<FilesMatch "\.(sql|db|sqlite|mdb)$">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>

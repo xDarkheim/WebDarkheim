@@ -1,9 +1,11 @@
 <?php
 
 /**
- * Simple Dependency Injection Container
- * Implements the Dependency Inversion Principle
- * and modern PHP practices
+ * Enhanced Dependency Injection Container
+ * Implements ContainerInterface and follows SOLID principles
+ * - Single Responsibility: Only manages dependency resolution
+ * - Open/Closed: Extensible through binding mechanisms
+ * - Dependency Inversion: Works with abstractions
  *
  * @author Dmytro Hovenko
  */
@@ -12,159 +14,159 @@ declare(strict_types=1);
 
 namespace App\Application\Core;
 
+use App\Domain\Interfaces\ContainerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
 use ReflectionParameter;
 use RuntimeException;
 
-
-class Container
+class Container implements ContainerInterface
 {
     private array $bindings = [];
     private array $instances = [];
-    private array $singletons = [];
+    private array $values = [];
 
     /**
      * Bind an interface to an implementation
      */
-    public function bind(string $abstract, string|callable|null $concrete = null, bool $singleton = false): void
+    public function bind(string $abstract, callable|string|null $concrete = null): void
     {
         $this->bindings[$abstract] = [
             'concrete' => $concrete ?? $abstract,
-            'singleton' => $singleton
+            'singleton' => false
         ];
     }
 
     /**
      * Bind as a singleton
      */
-    public function singleton(string $abstract, string|callable|null $concrete = null): void
+    public function singleton(string $abstract, callable|string|null $concrete = null): void
     {
-        $this->bind($abstract, $concrete, true);
+        $this->bindings[$abstract] = [
+            'concrete' => $concrete ?? $abstract,
+            'singleton' => true
+        ];
     }
 
     /**
-     * Bind an existing instance
-     */
-    public function instance(string $abstract, object $instance): void
-    {
-        $this->instances[$abstract] = $instance;
-    }
-
-    /**
-     * Bind any value (including arrays, scalars)
+     * Bind a concrete value to the container
      */
     public function value(string $abstract, mixed $value): void
     {
-        $this->instances[$abstract] = $value;
+        $this->values[$abstract] = $value;
     }
 
     /**
-     * Check if a binding exists
+     * Check if the container has a binding
      */
     public function has(string $abstract): bool
     {
-        return isset($this->bindings[$abstract]) || isset($this->instances[$abstract]);
+        return isset($this->bindings[$abstract]) || isset($this->values[$abstract]);
     }
 
     /**
-     * Resolve a dependency from the container
+     * Get all registered bindings
+     */
+    public function getBindings(): array
+    {
+        return $this->bindings;
+    }
+
+    /**
+     * Get value by key (for backward compatibility)
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        return $this->values[$key] ?? $default;
+    }
+
+    /**
+     * Resolve a service from the container
+     *
      * @throws ReflectionException
      */
     public function make(string $abstract): mixed
     {
-        // Return an existing instance if bound
+        // Return value if bound directly
+        if (isset($this->values[$abstract])) {
+            return $this->values[$abstract];
+        }
+
+        // Return singleton instance if already created
         if (isset($this->instances[$abstract])) {
             return $this->instances[$abstract];
         }
 
-        // Check if it's a singleton and already created
-        if (isset($this->singletons[$abstract])) {
-            return $this->singletons[$abstract];
+        // Get binding configuration
+        $binding = $this->bindings[$abstract] ?? null;
+        if ($binding === null) {
+            // Try to auto-resolve if no binding exists
+            return $this->resolve($abstract);
         }
 
-        $concrete = $this->getConcrete($abstract);
-
-        // If concrete is a callable, execute it
-        if (is_callable($concrete)) {
-            $object = $concrete($this);
-        } else {
-            $object = $this->build($concrete);
-        }
+        $concrete = $binding['concrete'];
+        $instance = $this->createInstance($concrete);
 
         // Store singleton instances
-        if (isset($this->bindings[$abstract]) && $this->bindings[$abstract]['singleton']) {
-            $this->singletons[$abstract] = $object;
+        if ($binding['singleton']) {
+            $this->instances[$abstract] = $instance;
         }
 
-        return $object;
+        return $instance;
     }
 
     /**
-     * Get a value from the container (for non-objects like arrays, strings, etc.)
+     * Create an instance of the concrete class
      */
-    public function get(string $abstract, mixed $default = null): mixed
+    private function createInstance(callable|string $concrete): mixed
     {
-        if (isset($this->instances[$abstract])) {
-            return $this->instances[$abstract];
+        if (is_callable($concrete)) {
+            return $concrete($this);
         }
 
-        return $default;
+        return $this->resolve($concrete);
     }
 
     /**
-     * Get the concrete implementation
-     */
-    private function getConcrete(string $abstract): string|callable
-    {
-        if (isset($this->bindings[$abstract])) {
-            return $this->bindings[$abstract]['concrete'];
-        }
-
-        return $abstract;
-    }
-
-    /**
-     * Build an object with dependencies
+     * Resolve a class using reflection
+     *
      * @throws ReflectionException
      */
-    private function build(string $concrete): object
+    private function resolve(string $className): mixed
     {
         try {
-            $reflectionClass = new ReflectionClass($concrete);
-        } catch (ReflectionException $e) {
-            throw new RuntimeException("Target class [$concrete] does not exist.", 0, $e);
+            $reflectionClass = new ReflectionClass($className);
+        } catch (\ReflectionException $e) {
+            throw new RuntimeException("Class {$className} not found: " . $e->getMessage());
         }
 
         if (!$reflectionClass->isInstantiable()) {
-            throw new RuntimeException("Target [$concrete] is not instantiable.");
+            throw new RuntimeException("Class {$className} is not instantiable");
         }
 
         $constructor = $reflectionClass->getConstructor();
-
         if ($constructor === null) {
-            return new $concrete();
+            return $reflectionClass->newInstance();
         }
 
         $dependencies = $this->resolveDependencies($constructor->getParameters());
-
         return $reflectionClass->newInstanceArgs($dependencies);
     }
 
     /**
      * Resolve constructor dependencies
+     *
+     * @param ReflectionParameter[] $parameters
+     * @return array
+     * @throws ReflectionException
      */
     private function resolveDependencies(array $parameters): array
     {
         $dependencies = [];
 
         foreach ($parameters as $parameter) {
-            try {
-                $dependency = $this->resolveDependency($parameter);
-            } catch (ReflectionException) {
-                throw new RuntimeException("Cannot resolve parameter [{$parameter->getName()}]");
-            }
+            $dependency = $this->resolveDependency($parameter);
             $dependencies[] = $dependency;
         }
 
@@ -173,6 +175,7 @@ class Container
 
     /**
      * Resolve a single dependency
+     *
      * @throws ReflectionException
      */
     private function resolveDependency(ReflectionParameter $parameter): mixed
@@ -183,18 +186,31 @@ class Container
             if ($parameter->isDefaultValueAvailable()) {
                 return $parameter->getDefaultValue();
             }
-
-            throw new RuntimeException("Cannot resolve parameter [{$parameter->getName()}]");
+            throw new RuntimeException("Cannot resolve parameter '{$parameter->getName()}' - no type hint");
         }
 
-        if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-            return $this->make($type->getName());
+        if (!$type instanceof ReflectionNamedType) {
+            throw new RuntimeException("Cannot resolve parameter '{$parameter->getName()}' - complex type");
         }
 
-        if ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
+        $className = $type->getName();
+
+        // Handle primitive types
+        if ($type->isBuiltin()) {
+            if ($parameter->isDefaultValueAvailable()) {
+                return $parameter->getDefaultValue();
+            }
+            throw new RuntimeException("Cannot resolve primitive type '{$className}' for parameter '{$parameter->getName()}'");
         }
 
-        throw new RuntimeException("Cannot resolve parameter [{$parameter->getName()}]");
+        // Resolve class dependency
+        try {
+            return $this->make($className);
+        } catch (RuntimeException $e) {
+            if ($parameter->isOptional()) {
+                return $parameter->getDefaultValue();
+            }
+            throw $e;
+        }
     }
 }

@@ -105,7 +105,7 @@ try {
 
 } catch (Exception $e) {
     // If a database is not available, use defaults
-    error_log("Warning: Could not load backup settings from database: " . $e->getMessage());
+    error_log('Warning: Could not load backup settings from database: ' . $e->getMessage());
 }
 
 return $config;

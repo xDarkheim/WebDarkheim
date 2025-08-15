@@ -1,264 +1,324 @@
 <?php
 
-/**
- * Article repository
- *
- * @author Dmytro Hovenko
- */
-
 declare(strict_types=1);
 
 namespace App\Domain\Repositories;
 
 use App\Domain\Interfaces\DatabaseInterface;
+use App\Domain\Interfaces\LoggerInterface;
 use App\Domain\Models\Article;
 use PDO;
-use PDOException;
+use Exception;
 
+/**
+ * Article Repository
+ * Temporary implementation to fix missing class issues
+ * Handles article-related database operations
+ */
 class ArticleRepository
 {
-    public DatabaseInterface $database;
+    public function __construct(
+        private readonly DatabaseInterface $database,
+        private readonly ?LoggerInterface $logger = null
+    ) {}
 
-    public function __construct(DatabaseInterface $database)
+    /**
+     * Create new article
+     */
+    public function create(array $data): ?int
     {
-        $this->database = $database;
-    }
-
-    public function findById(int $id): ?Article
-    {
-        $conn = $this->database->getConnection();
-
         try {
-            $sql = "SELECT a.*, u.username AS author_name, r.username AS reviewer_name
-                    FROM articles a 
-                    LEFT JOIN users u ON a.user_id = u.id 
-                    LEFT JOIN users r ON a.reviewed_by = r.id
-                    WHERE a.id = :id";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $sql = "INSERT INTO articles (title, content, author_id, category_id, status, excerpt, created_at, updated_at) 
+                    VALUES (:title, :content, :author_id, :category_id, :status, :excerpt, NOW(), NOW())";
 
-            if ($result) {
-                return new Article(
-                    (int)$result['id'],
-                    $result['title'],
-                    $result['short_description'],
-                    $result['full_text'],
-                    $result['date'],
-                    $result['user_id'] ? (int)$result['user_id'] : null,
-                    $result['status'],
-                    $result['reviewed_by'] ? (int)$result['reviewed_by'] : null,
-                    $result['reviewed_at'],
-                    $result['review_notes'],
-                    $result['created_at'],
-                    $result['updated_at'],
-                    $result['author_name'],
-                    $result['reviewer_name']
-                );
-            }
-        } catch (PDOException $e) {
-            error_log("ArticleRepository::findById - Database error: " . $e->getMessage());
-        }
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute([
+                ':title' => $data['title'] ?? '',
+                ':content' => $data['content'] ?? '',
+                ':author_id' => $data['author_id'] ?? 0,
+                ':category_id' => $data['category_id'] ?? null,
+                ':status' => $data['status'] ?? 'draft',
+                ':excerpt' => $data['excerpt'] ?? ''
+            ]);
 
-        return null;
-    }
+            $id = $this->database->getConnection()->lastInsertId();
 
-    public function findAll(?string $status = null): array
-    {
-        $conn = $this->database->getConnection();
-
-        try {
-            $sql = "SELECT a.*, u.username AS author_name, r.username AS reviewer_name
-                    FROM articles a 
-                    LEFT JOIN users u ON a.user_id = u.id 
-                    LEFT JOIN users r ON a.reviewed_by = r.id";
-
-            if ($status) {
-                $sql .= " WHERE a.status = :status";
+            if ($this->logger) {
+                $this->logger->info('Article created', ['article_id' => $id]);
             }
 
-            $sql .= " ORDER BY a.created_at DESC";
-
-            $stmt = $conn->prepare($sql);
-
-            if ($status) {
-                $stmt->bindValue(':status', $status);
+            return (int)$id;
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error creating article', ['error' => $e->getMessage()]);
             }
-
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $articles = [];
-            foreach ($results as $result) {
-                $articles[] = new Article(
-                    (int)$result['id'],
-                    $result['title'],
-                    $result['short_description'],
-                    $result['full_text'],
-                    $result['date'],
-                    $result['user_id'] ? (int)$result['user_id'] : null,
-                    $result['status'],
-                    $result['reviewed_by'] ? (int)$result['reviewed_by'] : null,
-                    $result['reviewed_at'],
-                    $result['review_notes'],
-                    $result['created_at'],
-                    $result['updated_at'],
-                    $result['author_name'],
-                    $result['reviewer_name']
-                );
-            }
-
-            return $articles;
-        } catch (PDOException $e) {
-            error_log("ArticleRepository::findAll - Database error: " . $e->getMessage());
-            return [];
+            return null;
         }
     }
 
-    public function findByUserId(int $user_id, ?string $status = null): array
+    /**
+     * Update existing article
+     */
+    public function update(int $id, array $data): bool
     {
-        $conn = $this->database->getConnection();
-
         try {
-            $sql = "SELECT a.*, u.username AS author_name, r.username AS reviewer_name
-                    FROM articles a 
-                    LEFT JOIN users u ON a.user_id = u.id 
-                    LEFT JOIN users r ON a.reviewed_by = r.id
-                    WHERE a.user_id = :user_id";
+            $sql = "UPDATE articles SET 
+                    title = :title, 
+                    content = :content, 
+                    category_id = :category_id, 
+                    status = :status, 
+                    excerpt = :excerpt,
+                    updated_at = NOW()
+                    WHERE id = :id";
 
-            if ($status) {
-                $sql .= " AND a.status = :status";
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $result = $stmt->execute([
+                ':id' => $id,
+                ':title' => $data['title'] ?? '',
+                ':content' => $data['content'] ?? '',
+                ':category_id' => $data['category_id'] ?? null,
+                ':status' => $data['status'] ?? 'draft',
+                ':excerpt' => $data['excerpt'] ?? ''
+            ]);
+
+            if ($this->logger && $result) {
+                $this->logger->info('Article updated', ['article_id' => $id]);
             }
 
-            $sql .= " ORDER BY a.created_at DESC";
-
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-
-            if ($status) {
-                $stmt->bindValue(':status', $status);
+            return $result;
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error updating article', ['error' => $e->getMessage(), 'id' => $id]);
             }
-
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $articles = [];
-            foreach ($results as $result) {
-                $articles[] = new Article(
-                    (int)$result['id'],
-                    $result['title'],
-                    $result['short_description'],
-                    $result['full_text'],
-                    $result['date'],
-                    $result['user_id'] ? (int)$result['user_id'] : null,
-                    $result['status'],
-                    $result['reviewed_by'] ? (int)$result['reviewed_by'] : null,
-                    $result['reviewed_at'],
-                    $result['review_notes'],
-                    $result['created_at'],
-                    $result['updated_at'],
-                    $result['author_name'],
-                    $result['reviewer_name']
-                );
-            }
-
-            return $articles;
-        } catch (PDOException $e) {
-            error_log("ArticleRepository::findByUserId - Database error: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    public function delete(Article $article): bool
-    {
-        $conn = $this->database->getConnection();
-
-        try {
-            // First delete article categories
-            $sql = "DELETE FROM article_categories WHERE article_id = :id";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':id', $article->id, PDO::PARAM_INT);
-            $stmt->execute();
-
-            // Then delete the article
-            $sql = "DELETE FROM articles WHERE id = :id";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':id', $article->id, PDO::PARAM_INT);
-
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("ArticleRepository::delete - Database error: " . $e->getMessage());
             return false;
         }
     }
 
+    /**
+     * Find article by ID
+     */
+    public function findById(int $id): ?array
+    {
+        try {
+            $sql = "SELECT * FROM articles WHERE id = :id LIMIT 1";
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute([':id' => $id]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error finding article by ID', ['error' => $e->getMessage(), 'id' => $id]);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Get all articles with optional status filter
+     */
+    public function findAll(?string $status = null): array
+    {
+        try {
+            $sql = "SELECT * FROM articles";
+            $params = [];
+
+            if ($status !== null) {
+                $sql .= " WHERE status = :status";
+                $params[':status'] = $status;
+            }
+
+            $sql .= " ORDER BY created_at DESC";
+
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute($params);
+
+            $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Convert to Article objects
+            return array_map(function($article) {
+                return Article::fromArray($article);
+            }, $articles);
+
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error finding all articles', [
+                    'status' => $status,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            return [];
+        }
+    }
+
+    /**
+     * Find articles by user ID with optional status filter
+     */
+    public function findByUserId(int $userId, ?string $status = null): array
+    {
+        try {
+            $sql = "SELECT * FROM articles WHERE author_id = :user_id";
+            $params = [':user_id' => $userId];
+
+            if ($status !== null) {
+                $sql .= " AND status = :status";
+                $params[':status'] = $status;
+            }
+
+            $sql .= " ORDER BY created_at DESC";
+
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute($params);
+
+            $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Convert to Article objects
+            return array_map(function($article) {
+                return Article::fromArray($article);
+            }, $articles);
+
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error finding articles by user ID', [
+                    'user_id' => $userId,
+                    'status' => $status,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            return [];
+        }
+    }
+
+    /**
+     * Get categories for an article
+     */
     public function getCategories(Article $article): array
     {
-        $conn = $this->database->getConnection();
-
         try {
             $sql = "SELECT c.* FROM categories c 
                     INNER JOIN article_categories ac ON c.id = ac.category_id 
                     WHERE ac.article_id = :article_id";
 
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':article_id', $article->id, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute([':article_id' => $article->id]);
 
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $categories = [];
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            foreach ($results as $result) {
-                $categories[] = (object)[
-                    'id' => (int)$result['id'],
-                    'name' => $result['name'],
-                    'description' => $result['description']
-                ];
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error getting article categories', [
+                    'article_id' => $article->id,
+                    'error' => $e->getMessage()
+                ]);
             }
-
-            return $categories;
-        } catch (PDOException $e) {
-            error_log("ArticleRepository::getCategories - Database error: " . $e->getMessage());
             return [];
         }
     }
 
-    public function setCategories(Article $article, array $category_ids): bool
+    /**
+     * Update article status
+     */
+    public function updateStatus(int $id, string $status, ?int $reviewerId = null, ?string $reviewNotes = null): bool
     {
-        $conn = $this->database->getConnection();
-
         try {
-            // Start transaction
-            $conn->beginTransaction();
+            $sql = "UPDATE articles SET status = :status, updated_at = NOW()";
+            $params = [':id' => $id, ':status' => $status];
 
-            // First, delete existing categories for this article
-            $sql = "DELETE FROM article_categories WHERE article_id = :article_id";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindValue(':article_id', $article->id, PDO::PARAM_INT);
-            $stmt->execute();
-
-            // Then add new categories
-            if (!empty($category_ids)) {
-                $sql = "INSERT INTO article_categories (article_id, category_id) VALUES (:article_id, :category_id)";
-                $stmt = $conn->prepare($sql);
-
-                foreach ($category_ids as $category_id) {
-                    $stmt->bindValue(':article_id', $article->id, PDO::PARAM_INT);
-                    $stmt->bindValue(':category_id', (int)$category_id, PDO::PARAM_INT);
-                    $stmt->execute();
-                }
+            if ($reviewerId !== null) {
+                $sql .= ", reviewer_id = :reviewer_id";
+                $params[':reviewer_id'] = $reviewerId;
             }
 
-            // Commit transaction
-            $conn->commit();
-            return true;
-        } catch (PDOException $e) {
-            // Rollback transaction on error
-            $conn->rollBack();
-            error_log("ArticleRepository::setCategories - Database error: " . $e->getMessage());
+            if ($reviewNotes !== null) {
+                $sql .= ", review_notes = :review_notes";
+                $params[':review_notes'] = $reviewNotes;
+            }
+
+            $sql .= " WHERE id = :id";
+
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $result = $stmt->execute($params);
+
+            if ($this->logger && $result) {
+                $this->logger->info('Article status updated', [
+                    'article_id' => $id,
+                    'status' => $status
+                ]);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error updating article status', [
+                    'error' => $e->getMessage(),
+                    'id' => $id,
+                    'status' => $status
+                ]);
+            }
             return false;
         }
     }
 
+    /**
+     * Delete article
+     */
+    public function delete(int $id): bool
+    {
+        try {
+            $sql = "DELETE FROM articles WHERE id = :id";
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $result = $stmt->execute([':id' => $id]);
+
+            if ($this->logger && $result) {
+                $this->logger->info('Article deleted', ['article_id' => $id]);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error deleting article', ['error' => $e->getMessage(), 'id' => $id]);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Get all articles with pagination
+     */
+    public function getAllArticles(int $limit = 20, int $offset = 0): array
+    {
+        try {
+            $sql = "SELECT * FROM articles ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error getting all articles', ['error' => $e->getMessage()]);
+            }
+            return [];
+        }
+    }
+
+    /**
+     * Count total articles
+     */
+    public function count(): int
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM articles";
+            $stmt = $this->database->getConnection()->prepare($sql);
+            $stmt->execute();
+
+            return (int)$stmt->fetchColumn();
+        } catch (Exception $e) {
+            if ($this->logger) {
+                $this->logger->error('Error counting articles', ['error' => $e->getMessage()]);
+            }
+            return 0;
+        }
+    }
 }

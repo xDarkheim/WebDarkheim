@@ -1,12 +1,11 @@
 <?php
 
 /**
- * Secure Session Manager
- * Replaces direct $_SESSION access with controlled methods
- * Provides session management, CSRF protection, and user state handling
- * Uses ConfigurationManager for dynamic settings loading
- * Uses TokenManagerInterface for secure CSRF token generation
- * Handles session expiration and user state
+ * Enhanced Secure Session Manager
+ * Implements SessionManagerInterface and follows SOLID principles
+ * - Single Responsibility: Only manages session operations
+ * - Open/Closed: Extensible through configuration
+ * - Dependency Inversion: Depends on abstractions
  *
  * @author Dmytro Hovenko
  */
@@ -16,28 +15,220 @@ declare(strict_types=1);
 namespace App\Application\Core;
 
 use App\Domain\Interfaces\LoggerInterface;
+use App\Domain\Interfaces\SessionManagerInterface;
 use App\Domain\Interfaces\TokenManagerInterface;
 use Exception;
 use InvalidArgumentException;
 use Random\RandomException;
 
-
-class SessionManager
+class SessionManager implements SessionManagerInterface
 {
     private static ?SessionManager $instance = null;
-    private LoggerInterface $logger;
     private bool $sessionStarted = false;
     private array $config;
-    private ?ConfigurationManager $configManager;
-    private ?TokenManagerInterface $tokenManager;
+    private array $flashData = [];
 
-    private function __construct(LoggerInterface $logger, array $config = [], ?ConfigurationManager $configManager = null, ?TokenManagerInterface $tokenManager = null)
+    private function __construct(
+        private readonly LoggerInterface $logger,
+        array $config = [],
+        private readonly ?ConfigurationManager $configManager = null,
+        private readonly ?TokenManagerInterface $tokenManager = null
+    ) {
+        $this->config = $this->buildConfiguration($config);
+    }
+
+    public static function getInstance(
+        LoggerInterface $logger,
+        array $config = [],
+        ?ConfigurationManager $configManager = null,
+        ?TokenManagerInterface $tokenManager = null
+    ): self {
+        if (self::$instance === null) {
+            self::$instance = new self($logger, $config, $configManager, $tokenManager);
+        }
+        return self::$instance;
+    }
+
+    /**
+     * Start session with secure configuration
+     */
+    public function start(): bool
     {
-        $this->logger = $logger;
-        $this->configManager = $configManager;
-        $this->tokenManager = $tokenManager;
+        if ($this->sessionStarted) {
+            return true;
+        }
 
-        // Default base settings
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $this->sessionStarted = true;
+            return true;
+        }
+
+        if (headers_sent($filename, $linenum)) {
+            $this->logger->warning('Cannot start session - headers already sent', [
+                'file' => $filename,
+                'line' => $linenum
+            ]);
+            return false;
+        }
+
+        $this->configureSession();
+
+        try {
+            $started = session_start();
+            if ($started) {
+                $this->sessionStarted = true;
+                $this->validateSession();
+                $this->loadFlashData();
+                $this->logger->debug('Session started successfully');
+            }
+            return $started;
+        } catch (Exception $e) {
+            $this->logger->error('Failed to start session', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Destroy session completely
+     */
+    public function destroy(): bool
+    {
+        if (!$this->isActive()) {
+            return true;
+        }
+
+        try {
+            $_SESSION = [];
+
+            if (ini_get('session.use_cookies')) {
+                $params = session_get_cookie_params();
+                setcookie(
+                    session_name(),
+                    '',
+                    [
+                        'expires' => time() - 42000,
+                        'path' => $params['path'],
+                        'domain' => $params['domain'],
+                        'secure' => $params['secure'],
+                        'httponly' => $params['httponly'],
+                        'samesite' => $params['samesite']
+                    ]
+                );
+            }
+
+            $destroyed = session_destroy();
+            if ($destroyed) {
+                $this->sessionStarted = false;
+                $this->logger->info('Session destroyed successfully');
+            }
+            return $destroyed;
+        } catch (Exception $e) {
+            $this->logger->error('Failed to destroy session', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Regenerate session ID for security
+     */
+    public function regenerateId(bool $deleteOldSession = false): bool
+    {
+        if (!$this->isActive()) {
+            return false;
+        }
+
+        try {
+            $regenerated = session_regenerate_id($deleteOldSession);
+            if ($regenerated) {
+                $this->logger->debug('Session ID regenerated');
+            }
+            return $regenerated;
+        } catch (Exception $e) {
+            $this->logger->error('Failed to regenerate session ID', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Get session data
+     */
+    public function get(string $key, mixed $default = null): mixed
+    {
+        if (!$this->isActive()) {
+            return $default;
+        }
+
+        return $_SESSION[$key] ?? $default;
+    }
+
+    /**
+     * Set session data
+     */
+    public function set(string $key, mixed $value): void
+    {
+        if (!$this->isActive()) {
+            $this->logger->warning('Attempted to set session data when session is not active', ['key' => $key]);
+            return;
+        }
+
+        $_SESSION[$key] = $value;
+    }
+
+    /**
+     * Check if session has key
+     */
+    public function has(string $key): bool
+    {
+        return $this->isActive() && isset($_SESSION[$key]);
+    }
+
+    /**
+     * Remove session data
+     */
+    public function remove(string $key): void
+    {
+        if ($this->isActive() && isset($_SESSION[$key])) {
+            unset($_SESSION[$key]);
+        }
+    }
+
+    /**
+     * Get all session data
+     */
+    public function all(): array
+    {
+        return $this->isActive() ? $_SESSION : [];
+    }
+
+    /**
+     * Flash message for next request
+     */
+    public function flash(string $key, mixed $value): void
+    {
+        if (!$this->isActive()) {
+            $this->flashData[$key] = $value;
+            return;
+        }
+
+        if (!isset($_SESSION['_flash'])) {
+            $_SESSION['_flash'] = [];
+        }
+        $_SESSION['_flash'][$key] = $value;
+    }
+
+    /**
+     * Check if session is active
+     */
+    public function isActive(): bool
+    {
+        return $this->sessionStarted && session_status() === PHP_SESSION_ACTIVE;
+    }
+
+    /**
+     * Build configuration array
+     */
+    private function buildConfiguration(array $config): array
+    {
         $defaultConfig = [
             'name' => 'DARKHEIM_SESSION',
             'lifetime' => 3600, // 1 hour
@@ -61,18 +252,7 @@ class SessionManager
             }
         }
 
-        $this->config = array_merge($defaultConfig, $config);
-    }
-
-    public static function getInstance(?LoggerInterface $logger = null, array $config = [], ?ConfigurationManager $configManager = null, ?TokenManagerInterface $tokenManager = null): SessionManager
-    {
-        if (self::$instance === null) {
-            if ($logger === null) {
-                throw new InvalidArgumentException('Logger is required for SessionManager initialization');
-            }
-            self::$instance = new self($logger, $config, $configManager, $tokenManager);
-        }
-        return self::$instance;
+        return array_merge($defaultConfig, $config);
     }
 
     /**
@@ -107,181 +287,26 @@ class SessionManager
     }
 
     /**
-     * Secure session start
+     * Configure session parameters
      */
-    public function start(): bool
+    private function configureSession(): void
     {
-        if ($this->sessionStarted || session_status() === PHP_SESSION_ACTIVE) {
-            return true;
-        }
-
-        // Check if headers have already been sent
-        if (headers_sent()) {
-            $this->logger->warning('Cannot start session: headers already sent');
-            return false;
-        }
-
-        // Set session parameters only if the session is not started yet
-        if (session_status() === PHP_SESSION_NONE) {
-            session_name($this->config['name']);
-            session_set_cookie_params([
-                'lifetime' => $this->config['lifetime'],
-                'path' => $this->config['path'],
-                'domain' => $this->config['domain'],
-                'secure' => $this->config['secure'],
-                'httponly' => $this->config['httponly'],
-                'samesite' => $this->config['samesite']
-            ]);
-
-            $result = session_start();
-        } else {
-            // Session is already active
-            $result = true;
-        }
-
-        if ($result) {
-            $this->sessionStarted = true;
-            $this->logger->debug('Session started', [
-                'session_id' => session_id(),
-                'session_name' => session_name()
-            ]);
-        } else {
-            $this->logger->error('Failed to start session');
-        }
-
-        return $result;
+        session_name($this->config['name']);
+        session_set_cookie_params([
+            'lifetime' => $this->config['lifetime'],
+            'path' => $this->config['path'],
+            'domain' => $this->config['domain'],
+            'secure' => $this->config['secure'],
+            'httponly' => $this->config['httponly'],
+            'samesite' => $this->config['samesite']
+        ]);
     }
 
     /**
-     * Get value from a session
+     * Validate session data
      */
-    public function get(string $key, $default = null)
+    private function validateSession(): void
     {
-        $this->ensureSessionStarted();
-        return $_SESSION[$key] ?? $default;
-    }
-
-    /**
-     * Set value in session
-     */
-    public function set(string $key, $value): void
-    {
-        $this->ensureSessionStarted();
-        $_SESSION[$key] = $value;
-        $this->logger->debug("Session value set: $key");
-    }
-
-    /**
-     * Check if key exists in session
-     */
-    public function has(string $key): bool
-    {
-        $this->ensureSessionStarted();
-        return isset($_SESSION[$key]);
-    }
-
-    /**
-     * Remove value from the session
-     */
-    public function unset(string $key): void
-    {
-        $this->ensureSessionStarted();
-        if (isset($_SESSION[$key])) {
-            unset($_SESSION[$key]);
-            $this->logger->debug("Session value unset: $key");
-        }
-    }
-
-    /**
-     * Get all session data
-     */
-    public function all(): array
-    {
-        $this->ensureSessionStarted();
-        return $_SESSION;
-    }
-
-    /**
-     * Clear all session data
-     */
-    public function clear(): void
-    {
-        $this->ensureSessionStarted();
-        $_SESSION = [];
-        $this->logger->info('Session cleared');
-    }
-
-    /**
-     * Regenerate session ID
-     */
-    public function regenerateId(bool $deleteOldSession = true): bool
-    {
-        $this->ensureSessionStarted();
-        $oldId = session_id();
-        $result = session_regenerate_id($deleteOldSession);
-
-        if ($result) {
-            $this->logger->info('Session ID regenerated', [
-                'old_id' => $oldId,
-                'new_id' => session_id()
-            ]);
-        } else {
-            $this->logger->error('Failed to regenerate session ID');
-        }
-
-        return $result;
-    }
-
-    /**
-     * Destroy session
-     */
-    public function destroy(): bool
-    {
-        if (!$this->sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
-            return true;
-        }
-
-        $sessionId = session_id();
-        $result = session_destroy();
-
-        if ($result) {
-            $this->sessionStarted = false;
-            $this->logger->info('Session destroyed', ['session_id' => $sessionId]);
-        } else {
-            $this->logger->error('Failed to destroy session');
-        }
-
-        return $result;
-    }
-
-    /**
-     * Flash messages
-     */
-    public function flash(string $key, $value): void
-    {
-        $this->set("flash_$key", $value);
-    }
-
-    /**
-     * Get flash message
-     */
-    public function getFlash(string $key, $default = null)
-    {
-        $flashKey = "flash_$key";
-        $value = $this->get($flashKey, $default);
-        $this->unset($flashKey);
-        return $value;
-    }
-
-    /**
-     * Check session validity
-     */
-    public function isValid(): bool
-    {
-        if (!$this->sessionStarted && session_status() !== PHP_SESSION_ACTIVE) {
-            return false;
-        }
-
         $sessionLifetime = $this->config['lifetime'];
         $lastActivity = $this->get('last_activity', 0);
 
@@ -290,104 +315,32 @@ class SessionManager
                 'last_activity' => date('Y-m-d H:i:s', $lastActivity),
                 'lifetime' => $sessionLifetime
             ]);
-            return false;
-        }
-
-        // Update last activity time
-        $this->set('last_activity', time());
-        return true;
-    }
-
-    /**
-     * Get session ID
-     */
-    public function getId(): string
-    {
-        $this->ensureSessionStarted();
-        return session_id();
-    }
-
-    /**
-     * Get session name
-     */
-    public function getName(): string
-    {
-        return session_name();
-    }
-
-    /**
-     * Check if the session is started
-     */
-    public function isStarted(): bool
-    {
-        return $this->sessionStarted || session_status() === PHP_SESSION_ACTIVE;
-    }
-
-    /**
-     * Ensure the session is started
-     */
-    private function ensureSessionStarted(): void
-    {
-        if (!$this->isStarted()) {
-            $this->start();
+            $this->destroy();
+        } else {
+            // Update last activity time
+            $this->set('last_activity', time());
         }
     }
 
     /**
-     * Save user state
+     * Load flash data from session
      */
-    public function setUserState(array $userData): void
+    private function loadFlashData(): void
     {
-        $this->set('user_id', $userData['id'] ?? null);
-        $this->set('username', $userData['username'] ?? null);
-        $this->set('user_role', $userData['role'] ?? null);
-        $this->set('user_email', $userData['email'] ?? null);
-        $this->set('user_authenticated', true);
-
-        $this->logger->info('User state saved to session', [
-            'user_id' => $userData['id'] ?? null,
-            'username' => $userData['username'] ?? null
-        ]);
+        if (isset($_SESSION['_flash'])) {
+            foreach ($_SESSION['_flash'] as $key => $value) {
+                $this->flashData[$key] = $value;
+            }
+            unset($_SESSION['_flash']);
+        }
     }
 
     /**
-     * Get user state
+     * Get flash message
      */
-    public function getUserState(): array
+    public function getFlash(string $key, $default = null)
     {
-        return [
-            'id' => $this->get('user_id'),
-            'username' => $this->get('username'),
-            'role' => $this->get('user_role'),
-            'email' => $this->get('user_email'),
-            'authenticated' => $this->get('user_authenticated', false),
-        ];
-    }
-
-    /**
-     * Clear user state
-     */
-    public function clearUserState(): void
-    {
-        $this->ensureSessionStarted();
-
-        if (isset($_SESSION['user_id'])) {
-            $this->unset('user_id');
-        }
-        if (isset($_SESSION['username'])) {
-            $this->unset('username');
-        }
-        if (isset($_SESSION['user_role'])) {
-            $this->unset('user_role');
-        }
-        if (isset($_SESSION['user_email'])) {
-            $this->unset('user_email');
-        }
-        if (isset($_SESSION['user_authenticated'])) {
-            $this->unset('user_authenticated');
-        }
-
-        $this->logger->info('User state cleared from session');
+        return $this->flashData[$key] ?? $default;
     }
 
     /**
@@ -451,13 +404,84 @@ class SessionManager
     }
 
     /**
+     * Get user state from session
+     */
+    public function getUserState(): array
+    {
+        return [
+            'authenticated' => $this->has('user_id'),
+            'user_id' => $this->get('user_id'),
+            'username' => $this->get('username'),
+            'user_role' => $this->get('user_role'),
+            'auto_login' => $this->get('auto_login', false)
+        ];
+    }
+
+    /**
+     * Set user state in session
+     */
+    public function setUserState(array $userData): void
+    {
+        if (!$this->isActive()) {
+            $this->logger->warning('Attempted to set user state when session is not active');
+            return;
+        }
+
+        // Set user data in session
+        $this->set('user_id', $userData['id'] ?? null);
+        $this->set('username', $userData['username'] ?? null);
+        $this->set('user_role', $userData['role'] ?? 'user');
+
+        // Optional fields
+        if (isset($userData['email'])) {
+            $this->set('user_email', $userData['email']);
+        }
+        if (isset($userData['first_name'])) {
+            $this->set('user_first_name', $userData['first_name']);
+        }
+        if (isset($userData['last_name'])) {
+            $this->set('user_last_name', $userData['last_name']);
+        }
+
+        $this->logger->debug('User state set in session', [
+            'user_id' => $userData['id'] ?? null,
+            'username' => $userData['username'] ?? null
+        ]);
+    }
+
+    /**
+     * Clear user state from session (logout)
+     */
+    public function clearUserState(): void
+    {
+        if (!$this->isActive()) {
+            return;
+        }
+
+        $userId = $this->get('user_id');
+
+        // Remove user-related session data
+        $this->remove('user_id');
+        $this->remove('username');
+        $this->remove('user_role');
+        $this->remove('user_email');
+        $this->remove('user_first_name');
+        $this->remove('user_last_name');
+        $this->remove('auto_login');
+
+        $this->logger->info('User state cleared from session', [
+            'user_id' => $userId
+        ]);
+    }
+
+    /**
      * Force CSRF token refresh
      * @throws RandomException
      */
     public function refreshCsrfToken(): string
     {
-        $this->unset('csrf_token');
-        $this->unset('csrf_token_time');
+        $this->remove('csrf_token');
+        $this->remove('csrf_token_time');
         return $this->getCsrfToken();
     }
 

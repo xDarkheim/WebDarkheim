@@ -14,17 +14,17 @@ declare(strict_types=1);
 if (defined('BOOTSTRAP_LOADED')) {
     return;
 }
-define('BOOTSTRAP_LOADED', true);
+const BOOTSTRAP_LOADED = true;
 
 // Load environment variables
 $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) {
+        if (str_starts_with(trim($line), '#')) {
             continue;
         }
-        if (strpos($line, '=') !== false) {
+        if (str_contains($line, '=')) {
             list($name, $value) = explode('=', $line, 2);
             $name = trim($name);
             $value = trim($value);
@@ -47,6 +47,9 @@ if (!file_exists($autoload_path)) {
 require_once $autoload_path;
 
 // Initialize debug helper and constants
+use App\Application\Helpers\NavigationHelper;
+use App\Domain\Interfaces\LoggerInterface;
+use App\Domain\Models\User;
 use App\Infrastructure\Lib\DebugHelper;
 DebugHelper::initializeConstants();
 
@@ -59,6 +62,8 @@ DebugHelper::initializeConstants();
 use App\Application\Core\Container;
 use App\Application\Core\ServiceProvider;
 use App\Application\Core\ErrorHandler;
+use App\Infrastructure\Lib\Logger;
+use App\Infrastructure\Lib\TokenManager;
 
 $container = new Container();
 $serviceProvider = ServiceProvider::getInstance($container);
@@ -67,7 +72,11 @@ $serviceProvider = ServiceProvider::getInstance($container);
 $serviceProvider->registerCoreServices();
 
 // Initialize error handling
-$logger = $container->make(\App\Domain\Interfaces\LoggerInterface::class);
+try {
+    $logger = $container->make(LoggerInterface::class);
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Logger service not found in the container: ' . $e->getMessage());
+}
 $debugMode = ($_ENV['APP_ENV'] ?? 'production') === 'development';
 
 // Determine log level based on a request type
@@ -75,7 +84,7 @@ $is_ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' ||
            (isset($_GET['action']) && $_GET['action'] === 'ajax');
 
-// For AJAX requests, use only ERROR level
+// For AJAX requests, use only the ERROR level
 $logLevel = $is_ajax ? 'error' : ($debugMode ? 'debug' : 'info');
 
 $errorHandler = new ErrorHandler($logger, $debugMode);
@@ -89,23 +98,51 @@ try {
     // Log configuration loading only for regular requests, not for AJAX
     if (!$is_ajax) {
         $totalSettings = array_sum(array_map('count', $site_settings_from_db));
-        $logger->info("Configuration loaded successfully", ['total_settings' => $totalSettings]);
+        $logger->info('Configuration loaded successfully', ['total_settings' => $totalSettings]);
     }
 
 } catch (Exception $e) {
-    $logger->error("Failed to load database settings: " . $e->getMessage());
+    $logger->error('Failed to load database settings: ' . $e->getMessage());
     // Fallback to default settings
     $site_settings_from_db = [];
 }
 
 // Create service instances through ServiceProvider for backward compatibility
-$database_handler = $serviceProvider->getDatabase();
-$flashMessageService = $serviceProvider->getFlashMessage();
-$logger = $serviceProvider->getLogger();
-$auth = $serviceProvider->getAuth();
-$tokenManager = $serviceProvider->getTokenManager();
-$mailerService = $serviceProvider->getMailer();
-$cache = $serviceProvider->getCache();
+try {
+    $database_handler = $serviceProvider->getDatabase();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Database service not found in the container: ' . $e->getMessage());
+}
+try {
+    $flashMessageService = $serviceProvider->getFlashMessage();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('FlashMessage service not found in the container: ' . $e->getMessage());
+}
+try {
+    $logger = $serviceProvider->getLogger();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Logger service not found in the container: ' . $e->getMessage());
+}
+try {
+    $auth = $serviceProvider->getAuth();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Auth service not found in the container: ' . $e->getMessage());
+}
+try {
+    $tokenManager = $serviceProvider->getTokenManager();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('TokenManager service not found in the container: ' . $e->getMessage());
+}
+try {
+    $mailerService = $serviceProvider->getMailer();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Mailer service not found in the container: ' . $e->getMessage());
+}
+try {
+    $cache = $serviceProvider->getCache();
+} catch (ReflectionException $e) {
+    throw new RuntimeException('Cache service not found in the container: ' . $e->getMessage());
+}
 
 // Make serviceProvider available globally for page files
 $GLOBALS['serviceProvider'] = $serviceProvider;
@@ -121,15 +158,15 @@ if (rand(1, 100) <= 5) {
 if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     $rememberToken = $_COOKIE['remember_token'];
 
-    // Validate "Remember me" token
+    // Validate a "Remember me" token
     $tokenData = $tokenManager->validateToken(
         $rememberToken,
-        \App\Infrastructure\Lib\TokenManager::TYPE_REMEMBER_ME
+        TokenManager::TYPE_REMEMBER_ME
     );
 
     if ($tokenData !== false) {
         // Get user data
-        $user = \App\Domain\Models\User::findById($database_handler, $tokenData['user_id']);
+        $user = User::findById($database_handler, true['user_id']);
 
         if ($user && $user['is_active']) {
             // Check IP and User-Agent for additional security
@@ -188,7 +225,7 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
     }
 }
 
-$logger = \App\Infrastructure\Lib\Logger::getInstance();
+$logger = Logger::getInstance();
 
 // Role-based access control - check page access permissions
 if (!$is_ajax && isset($_GET['page'])) {
@@ -200,12 +237,12 @@ if (!$is_ajax && isset($_GET['page'])) {
         $publicPages = ['home', 'about', 'contact', 'projects', 'services', 'team', 'login', 'register', 'news', 'verify_email', 'reset_password', 'forgot_password'];
 
         // Check access for non-public pages (skip API endpoints as they have their own validation)
-        if (strpos($currentPage, 'api_') !== 0 && !in_array($currentPage, $publicPages)) {
+        if (!str_starts_with($currentPage, 'api_') && !in_array($currentPage, $publicPages)) {
             // Check access for non-public pages using NavigationHelper
-            if (!\App\Application\Helpers\NavigationHelper::canAccessPage($currentPage, $userRole)) {
+            if (!NavigationHelper::canAccessPage($currentPage, $userRole)) {
                 $_SESSION['error_message'] = 'У вас нет прав доступа к этой странице.';
 
-                // Redirect based on user role
+                // Redirect based on a user role
                 switch ($userRole) {
                     case 'admin':
                     case 'employee':
@@ -222,7 +259,7 @@ if (!$is_ajax && isset($_GET['page'])) {
         }
     } catch (Exception $e) {
         $logger->error('Role access control error: ' . $e->getMessage());
-        // Fallback to home page on error
+        // Fallback to the home page on error
         header('Location: /index.php?page=home');
         exit;
     }
@@ -254,7 +291,7 @@ date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'UTC');
 
 // Security headers
 if (!headers_sent()) {
-    header('X-Content-Type-Options: nosniff');
+    header('X-Content-Type-Options: nos niff');
     header('X-Frame-Options: DENY');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');

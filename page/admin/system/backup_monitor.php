@@ -2,9 +2,9 @@
 
 /**
  * Backup Monitor Page - DARK ADMIN THEME
- * Administrative interface for backup monitoring with modern dark theme
+ * Administrative interface for backup monitoring with a modern dark theme
  *
- * @author GitHub Copilot
+ * @author Dmytro Hovenko
  */
 
 declare(strict_types=1);
@@ -12,8 +12,6 @@ declare(strict_types=1);
 // Include required components
 use App\Application\Components\AdminNavigation;
 use App\Application\Controllers\DatabaseBackupController;
-use App\Infrastructure\Components\MessageComponent;
-use App\Infrastructure\Lib\FlashMessageService;
 
 // Use global services from bootstrap.php
 global $flashMessageService, $database_handler, $serviceProvider;
@@ -26,27 +24,32 @@ if (session_status() == PHP_SESSION_NONE) {
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: Failed to get AuthenticationService instance: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
 }
 
 // Check authentication and admin rights
 if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
-    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    $flashMessageService->addError('Access Denied. You do not have permission to view this page.');
     header('Location: /index.php?page=login');
     exit();
 }
 
 // Check for required services
 if (!isset($database_handler)) {
-    error_log("Critical: Required services not available in backup_monitor.php");
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: Required services not available in backup_monitor.php');
+    die('A critical system error occurred. Please try again later.');
 }
 
-// Create unified navigation after authentication check
-$adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+// Create unified navigation after an authentication check
+try {
+    $adminNavigation = new AdminNavigation($serviceProvider->getAuth());
+} catch (ReflectionException $e) {
+    error_log('Critical: Failed to create AdminNavigation instance: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
+}
 
-$page_title = "Database Backup Monitor";
+$page_title = 'Database Backup Monitor';
 
 try {
     // Initialize backup controller
@@ -79,7 +82,7 @@ try {
         } elseif ($daysSinceLastBackup > 1) {
             $healthStatus = 'warning';
             $healthMessage = "Last backup is $daysSinceLastBackup days old";
-            $warnings[] = "Consider checking the automatic backup system";
+            $warnings[] = 'Consider checking the automatic backup system';
             $flashMessageService->addWarning("Last backup was created $daysSinceLastBackup days ago. Consider checking the backup system.");
         } else {
             $flashMessageService->addSuccess('Backup system is operating normally. Latest backup is recent.');
@@ -87,7 +90,7 @@ try {
     }
 
 } catch (Exception $e) {
-    error_log("Failed to initialize backup controller: " . $e->getMessage());
+    error_log('Failed to initialize backup controller: ' . $e->getMessage());
     $flashMessageService->addError('Failed to load backup system: ' . $e->getMessage());
 
     // Fallback values
@@ -148,7 +151,7 @@ $flashMessages = $flashMessageService->getAllMessages();
         </div>
     </header>
 
-    <!-- Flash Messages - Let global toast system handle all messages -->
+    <!-- Flash Messages - Let a global toast system handle all messages -->
     <div id="flash-messages-data" data-php-messages="<?= htmlspecialchars(json_encode($flashMessages)) ?>" style="display: none;"></div>
 
     <!-- Main Content -->
@@ -294,7 +297,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                                     <?php foreach ($backups as $backup): ?>
                                         <?php
                                         if (!is_array($backup)) {
-                                            error_log("Critical: backup is not an array: " . gettype($backup));
+                                            error_log('Critical: backup is not an array: ' . gettype($backup));
                                             continue;
                                         }
 
@@ -453,12 +456,12 @@ $flashMessages = $flashMessageService->getAllMessages();
     <!-- Admin Scripts -->
     <script src="/public/assets/js/admin.js"></script>
     <script>
-        // Initialize page when DOM and admin panel are ready
+        // Initialize the page when DOM and admin panel are ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for admin panel to be available
+            // Wait for an admin panel to be available
             const initializeWhenReady = () => {
                 if (window.adminPanel) {
-                    // Process PHP flash messages through global toast system
+                    // Process PHP flash messages through a global toast system
                     const flashData = document.getElementById('flash-messages-data');
                     if (flashData && flashData.dataset.phpMessages) {
                         try {
@@ -481,7 +484,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                     // Initialize button handlers
                     initializeBackupHandlers();
                 } else {
-                    // Retry in 100ms if admin panel not ready
+                    // Retry in 100 ms if an admin panel not ready
                     setTimeout(initializeWhenReady, 100);
                 }
             };
@@ -511,7 +514,7 @@ $flashMessages = $flashMessageService->getAllMessages();
                 });
             });
 
-            // Delete buttons are handled by admin.js confirm system
+            // Delete buttons are handled by admin.js confirm a system
             document.querySelectorAll('[data-action="delete"]').forEach(button => {
                 button.addEventListener('click', function(e) {
                     if (e.target.closest('[data-confirm]')) {
@@ -636,10 +639,10 @@ $flashMessages = $flashMessageService->getAllMessages();
                     window.showToast(`Preparing download for ${filename}...`, 'info');
                 }
 
-                // Create download link using API
+                // Create a download link using API
                 const downloadUrl = `https://darkheim.net/page/api/admin/download_backup.php?filename=${encodeURIComponent(filename)}`;
 
-                // Create temporary link and trigger download
+                // Create a temporary link and trigger download
                 const link = document.createElement('a');
                 link.href = downloadUrl;
                 link.download = filename;
@@ -686,12 +689,12 @@ $flashMessages = $flashMessageService->getAllMessages();
                 }
 
                 if (data.success) {
-                    // Remove row from table instead of full page reload
+                    // Remove row from the table instead of full page reload
                     const row = document.querySelector(`[data-filename="${filename}"]`).closest('tr');
                     if (row) {
                         row.remove();
 
-                        // Check if table is now empty
+                        // Check if the table is now empty
                         const tbody = document.querySelector('.admin-table tbody');
                         if (tbody && tbody.children.length === 0) {
                             setTimeout(() => {

@@ -11,7 +11,6 @@
 
 declare(strict_types=1);
 
-use App\Application\Core\ServiceProvider;
 use App\Application\Services\SiteSettingsService;
 use App\Application\Middleware\CSRFMiddleware;
 use App\Application\Components\AdminNavigation;
@@ -27,18 +26,18 @@ if (session_status() == PHP_SESSION_NONE) {
 try {
     $authService = $serviceProvider->getAuth();
 } catch (Exception $e) {
-    error_log("Critical: Failed to get AuthenticationService instance: " . $e->getMessage());
-    die("A critical system error occurred. Please try again later.");
+    error_log('Critical: Failed to get AuthenticationService instance: ' . $e->getMessage());
+    die('A critical system error occurred. Please try again later.');
 }
 
 // Check authentication and admin rights
 if (!$authService->isAuthenticated() || !$authService->hasRole('admin')) {
-    $flashMessageService->addError("Access Denied. You do not have permission to view this page.");
+    $flashMessageService->addError('Access Denied. You do not have permission to view this page.');
     header('Location: /index.php?page=login');
     exit();
 }
 
-$page_title = "Site Settings";
+$page_title = 'Site Settings';
 
 // Get settings service
 $settingsService = null;
@@ -48,8 +47,8 @@ try {
     $settingsService = new SiteSettingsService($database_handler);
     $allSettings = $settingsService->getAllForAdmin();
 } catch (Exception $e) {
-    error_log("Failed to initialize SiteSettingsService: " . $e->getMessage());
-    $flashMessageService->addError("Failed to load site settings. Please try again later.");
+    error_log('Failed to initialize SiteSettingsService: ' . $e->getMessage());
+    $flashMessageService->addError('Failed to load site settings. Please try again later.');
     $allSettings = [];
 }
 
@@ -60,9 +59,9 @@ $adminNavigation = new AdminNavigation($authService);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Use global CSRF validation via CSRFMiddleware
     if (!CSRFMiddleware::validateQuick()) {
-        $flashMessageService->addError("Invalid CSRF token. Settings not saved.");
+        $flashMessageService->addError('Invalid CSRF token. Settings not saved.');
     } elseif (!$settingsService) {
-        $flashMessageService->addError("Settings service is not available. Cannot save settings.");
+        $flashMessageService->addError('Settings service is not available. Cannot save settings.');
     } else {
         try {
             // Handle special actions
@@ -73,16 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if (method_exists($settingsService, 'testEmailConfiguration')) {
                                 $result = $settingsService->testEmailConfiguration();
                                 if ($result) {
-                                    $flashMessageService->addSuccess("Email test completed successfully.");
+                                    $flashMessageService->addSuccess('Email test completed successfully.');
                                 } else {
-                                    $flashMessageService->addError("Email test failed. Please check your email configuration.");
+                                    $flashMessageService->addError('Email test failed. Please check your email configuration.');
                                 }
                             } else {
-                                $flashMessageService->addError("Email test feature is not available.");
+                                $flashMessageService->addError('Email test feature is not available.');
                             }
                         } catch (Exception $e) {
-                            error_log("Email test failed: " . $e->getMessage());
-                            $flashMessageService->addError("Email test failed: " . $e->getMessage());
+                            error_log('Email test failed: ' . $e->getMessage());
+                            $flashMessageService->addError('Email test failed: ' . $e->getMessage());
                         }
                         break;
 
@@ -108,17 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     }
                                     $flashMessageService->addSuccess("Cache cleared successfully. Removed $cleared files.");
                                 } else {
-                                    $flashMessageService->addWarning("Cache directory not found.");
+                                    $flashMessageService->addWarning('Cache directory not found.');
                                 }
                             }
                         } catch (Exception $e) {
-                            error_log("Failed to clear cache: " . $e->getMessage());
-                            $flashMessageService->addError("Failed to clear cache: " . $e->getMessage());
+                            error_log('Failed to clear cache: ' . $e->getMessage());
+                            $flashMessageService->addError('Failed to clear cache: ' . $e->getMessage());
                         }
                         break;
 
                     default:
-                        $flashMessageService->addError("Unknown action: " . htmlspecialchars($_POST['action']));
+                        $flashMessageService->addError('Unknown action: ' . htmlspecialchars($_POST['action']));
                         break;
                 }
             } else {
@@ -148,20 +147,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         try {
                             $result = $settingsService->updateSettings($settingsToUpdate);
                             if ($result) {
-                                $flashMessageService->addSuccess("Settings updated successfully.");
+                                $flashMessageService->addSuccess('Settings updated successfully.');
                             } else {
-                                $flashMessageService->addError("Failed to update settings. Please try again.");
+                                $flashMessageService->addError('Failed to update settings. Please try again.');
                             }
                         } catch (Exception $e) {
-                            error_log("Failed to update settings: " . $e->getMessage());
-                            $flashMessageService->addError("Failed to update settings: " . $e->getMessage());
+                            error_log('Failed to update settings: ' . $e->getMessage());
+                            $flashMessageService->addError('Failed to update settings: ' . $e->getMessage());
                         }
                     } else {
-                        $flashMessageService->addError("Settings update functionality is not available.");
-                        error_log("updateSettings method not found in SiteSettingsService");
+                        $flashMessageService->addError('Settings update functionality is not available.');
+                        error_log('updateSettings method not found in SiteSettingsService');
                     }
                 } else {
-                    $flashMessageService->addWarning("No settings to update.");
+                    $flashMessageService->addWarning('No settings to update.');
                 }
             }
 
@@ -171,11 +170,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
         } catch (Exception $e) {
-            error_log("Error processing POST request: " . $e->getMessage());
-            $flashMessageService->addError("An error occurred while processing your request: " . $e->getMessage());
+            error_log('Error processing POST request: ' . $e->getMessage());
+            $flashMessageService->addError('An error occurred while processing your request: ' . $e->getMessage());
         } catch (Error $e) {
-            error_log("Fatal error processing POST request: " . $e->getMessage());
-            $flashMessageService->addError("A critical error occurred while processing your request.");
+            error_log('Fatal error processing POST request: ' . $e->getMessage());
+            $flashMessageService->addError('A critical error occurred while processing your request.');
         }
     }
 
@@ -185,7 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get CSRF token via global system
-$csrfToken = CSRFMiddleware::getToken();
+try {
+    $csrfToken = CSRFMiddleware::getToken();
+} catch (Exception $e) {
+    error_log('Failed to get CSRF token: ' . $e->getMessage());
+    $flashMessageService->addError('Failed to get CSRF token. Please try again.');
+    header('Location: /index.php?page=site_settings');
+    exit();
+}
 
 // Define category names for display
 $categoryNames = [
@@ -205,8 +211,8 @@ $categoryNames = [
 
 // Check if settings are loaded
 if (empty($allSettings)) {
-    error_log("ERROR: No settings loaded from database");
-    $flashMessageService->addError("No settings found. Please check database connection.");
+    error_log('ERROR: No settings loaded from database');
+    $flashMessageService->addError('No settings found. Please check database connection.');
 }
 
 // Get flash messages

@@ -146,12 +146,12 @@ class ServiceProvider
 
     /**
      * Get SessionManager instance
-     * @return SessionManager
+     * @return \App\Domain\Interfaces\SessionManagerInterface
      * @throws ReflectionException
      */
-    public function getSessionManager(): SessionManager
+    public function getSessionManager(): \App\Domain\Interfaces\SessionManagerInterface
     {
-        return $this->getService(SessionManager::class);
+        return $this->getService(\App\Domain\Interfaces\SessionManagerInterface::class);
     }
 
     /**
@@ -205,6 +205,25 @@ class ServiceProvider
     }
 
     /**
+     * Get MiddlewareManager instance
+     * @return MiddlewareManager
+     * @throws ReflectionException
+     */
+    public function getMiddlewareManager(): MiddlewareManager
+    {
+        return $this->getService(MiddlewareManager::class);
+    }
+
+    /**
+     * Get container instance
+     * @return Container
+     */
+    public function getContainer(): Container
+    {
+        return $this->container;
+    }
+
+    /**
      * Registers all core services in the container
      */
     public function registerCoreServices(): void
@@ -243,6 +262,16 @@ class ServiceProvider
         // Password Manager
         $this->container->singleton(PasswordManagerInterface::class, function () {
             return new PasswordManager();
+        });
+
+        // Session Manager - добавляем регистрацию интерфейса
+        $this->container->singleton(\App\Domain\Interfaces\SessionManagerInterface::class, function ($container) {
+            return SessionManager::getInstance(
+                $container->make(LoggerInterface::class),
+                [],
+                $container->make(ConfigurationManager::class),
+                $container->make(TokenManagerInterface::class)
+            );
         });
 
         // Mailer (requires settings from DB)
@@ -349,13 +378,11 @@ class ServiceProvider
             );
         });
 
-        // Session Manager
-        $this->container->singleton(SessionManager::class, function ($container) {
-            return SessionManager::getInstance(
-                $container->make(LoggerInterface::class),
-                [],
-                $container->make(ConfigurationManager::class),
-                $container->make(TokenManagerInterface::class)
+        // Middleware Manager
+        $this->container->singleton(MiddlewareManager::class, function ($container) {
+            return new MiddlewareManager(
+                $this,
+                $container->make(LoggerInterface::class)
             );
         });
     }
